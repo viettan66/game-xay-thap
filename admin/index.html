@@ -7,18 +7,24 @@
 <style>
   :root {
     --bg: #f6f1e7; --card: #fffdf8; --ink: #2b2118; --muted: #7a6a58; --line: #e4d9c6;
-    --accent: #b5462b; --bar: #d99a2b; --prod: #b3261e; --test: #c26a00;
+    --accent: #b5462b; --bar: #d99a2b; --prod: #b3261e; --test: #c26a00; --ok: #2e7d32;
   }
   * { box-sizing: border-box; }
   body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--ink); }
-  header { padding: 16px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); background: var(--card); }
+  header { padding: 14px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); background: var(--card); }
   h1 { font-size: 20px; margin: 0; }
   .badge { padding: 4px 10px; border-radius: 999px; color: #fff; font-weight: 700; font-size: 13px; letter-spacing: .04em; }
   .badge.production { background: var(--prod); }
   .badge.test { background: var(--test); }
   .note { color: var(--muted); font-size: 13px; }
-  main { padding: 20px 24px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); max-width: 1200px; }
+  a.btn, button { font: inherit; font-size: 14px; padding: 7px 12px; border-radius: 8px; border: 1px solid #c9b79a; background: #fff; color: var(--ink); cursor: pointer; text-decoration: none; }
+  button:hover, a.btn:hover { background: #f3eadb; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  button:disabled { opacity: .45; cursor: default; }
+  main { padding: 20px 24px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); max-width: 1280px; }
   section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  section.wide { grid-column: 1 / -1; }
   h2 { font-size: 15px; margin: 0 0 12px; color: var(--accent); }
   .big { font-size: 28px; font-weight: 700; }
   .row { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; font-variant-numeric: tabular-nums; }
@@ -28,19 +34,26 @@
   .steps span { flex: 1; height: 8px; border-radius: 4px; background: var(--line); }
   .steps span.done { background: var(--bar); }
   .steps span.cur { background: var(--accent); }
+  .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  label { font-size: 14px; display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  select { font: inherit; padding: 5px; border-radius: 6px; border: 1px solid #c9b79a; }
   table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
   td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
   td.n { width: 28px; color: var(--muted); }
-  td.p { text-align: right; }
+  td.p { text-align: right; white-space: nowrap; }
   .empty { color: var(--muted); font-style: italic; }
-  .err { color: var(--prod); font-weight: 600; }
+  .err { color: var(--prod); font-weight: 600; min-height: 1em; }
+  .state-ok { color: var(--ok); font-weight: 600; }
+  .state-bad { color: var(--prod); font-weight: 600; }
 </style>
 </head>
 <body>
 <header>
   <h1>Bảo Tháp Thiên Phúc</h1>
   <span id="profile" class="badge">…</span>
-  <span class="note">Trang trạng thái tạm (giai đoạn 1). Trang quản trị đầy đủ có ở giai đoạn 7. Tự cập nhật mỗi 2 giây.</span>
+  <a class="btn" href="/overlay/" target="_blank">Mở overlay ↗</a>
+  <span class="note">Trang tạm. Trang quản trị đầy đủ có ở giai đoạn 7. Tự cập nhật mỗi 2 giây.</span>
+  <span id="error" class="err"></span>
 </header>
 <main>
   <section>
@@ -55,55 +68,150 @@
     <h2>Tổng quan</h2>
     <div class="row"><span>Tổng điểm đã góp</span><b id="total"></b></div>
     <div class="row"><span>Cả tháp cần</span><span id="need"></span></div>
-    <div class="row"><span>Phiên live</span><span id="session"></span></div>
-    <div class="row"><span>Nguồn live</span><span id="source"></span></div>
+    <div class="row"><span>Hệ số đang áp dụng</span><span id="mult"></span></div>
+    <div class="row"><span>Nhãn trên overlay</span><span id="ovbadge"></span></div>
     <div class="row"><span>Node.js</span><span id="node"></span></div>
-    <div id="error" class="err"></div>
   </section>
-  <section><h2 id="t-total"></h2><table id="b-total"></table></section>
+  <section>
+    <h2>Nguồn sự kiện</h2>
+    <div class="row"><span>Nguồn</span><b id="source"></b></div>
+    <div class="row"><span>Trạng thái</span><span id="livestate"></span></div>
+    <div class="row"><span>Người xem</span><span id="viewers"></span></div>
+    <div id="mode-box" class="buttons" hidden>
+      <button id="mode-sim" data-mode="simulator">Giả lập</button>
+      <button id="mode-live" data-mode="live">Live thật (diễn tập)</button>
+    </div>
+    <h2 style="margin-top:18px">Phiên live</h2>
+    <div class="row"><span>Phiên</span><span id="session"></span></div>
+    <div class="buttons">
+      <button data-post="/api/session/start">Bắt đầu phiên</button>
+      <button data-post="/api/session/end">Kết thúc phiên</button>
+    </div>
+  </section>
+  <section id="sim" class="wide" hidden>
+    <h2>Giả lập (chỉ hồ sơ thử) – overlay hiện nhãn “CHẾ ĐỘ THỬ”</h2>
+    <div class="buttons">
+      <button id="sim-start" class="primary">▶ Chạy</button>
+      <button id="sim-stop">■ Dừng</button>
+      <label>Kịch bản <select id="sim-scenario"></select></label>
+      <label>Tốc độ
+        <select id="sim-speed">
+          <option value="0.25">×0,25</option><option value="0.5">×0,5</option><option value="1">×1</option>
+          <option value="2">×2</option><option value="5">×5</option><option value="10">×10</option>
+        </select>
+      </label>
+      <span id="sim-state" class="note"></span>
+    </div>
+    <div class="buttons">
+      <button data-fire="gift_small">Quà nhỏ (1 xu)</button>
+      <button data-fire="gift_medium">Quà vừa (100 xu)</button>
+      <button data-fire="gift_large">Quà lớn (1.000 xu)</button>
+      <button data-fire="like_1000">1.000 tim</button>
+      <button data-fire="comment">Comment</button>
+      <button data-fire="join">Người vào phòng</button>
+      <button data-fire="burst">Đợt dồn dập (150 sự kiện)</button>
+    </div>
+  </section>
   <section><h2 id="t-session"></h2><table id="b-session"></table></section>
+  <section><h2 id="t-total"></h2><table id="b-total"></table></section>
   <section><h2 id="t-floor"></h2><table id="b-floor"></table></section>
 </main>
 <script>
   const fmt = (n) => Number(n).toLocaleString('vi-VN');
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let editing = false;
 
-  function board(id, titleId, b, unit) {
-    $(titleId).textContent = b.title;
-    $(id).innerHTML = b.rows.length
+  function board(key, b, unit) {
+    $('t-' + key).textContent = b.title;
+    $('b-' + key).innerHTML = b.rows.length
       ? b.rows.map((r) => `<tr><td class="n">${r.rank}</td><td>${esc(r.nickname)}</td><td class="p">${fmt(r.points)} ${esc(unit)}</td></tr>`).join('')
       : '<tr><td class="empty">Chưa có ai</td></tr>';
   }
 
+  function render(s) {
+    const t = s.tower;
+    $('profile').textContent = s.profile === 'production' ? 'DỮ LIỆU THẬT' : 'HỒ SƠ THỬ';
+    $('profile').className = 'badge ' + s.profile;
+    $('floor').textContent = t.completed ? 'Tháp đã hoàn thành' : (t.floor === 0 ? t.floorName : `${t.floorName} / ${t.totalFloors}`);
+    $('stage').textContent = t.completed ? '' : `Giai đoạn ${t.stage}/5: ${t.stageName}`;
+    $('bar').style.width = t.percent + '%';
+    $('pts').textContent = `${fmt(t.floorPoints)} / ${fmt(t.floorCost)} ${s.pointUnit}`;
+    $('pct').textContent = t.percent + '%';
+    $('steps').innerHTML = [1, 2, 3, 4, 5]
+      .map((i) => `<span class="${t.completed || i < t.stage ? 'done' : i === t.stage ? 'cur' : ''}"></span>`).join('');
+    $('total').textContent = `${fmt(t.totalPoints)} ${s.pointUnit}`;
+    $('need').textContent = `${fmt(s.totalTowerCost)} ${s.pointUnit}`;
+    $('mult').textContent = s.multiplier ? `${s.multiplier.labels.join(' + ')} ×${s.multiplier.total}` : '×1';
+    $('ovbadge').textContent = s.badge || '(không có – live thật)';
+    $('node').textContent = s.nodeVersion;
+
+    const live = s.live;
+    $('source').textContent = live.mode === 'simulator' ? 'Giả lập' : live.source;
+    $('livestate').textContent = live.text;
+    $('livestate').className = live.status.state === 'connected' ? 'state-ok' : live.status.state === 'error' ? 'state-bad' : '';
+    $('viewers').textContent = live.viewers == null ? '–' : fmt(live.viewers);
+    $('mode-box').hidden = s.profile !== 'test';
+    $('mode-sim').classList.toggle('on', live.mode === 'simulator');
+    $('mode-live').classList.toggle('on', live.mode === 'live');
+    $('session').textContent = s.session ? `#${s.session.id}, từ ${new Date(s.session.startedAt).toLocaleString('vi-VN')}` : 'Chưa có phiên';
+
+    $('sim').hidden = !s.sim;
+    if (s.sim) {
+      const sel = $('sim-scenario');
+      if (!sel.options.length) sel.innerHTML = s.scenarios.map((x) => `<option value="${x.key}">${esc(x.label)}</option>`).join('');
+      if (!editing) {
+        sel.value = s.sim.scenario;
+        $('sim-speed').value = String(s.sim.speed);
+      }
+      $('sim-start').disabled = s.sim.running;
+      $('sim-stop').disabled = !s.sim.running;
+      $('sim-state').textContent = s.sim.running
+        ? `Đang chạy: ${s.sim.scenarioLabel}, ${fmt(s.sim.viewers)} người xem`
+        : 'Đang dừng';
+    }
+    for (const b of s.boards) board(b.key, b, s.pointUnit);
+  }
+
   async function refresh() {
     try {
-      const s = await (await fetch('/api/status')).json();
-      const t = s.tower;
-      $('profile').textContent = s.profile === 'production' ? 'DỮ LIỆU THẬT' : 'HỒ SƠ THỬ';
-      $('profile').className = 'badge ' + s.profile;
-      $('floor').textContent = t.completed ? 'Tháp đã hoàn thành' : `${t.floorName} / ${t.totalFloors}`;
-      $('stage').textContent = t.completed ? '' : `Giai đoạn ${t.stage}/5: ${t.stageName}`;
-      $('bar').style.width = t.percent + '%';
-      $('pts').textContent = `${fmt(t.floorPoints)} / ${fmt(t.floorCost)} ${s.pointUnit}`;
-      $('pct').textContent = t.percent + '%';
-      $('steps').innerHTML = [1, 2, 3, 4, 5]
-        .map((i) => `<span class="${t.completed || i < t.stage ? 'done' : i === t.stage ? 'cur' : ''}"></span>`)
-        .join('');
-      $('total').textContent = `${fmt(t.totalPoints)} ${s.pointUnit}`;
-      $('need').textContent = `${fmt(s.totalTowerCost)} ${s.pointUnit}`;
-      $('session').textContent = s.session
-        ? `#${s.session.id}, từ ${new Date(s.session.startedAt).toLocaleString('vi-VN')}`
-        : 'Chưa có phiên';
-      $('source').textContent = s.liveSource;
-      $('node').textContent = s.nodeVersion;
-      board('b-total', 't-total', s.boards.total, s.pointUnit);
-      board('b-session', 't-session', s.boards.session, s.pointUnit);
-      board('b-floor', 't-floor', s.boards.floor, s.pointUnit);
-      $('error').textContent = '';
+      render(await (await fetch('/api/status')).json());
+      if (!$('error').dataset.sticky) $('error').textContent = '';
     } catch {
       $('error').textContent = 'Mất kết nối với server. Cửa sổ chạy game còn mở không?';
     }
+  }
+
+  async function post(url, body) {
+    try {
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+      const j = await r.json();
+      if (!r.ok) {
+        $('error').textContent = j.error || 'Lỗi';
+        $('error').dataset.sticky = '1';
+        setTimeout(() => { delete $('error').dataset.sticky; }, 5000);
+        return;
+      }
+      render(j);
+    } catch {
+      $('error').textContent = 'Không gửi được lệnh tới server.';
+    }
+  }
+
+  const simSettings = () => ({ scenario: $('sim-scenario').value, speed: Number($('sim-speed').value) });
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.post) post(b.dataset.post);
+    if (b.dataset.fire) post('/api/sim/fire', { kind: b.dataset.fire });
+    if (b.dataset.mode) post('/api/live/mode', { mode: b.dataset.mode });
+    if (b.id === 'sim-start') post('/api/sim/start', simSettings());
+    if (b.id === 'sim-stop') post('/api/sim/stop');
+  });
+  for (const id of ['sim-scenario', 'sim-speed']) {
+    $(id).addEventListener('focus', () => { editing = true; });
+    $(id).addEventListener('blur', () => { editing = false; });
+    $(id).addEventListener('change', () => { post('/api/sim/settings', simSettings()); });
   }
   refresh();
   setInterval(refresh, 2000);

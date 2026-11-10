@@ -16,6 +16,7 @@ import {
   type TowerState,
 } from '../../shared/tower.js';
 import { vnDayKey } from '../../shared/time.js';
+import type { TowerView } from '../../shared/protocol.js';
 import type { LiveEvent } from '../../shared/types.js';
 import type { GameConfig } from '../config/schema.js';
 import type { DB } from '../db/database.js';
@@ -33,18 +34,8 @@ interface GameStateRow {
   golden_manual_until: number | null;
 }
 
-export interface TowerStatus {
-  floor: number;
-  totalFloors: number;
-  floorName: string;
-  stage: number;
-  stageName: string;
-  floorPoints: number;
-  floorCost: number;
-  percent: number;
-  totalPoints: number;
-  completed: boolean;
-}
+/** Trạng thái tháp để hiển thị (dùng chung với overlay). */
+export type TowerStatus = TowerView;
 
 export interface ProcessResult {
   status: 'counted' | 'zero' | 'duplicate' | 'ignored';

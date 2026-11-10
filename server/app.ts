@@ -1,49 +1,147 @@
-// Web server (Express). Giai đoạn 1 chỉ có trang trạng thái tạm thời; admin đầy đủ làm ở giai đoạn 7.
+// Web server (Express): trang trạng thái tạm, API điều khiển giả lập và phiên, overlay đã đóng gói.
+// Admin đầy đủ làm ở giai đoạn 7.
 
+import fs from 'node:fs';
 import path from 'node:path';
-import express from 'express';
+import express, { type NextFunction, type Request, type Response } from 'express';
 import { totalTowerCost } from '../shared/tower.js';
 import type { GameCore } from './core.js';
-import { topFloor, topSession, topTotal } from './game/queries.js';
+import { SimulatorNotAllowed, type LiveService, type SourceMode } from './live/service.js';
+import { FIRE_KINDS, SCENARIO_KEYS, SCENARIOS, type FireKind, type ScenarioKey } from './live/simulator.js';
+import type { StateBroadcaster } from './overlay/broadcaster.js';
+import { buildOverlayState } from './overlay/state.js';
 
-export function buildStatus(core: GameCore) {
+export interface AppDeps {
+  core: GameCore;
+  live: LiveService;
+  broadcaster: StateBroadcaster;
+  rootDir: string;
+  isAllowedOrigin: (origin: string | undefined) => boolean;
+}
+
+export function overlayDir(rootDir: string): string {
+  return path.join(rootDir, 'dist', 'overlay');
+}
+
+export function buildStatus({ core, live }: Pick<AppDeps, 'core' | 'live'>) {
   const cfg = core.config;
-  const tower = core.engine.status();
+  const overlay = buildOverlayState(core, live.badge());
   const session = core.sessions.current();
   return {
     profile: core.profile,
     nodeVersion: process.versions.node,
-    tower,
+    tower: overlay.tower,
     totalTowerCost: totalTowerCost(cfg.tower),
     session: session ? { id: session.id, startedAt: session.started_at } : null,
-    boards: {
-      total: { title: cfg.labels.boards.totalTop, rows: topTotal(core.db, 10) },
-      session: {
-        title: cfg.labels.boards.sessionTop,
-        rows: session ? topSession(core.db, session.id, 5) : [],
-      },
-      floor: {
-        title: cfg.labels.boards.floorTop.replace('{floor}', String(tower.floor)),
-        rows: topFloor(core.db, tower.floor, 5),
-      },
-    },
+    boards: overlay.boards,
+    multiplier: overlay.multiplier,
+    badge: overlay.badge,
     pointUnit: cfg.labels.pointUnitLabel,
-    liveSource: cfg.liveSource,
+    live: live.status(),
+    sim: live.simState(),
+    scenarios: SCENARIO_KEYS.map((k) => ({ key: k, label: SCENARIOS[k].label })),
   };
 }
 
-export function createApp(core: GameCore, rootDir: string): express.Express {
+class BadRequest extends Error {}
+
+export function createApp(deps: AppDeps): express.Express {
+  const { core, live, broadcaster, rootDir } = deps;
   const app = express();
   app.disable('x-powered-by');
 
-  app.get('/api/status', (_req, res) => {
-    res.json(buildStatus(core));
+  // Chỉ nhận lệnh dạng JSON từ chính trang của game: chặn trang web lạ gửi lệnh tới 127.0.0.1.
+  app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+    if (req.method === 'GET') return next();
+    if (!req.is('application/json')) return res.status(415).json({ error: 'Lệnh phải gửi dạng JSON' });
+    if (!deps.isAllowedOrigin(req.headers.origin)) return res.status(403).json({ error: 'Không cho phép' });
+    next();
   });
+  app.use(express.json({ limit: '1mb' }));
+
+  const ok = (res: Response) => {
+    broadcaster.markDirty();
+    res.json(buildStatus(deps));
+  };
+  const body = (req: Request) => (req.body ?? {}) as Record<string, unknown>;
+  const simSettingsFrom = (b: Record<string, unknown>) => {
+    const out: { scenario?: ScenarioKey; speed?: number } = {};
+    if (b.scenario !== undefined) {
+      if (!SCENARIO_KEYS.includes(b.scenario as ScenarioKey)) throw new BadRequest('Kịch bản không hợp lệ');
+      out.scenario = b.scenario as ScenarioKey;
+    }
+    if (b.speed !== undefined) {
+      if (typeof b.speed !== 'number' || !Number.isFinite(b.speed)) throw new BadRequest('Tốc độ phải là số');
+      out.speed = b.speed;
+    }
+    return out;
+  };
+
+  app.get('/api/status', (_req, res) => {
+    res.json(buildStatus(deps));
+  });
+
+  app.post('/api/live/mode', (req, res) => {
+    const mode = body(req).mode as SourceMode;
+    if (mode !== 'simulator' && mode !== 'live') throw new BadRequest('mode phải là "simulator" hoặc "live"');
+    live.setMode(mode);
+    ok(res);
+  });
+  app.post('/api/sim/start', (req, res) => {
+    live.simStart(simSettingsFrom(body(req)));
+    ok(res);
+  });
+  app.post('/api/sim/stop', (_req, res) => {
+    live.simStop();
+    ok(res);
+  });
+  app.post('/api/sim/settings', (req, res) => {
+    live.simSettings(simSettingsFrom(body(req)));
+    ok(res);
+  });
+  app.post('/api/sim/fire', (req, res) => {
+    const kind = body(req).kind as FireKind;
+    if (!FIRE_KINDS.includes(kind)) throw new BadRequest('Loại sự kiện không hợp lệ');
+    live.simFire(kind);
+    ok(res);
+  });
+  app.post('/api/session/start', (_req, res) => {
+    core.sessions.startManual();
+    ok(res);
+  });
+  app.post('/api/session/end', (_req, res) => {
+    core.sessions.endManual();
+    ok(res);
+  });
+
   app.get('/admin', (_req, res) => {
     res.sendFile(path.join(rootDir, 'admin', 'index.html'));
   });
+
+  // Overlay đã đóng gói (npm run build). Chưa có thì báo cách làm thay vì trang trắng.
+  const dist = overlayDir(rootDir);
+  app.use('/overlay', (req, res, next) => {
+    if (fs.existsSync(path.join(dist, 'index.html'))) return next();
+    res
+      .status(503)
+      .type('html')
+      .send(
+        '<meta charset="utf-8"><body style="font-family:sans-serif;padding:40px">' +
+          '<h2>Overlay chưa được đóng gói</h2>' +
+          '<p>Đóng cửa sổ game rồi mở lại <b>start-test.bat</b> / <b>start.bat</b> (game tự đóng gói), ' +
+          'hoặc chạy lệnh <code>npm run build</code>.</p></body>',
+      );
+  });
+  app.use('/overlay', express.static(dist, { index: 'index.html', maxAge: 0 }));
+
   app.get('/', (_req, res) => {
     res.redirect('/admin');
+  });
+
+  app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
+    if (err instanceof SimulatorNotAllowed) return res.status(403).json({ error: err.message });
+    if (err instanceof BadRequest) return res.status(400).json({ error: err.message });
+    next(err);
   });
   return app;
 }

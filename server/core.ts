@@ -33,7 +33,7 @@ export class GameCore {
   readonly engine: GameEngine;
   readonly sessions: SessionManager;
   readonly createdConfigFiles: string[];
-  private readonly now: () => number;
+  readonly now: () => number;
   private readonly log: Logger;
   private pendingBackups: Promise<unknown>[] = [];
 

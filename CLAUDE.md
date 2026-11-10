@@ -54,7 +54,8 @@ scripts/  công cụ phụ (cắt sprite, backup, giả lập)
 - `npm run typecheck`: kiểm tra kiểu TypeScript (`tsc --noEmit`)
 - `npm run dev`: server hồ sơ test, tự chạy lại khi sửa code
 - `npm run demo -- --reset`: bắn sự kiện mẫu vào hồ sơ test
-- `start.bat` (production) / `start-test.bat` (test): người dùng nhấp đúp; gọi `scripts/windows/run.bat`, tự `npm install` khi thiếu thư viện, tự khởi động lại khi crash
+- `npm run build`: đóng gói overlay (Vite) vào `dist/overlay`; `npm run dev:overlay`: Vite dev server cổng 5173
+- `start.bat` (production) / `start-test.bat` (test): người dùng nhấp đúp; gọi `scripts/windows/run.bat` → `scripts/prepare.mjs` (kiểm tra Node, tự `npm install` khi thiếu thư viện, tự `npm run build` khi code overlay/shared mới hơn bản đóng gói), rồi chạy server, tự khởi động lại khi crash
 - Biến `GAME_NO_BROWSER=1`: không tự mở trình duyệt (dùng khi tự kiểm tra server)
 
 ## Ghi chú kỹ thuật
@@ -63,7 +64,13 @@ scripts/  công cụ phụ (cắt sprite, backup, giả lập)
 - Config: `config/defaults/*.json` là bản mặc định (có trên git); `config/*.json` là bản đang dùng (không lên git), được trộn với bản mặc định khi đọc. Khóa config mới: thêm vào `server/config/schema.ts` VÀ `config/defaults/config.json`.
 - DB: thêm bảng/cột bằng migration MỚI ở cuối `server/db/migrations.ts`, không sửa migration cũ.
 - Quyết định đã chốt với chủ dự án: SPEC.md mục 16.
+- Server: `server/server.ts` (`startServer`) ghép lõi game + nguồn live + Express + WebSocket `/ws`; `main.ts` chỉ là điểm khởi động. Test chạy server thật bằng `startServer({ port: 0 })`.
+- Nguồn live: `server/live/` (giao diện `LiveAdapter`, `SimulatorAdapter`, `LiveService`). Hồ sơ test chọn giả lập/live thật (lưu trong bảng `settings`); production không bao giờ chạy giả lập.
+- Overlay: `overlay/src/` (PixiJS v8). Tính toán bố cục thuần trong `overlay/src/layout.ts` (có test); dữ liệu server gửi xuống định nghĩa ở `shared/protocol.ts`. Không viết cứng chữ người xem đọc được trong overlay, mọi chữ lấy từ state (config).
+- API POST chỉ nhận JSON và Origin của chính game (chống trang web lạ gửi lệnh tới 127.0.0.1); WebSocket cũng kiểm tra Origin.
+- Tự kiểm tra hình overlay: chạy server với `GAME_NO_BROWSER=1`, chụp bằng Edge headless (`--headless=new --user-data-dir=<thư mục nháp> --use-angle=swiftshader --window-size=1080,1920 --screenshot=...`).
 
 ## Tiến độ
 - [x] Giai đoạn 1: khung dự án (2026-11-10)
-- [ ] Giai đoạn 2: simulator + WebSocket + overlay tối giản
+- [x] Giai đoạn 2: simulator + WebSocket + overlay tối giản (2026-11-10)
+- [ ] Giai đoạn 3: đồ họa thật (đã soi ảnh gốc, đề xuất cắt chờ duyệt)

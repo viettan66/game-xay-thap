@@ -4,11 +4,10 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createApp } from './app.js';
 import { ConfigError } from './config/store.js';
-import { GameCore } from './core.js';
 import { createLogger } from './logger.js';
 import { profilePaths, resolveProfile, type ProfileName } from './profile.js';
+import { PortInUseError, startServer, type RunningServer } from './server.js';
 
 const EXIT_FATAL = 3;
 const rootDir = path.resolve(import.meta.dirname, '..');
@@ -36,51 +35,36 @@ if (fs.existsSync(envFile)) process.loadEnvFile(envFile);
 const log = createLogger(profilePaths(rootDir, profile).logsDir);
 if (major < 24) log.warn(`Đang dùng Node.js ${process.versions.node}. Nên cài Node.js 24 LTS.`);
 
-let core: GameCore;
+let running: RunningServer;
 try {
-  core = GameCore.open({ rootDir, profile, logger: log });
+  running = await startServer({ rootDir, profile, logger: log });
 } catch (e) {
   if (e instanceof ConfigError) {
     fatal(`Config chưa đúng, game chưa chạy được.\n${e.message}\n\nSửa file trong thư mục config\\ rồi chạy lại.`);
   }
+  if (e instanceof PortInUseError) {
+    fatal(`Cổng ${e.message} đang bị chiếm. Có thể game đang chạy ở một cửa sổ khác, hãy đóng cửa sổ đó trước.`);
+  }
   throw e;
 }
+
+const { core, live } = running;
 for (const f of core.createdConfigFiles) log.info(`Đã tạo config\\${f} từ bản mặc định`);
-
-const port = core.config.server.port;
-const url = `http://127.0.0.1:${port}/admin`;
-const server = createApp(core, rootDir).listen(port, '127.0.0.1', () => {
-  const s = core.engine.status();
-  log.info(`Hồ sơ: ${profile.toUpperCase()} | ${s.floorName} – ${s.stageName} – ${s.percent}%`);
-  log.info(`Trang trạng thái: ${url}`);
-  if (process.argv.includes('--open') && process.platform === 'win32' && !process.env.GAME_NO_BROWSER) {
-    spawn('cmd', ['/c', 'start', '', url], { detached: true, stdio: 'ignore' }).unref();
-  }
-});
-server.on('error', (e: NodeJS.ErrnoException) => {
-  if (e.code === 'EADDRINUSE') {
-    fatal(`Cổng ${port} đang bị chiếm. Có thể game đang chạy ở một cửa sổ khác, hãy đóng cửa sổ đó trước.`);
-  }
-  log.error('Lỗi web server', e);
-  process.exit(1);
-});
-
-const timer = setInterval(() => {
-  try {
-    core.tick();
-  } catch (e) {
-    log.error('Lỗi khi chạy tác vụ định kỳ', e);
-  }
-}, 30_000);
+const s = core.engine.status();
+log.info(`Hồ sơ: ${profile.toUpperCase()} | ${s.floorName} – ${s.stageName} – ${s.percent}%`);
+log.info(`Nguồn sự kiện: ${live.mode() === 'simulator' ? 'giả lập' : core.config.liveSource} (${live.status().text})`);
+log.info(`Trang trạng thái: ${running.url}/admin`);
+log.info(`Overlay (OBS Browser Source 1080×1920): ${running.url}/overlay/`);
+if (process.argv.includes('--open') && process.platform === 'win32' && !process.env.GAME_NO_BROWSER) {
+  spawn('cmd', ['/c', 'start', '', `${running.url}/admin`], { detached: true, stdio: 'ignore' }).unref();
+}
 
 let stopping = false;
 async function shutdown(signal: string): Promise<void> {
   if (stopping) return;
   stopping = true;
   log.info(`Đang tắt server (${signal})...`);
-  clearInterval(timer);
-  server.close();
-  await core.close();
+  await running.close();
   process.exit(0);
 }
 for (const sig of ['SIGINT', 'SIGTERM', 'SIGBREAK'] as const) process.on(sig, () => void shutdown(sig));

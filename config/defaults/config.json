@@ -37,6 +37,14 @@
     "keep": 30,
     "dailyTime": "04:00"
   },
+  "overlay": {
+    "safeArea": { "top": 180, "bottom": 600, "right": 150 },
+    "floor1WidthPx": 520,
+    "towerTaper": 0.995,
+    "towerCenterX": 510,
+    "towerBaseY": 1215,
+    "boardRotateSec": 15
+  },
   "titles": [
     { "minPoints": 1000, "label": "Thợ phụ" },
     { "minPoints": 10000, "label": "Thợ cả" },
@@ -59,7 +67,7 @@
     "boards": {
       "sessionTop": "Top phiên này",
       "totalTop": "Bảng góp công",
-      "floorTop": "Bia ghi danh tầng {floor}"
+      "floorTop": "Bia ghi danh – {floorName}"
     }
   }
 }

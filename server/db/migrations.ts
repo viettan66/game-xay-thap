@@ -110,4 +110,14 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    version: 2,
+    name: 'Thiết lập riêng của từng hồ sơ (giai đoạn 2)',
+    sql: `
+      CREATE TABLE settings (
+        key        TEXT PRIMARY KEY,
+        value_json TEXT NOT NULL
+      );
+    `,
+  },
 ];

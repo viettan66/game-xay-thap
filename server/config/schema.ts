@@ -57,6 +57,14 @@ export const configSchema = z.strictObject({
     keep: int(1).max(1000),
     dailyTime: hhmm,
   }),
+  overlay: z.strictObject({
+    safeArea: z.strictObject({ top: int(0).max(960), bottom: int(0).max(960), right: int(0).max(540) }),
+    floor1WidthPx: int(100).max(1000),
+    towerTaper: z.number().min(0.9).max(1),
+    towerCenterX: int(0).max(1080),
+    towerBaseY: int(0).max(1920),
+    boardRotateSec: z.number().min(3).max(300),
+  }),
   titles: z.array(z.strictObject({ minPoints: int(0), label: z.string().min(1) })).min(1),
   labels: z.strictObject({
     pointUnitLabel: z.string().min(1),
