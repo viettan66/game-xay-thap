@@ -12,6 +12,13 @@ export default defineConfig({
     outDir: fileURLToPath(new URL('../dist/overlay', import.meta.url)),
     emptyOutDir: true,
     chunkSizeWarningLimit: 2000,
+    // Hai trang: overlay (index.html) và trang kiểm tra ảnh /tools/assets (tools.html).
+    rollupOptions: {
+      input: {
+        index: fileURLToPath(new URL('./index.html', import.meta.url)),
+        tools: fileURLToPath(new URL('./tools.html', import.meta.url)),
+      },
+    },
   },
   server: {
     host: '127.0.0.1',

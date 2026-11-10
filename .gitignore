@@ -37,3 +37,7 @@ Thumbs.db
 desktop.ini
 .DS_Store
 *.swp
+
+# --- Ảnh trung gian khi xử lý đồ họa (tạo lại được bằng script) và công cụ tải về ---
+assets/work/
+.tools/

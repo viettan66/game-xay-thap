@@ -26,6 +26,7 @@ export type SaveConfigResult =
   | { status: 'needs_confirmation'; reprice: RepricePreview };
 
 export class GameCore {
+  readonly rootDir: string;
   readonly paths: ProfilePaths;
   readonly configDir: string;
   readonly configStore: ConfigStore;
@@ -40,6 +41,7 @@ export class GameCore {
   private constructor(o: CoreOptions) {
     this.now = o.now ?? Date.now;
     this.log = o.logger ?? silentLogger;
+    this.rootDir = o.rootDir;
     this.paths = profilePaths(o.rootDir, o.profile);
     this.configDir = o.configDir ?? path.join(o.rootDir, 'config');
 

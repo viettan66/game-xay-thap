@@ -62,6 +62,8 @@ export interface OverlayState {
     disclaimer: string;
   };
   layout: OverlayLayout;
+  /** Đổi khi assets/manifest.json đổi (ví dụ vừa lưu ở /tools/assets): overlay tải lại ảnh. */
+  assetsVersion: string;
 }
 
 export type ServerMessage =

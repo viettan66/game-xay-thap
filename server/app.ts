@@ -8,6 +8,9 @@ import { totalTowerCost } from '../shared/tower.js';
 import type { GameCore } from './core.js';
 import { SimulatorNotAllowed, type LiveService, type SourceMode } from './live/service.js';
 import { FIRE_KINDS, SCENARIO_KEYS, SCENARIOS, type FireKind, type ScenarioKey } from './live/simulator.js';
+import { chooseBackground, gameAssetsDir, loadManifest, ManifestError, missingFiles, saveManifest } from './assets/manifest.js';
+import { applyToManifest, parseToolUpdate } from './assets/tools.js';
+import { ConfigError } from './config/store.js';
 import type { StateBroadcaster } from './overlay/broadcaster.js';
 import { buildOverlayState } from './overlay/state.js';
 
@@ -114,6 +117,53 @@ export function createApp(deps: AppDeps): express.Express {
     ok(res);
   });
 
+  // ---- Ảnh game (mục 7) ----
+  app.get('/assets/manifest.json', (_req, res) => {
+    const m = loadManifest(rootDir);
+    if (!m) return res.status(404).json({ error: 'Chưa có assets/manifest.json (chạy npm run assets:build)' });
+    res.set('Cache-Control', 'no-store').json(m);
+  });
+  app.use('/assets/game', express.static(gameAssetsDir(rootDir), { maxAge: 0, fallthrough: false }));
+
+  // ---- Trang kiểm tra ảnh /tools/assets ----
+  app.get('/api/tools/assets', (_req, res) => {
+    const m = loadManifest(rootDir);
+    res.json({
+      manifest: m,
+      missing: m ? missingFiles(rootDir, m) : [],
+      config: { floor1WidthPx: core.config.overlay.floor1WidthPx, towerTaper: core.config.overlay.towerTaper },
+    });
+  });
+  app.post('/api/tools/manifest', (req, res) => {
+    const m = loadManifest(rootDir);
+    if (!m) throw new ManifestError(['Chưa có assets/manifest.json']);
+    const u = parseToolUpdate(body(req));
+    saveManifest(rootDir, applyToManifest(m, u));
+    // Độ thu nhỏ từng tầng và bề rộng tầng 1 nằm trong config (mục 8, 14.13).
+    if (u.floor1WidthPx !== undefined || u.towerTaper !== undefined) {
+      const next = structuredClone(core.config);
+      if (u.floor1WidthPx !== undefined) next.overlay.floor1WidthPx = u.floor1WidthPx;
+      if (u.towerTaper !== undefined) next.overlay.towerTaper = u.towerTaper;
+      core.saveConfig(next, { source: 'tools/assets' });
+    }
+    broadcaster.markDirty();
+    res.json({ ok: true, manifest: loadManifest(rootDir) });
+  });
+  app.post('/api/tools/background', (req, res) => {
+    const m = loadManifest(rootDir);
+    if (!m) throw new ManifestError(['Chưa có assets/manifest.json']);
+    const key = String(body(req).variant ?? '');
+    chooseBackground(rootDir, m.background.variants, key);
+    saveManifest(rootDir, { ...m, background: { ...m.background, variant: key } });
+    broadcaster.markDirty();
+    res.json({ ok: true, manifest: loadManifest(rootDir) });
+  });
+  app.get('/tools/assets', (_req, res) => {
+    const page = path.join(overlayDir(rootDir), 'tools.html');
+    if (!fs.existsSync(page)) return res.status(503).type('html').send('<meta charset="utf-8"><p>Chưa đóng gói. Chạy <code>npm run build</code>.</p>');
+    res.sendFile(page);
+  });
+
   app.get('/admin', (_req, res) => {
     res.sendFile(path.join(rootDir, 'admin', 'index.html'));
   });
@@ -141,6 +191,7 @@ export function createApp(deps: AppDeps): express.Express {
   app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
     if (err instanceof SimulatorNotAllowed) return res.status(403).json({ error: err.message });
     if (err instanceof BadRequest) return res.status(400).json({ error: err.message });
+    if (err instanceof ManifestError || err instanceof ConfigError) return res.status(400).json({ error: err.message });
     next(err);
   });
   return app;

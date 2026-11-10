@@ -54,7 +54,8 @@ scripts/  công cụ phụ (cắt sprite, backup, giả lập)
 - `npm run typecheck`: kiểm tra kiểu TypeScript (`tsc --noEmit`)
 - `npm run dev`: server hồ sơ test, tự chạy lại khi sửa code
 - `npm run demo -- --reset`: bắn sự kiện mẫu vào hồ sơ test
-- `npm run build`: đóng gói overlay (Vite) vào `dist/overlay`; `npm run dev:overlay`: Vite dev server cổng 5173
+- `npm run build`: đóng gói overlay + trang /tools/assets (Vite) vào `dist/overlay`; `npm run dev:overlay`: Vite dev server cổng 5173
+- `npm run assets:nobg` (cần `.venv` có rembg) rồi `npm run assets:build`: làm lại ảnh game từ `assets/raw`
 - `start.bat` (production) / `start-test.bat` (test): người dùng nhấp đúp; gọi `scripts/windows/run.bat` → `scripts/prepare.mjs` (kiểm tra Node, tự `npm install` khi thiếu thư viện, tự `npm run build` khi code overlay/shared mới hơn bản đóng gói), rồi chạy server, tự khởi động lại khi crash
 - Biến `GAME_NO_BROWSER=1`: không tự mở trình duyệt (dùng khi tự kiểm tra server)
 
@@ -68,9 +69,14 @@ scripts/  công cụ phụ (cắt sprite, backup, giả lập)
 - Nguồn live: `server/live/` (giao diện `LiveAdapter`, `SimulatorAdapter`, `LiveService`). Hồ sơ test chọn giả lập/live thật (lưu trong bảng `settings`); production không bao giờ chạy giả lập.
 - Overlay: `overlay/src/` (PixiJS v8). Tính toán bố cục thuần trong `overlay/src/layout.ts` (có test); dữ liệu server gửi xuống định nghĩa ở `shared/protocol.ts`. Không viết cứng chữ người xem đọc được trong overlay, mọi chữ lấy từ state (config).
 - API POST chỉ nhận JSON và Origin của chính game (chống trang web lạ gửi lệnh tới 127.0.0.1); WebSocket cũng kiểm tra Origin.
+- Ảnh game: `scripts/assets/remove_bg.py` (rembg birefnet-general-lite, cắt từng vật rồi mới tách nền, khử viền trắng) → `assets/work/nobg`; `scripts/assets/build.ts` (sharp, dùng `scripts/slice-sheet.ts` + `scripts/assets/measure.ts`) → `assets/game` + `assets/manifest.json`. Kiểu manifest: `shared/manifest.ts`; kiểm tra/lưu: `server/assets/`. Giá trị chỉnh tay (`tuned: true`, bản nền, towerAnchor, spireScale) được giữ khi chạy lại build.
+- Xếp chồng tầng: `overlay/src/towerLayout.ts` (thuần, có test). Tầng 1: bottomY đặt lên towerAnchor; tầng n+1: eaveLineY đặt lên topY tầng n.
+- Trang `/tools/assets` = `overlay/tools.html` + `overlay/src/tools/main.ts` (Vite đóng gói chung với overlay, dùng lại Backdrop/TowerView).
+- Máy chủ dự án dùng bảng mã cp932 khi ghi log: script Python phải `reconfigure(encoding='utf-8')` cho stdout.
 - Tự kiểm tra hình overlay: chạy server với `GAME_NO_BROWSER=1`, chụp bằng Edge headless (`--headless=new --user-data-dir=<thư mục nháp> --use-angle=swiftshader --window-size=1080,1920 --screenshot=...`).
 
 ## Tiến độ
 - [x] Giai đoạn 1: khung dự án (2026-11-10)
 - [x] Giai đoạn 2: simulator + WebSocket + overlay tối giản (2026-11-10)
-- [ ] Giai đoạn 3: đồ họa thật (đã soi ảnh gốc, đề xuất cắt chờ duyệt)
+- [x] Giai đoạn 3: đồ họa thật, manifest, script cắt sprite, xếp chồng theo eaveLineY, parallax, debug D, /tools/assets (2026-11-10)
+- [ ] Giai đoạn 4: nhân vật, trụ trì, hiệu ứng quà, hàng đợi thông báo

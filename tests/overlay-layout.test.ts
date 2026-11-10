@@ -88,7 +88,7 @@ describe('giao diện không đặt vào vùng an toàn (mục 8)', () => {
     it(`vùng an toàn trên ${safe.top}, dưới ${safe.bottom}, phải ${safe.right}`, () => {
       const r = uiRects(safe);
       const content = { x: 0, y: safe.top, w: STAGE_W - safe.right, h: STAGE_H - safe.top - safe.bottom };
-      const parts = { badge: r.badge, banner: r.banner, chip: r.chip, board: r.board, disclaimer: r.disclaimer };
+      const parts = { badge: r.badge, banner: r.banner, progress: r.progress, chip: r.chip, board: r.board, disclaimer: r.disclaimer };
       for (const [name, rect] of Object.entries(parts)) {
         expect(rectInside(rect, content), name).toBe(true);
         expect(rect.w, name).toBeGreaterThan(0);

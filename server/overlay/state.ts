@@ -2,6 +2,7 @@
 
 import { computeMultiplier } from '../../shared/events.js';
 import type { Board, OverlayState } from '../../shared/protocol.js';
+import { assetsVersion } from '../assets/manifest.js';
 import type { GameCore } from '../core.js';
 import { topFloor, topSession, topTotal } from '../game/queries.js';
 
@@ -39,5 +40,6 @@ export function buildOverlayState(core: GameCore, badge: string | null): Overlay
     multiplier: m.total !== 1 ? { total: m.total, labels } : null,
     labels: { pointUnit: cfg.labels.pointUnitLabel, disclaimer: cfg.labels.disclaimer },
     layout: { ...cfg.overlay },
+    assetsVersion: assetsVersion(core.rootDir),
   };
 }
