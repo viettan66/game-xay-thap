@@ -1,0 +1,4 @@
+# File .bat phải giữ kiểu xuống dòng Windows (CRLF) để cmd đọc đúng.
+*.bat text eol=crlf
+*.png binary
+*.db binary

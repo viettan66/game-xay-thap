@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bảo Tháp Thiên Phúc – Trạng thái</title>
+<style>
+  :root {
+    --bg: #f6f1e7; --card: #fffdf8; --ink: #2b2118; --muted: #7a6a58; --line: #e4d9c6;
+    --accent: #b5462b; --bar: #d99a2b; --prod: #b3261e; --test: #c26a00;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+  header { padding: 16px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); background: var(--card); }
+  h1 { font-size: 20px; margin: 0; }
+  .badge { padding: 4px 10px; border-radius: 999px; color: #fff; font-weight: 700; font-size: 13px; letter-spacing: .04em; }
+  .badge.production { background: var(--prod); }
+  .badge.test { background: var(--test); }
+  .note { color: var(--muted); font-size: 13px; }
+  main { padding: 20px 24px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); max-width: 1200px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  h2 { font-size: 15px; margin: 0 0 12px; color: var(--accent); }
+  .big { font-size: 28px; font-weight: 700; }
+  .row { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; font-variant-numeric: tabular-nums; }
+  .bar { height: 14px; background: var(--line); border-radius: 7px; overflow: hidden; margin: 10px 0 6px; }
+  .bar > div { height: 100%; background: var(--bar); width: 0; transition: width .4s; }
+  .steps { display: flex; gap: 6px; margin-top: 8px; }
+  .steps span { flex: 1; height: 8px; border-radius: 4px; background: var(--line); }
+  .steps span.done { background: var(--bar); }
+  .steps span.cur { background: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
+  td.n { width: 28px; color: var(--muted); }
+  td.p { text-align: right; }
+  .empty { color: var(--muted); font-style: italic; }
+  .err { color: var(--prod); font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Bảo Tháp Thiên Phúc</h1>
+  <span id="profile" class="badge">…</span>
+  <span class="note">Trang trạng thái tạm (giai đoạn 1). Trang quản trị đầy đủ có ở giai đoạn 7. Tự cập nhật mỗi 2 giây.</span>
+</header>
+<main>
+  <section>
+    <h2>Tiến độ tháp</h2>
+    <div class="big" id="floor">…</div>
+    <div id="stage"></div>
+    <div class="bar"><div id="bar"></div></div>
+    <div class="row"><span id="pts"></span><span id="pct"></span></div>
+    <div class="steps" id="steps"></div>
+  </section>
+  <section>
+    <h2>Tổng quan</h2>
+    <div class="row"><span>Tổng điểm đã góp</span><b id="total"></b></div>
+    <div class="row"><span>Cả tháp cần</span><span id="need"></span></div>
+    <div class="row"><span>Phiên live</span><span id="session"></span></div>
+    <div class="row"><span>Nguồn live</span><span id="source"></span></div>
+    <div class="row"><span>Node.js</span><span id="node"></span></div>
+    <div id="error" class="err"></div>
+  </section>
+  <section><h2 id="t-total"></h2><table id="b-total"></table></section>
+  <section><h2 id="t-session"></h2><table id="b-session"></table></section>
+  <section><h2 id="t-floor"></h2><table id="b-floor"></table></section>
+</main>
+<script>
+  const fmt = (n) => Number(n).toLocaleString('vi-VN');
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function board(id, titleId, b, unit) {
+    $(titleId).textContent = b.title;
+    $(id).innerHTML = b.rows.length
+      ? b.rows.map((r) => `<tr><td class="n">${r.rank}</td><td>${esc(r.nickname)}</td><td class="p">${fmt(r.points)} ${esc(unit)}</td></tr>`).join('')
+      : '<tr><td class="empty">Chưa có ai</td></tr>';
+  }
+
+  async function refresh() {
+    try {
+      const s = await (await fetch('/api/status')).json();
+      const t = s.tower;
+      $('profile').textContent = s.profile === 'production' ? 'DỮ LIỆU THẬT' : 'HỒ SƠ THỬ';
+      $('profile').className = 'badge ' + s.profile;
+      $('floor').textContent = t.completed ? 'Tháp đã hoàn thành' : `${t.floorName} / ${t.totalFloors}`;
+      $('stage').textContent = t.completed ? '' : `Giai đoạn ${t.stage}/5: ${t.stageName}`;
+      $('bar').style.width = t.percent + '%';
+      $('pts').textContent = `${fmt(t.floorPoints)} / ${fmt(t.floorCost)} ${s.pointUnit}`;
+      $('pct').textContent = t.percent + '%';
+      $('steps').innerHTML = [1, 2, 3, 4, 5]
+        .map((i) => `<span class="${t.completed || i < t.stage ? 'done' : i === t.stage ? 'cur' : ''}"></span>`)
+        .join('');
+      $('total').textContent = `${fmt(t.totalPoints)} ${s.pointUnit}`;
+      $('need').textContent = `${fmt(s.totalTowerCost)} ${s.pointUnit}`;
+      $('session').textContent = s.session
+        ? `#${s.session.id}, từ ${new Date(s.session.startedAt).toLocaleString('vi-VN')}`
+        : 'Chưa có phiên';
+      $('source').textContent = s.liveSource;
+      $('node').textContent = s.nodeVersion;
+      board('b-total', 't-total', s.boards.total, s.pointUnit);
+      board('b-session', 't-session', s.boards.session, s.pointUnit);
+      board('b-floor', 't-floor', s.boards.floor, s.pointUnit);
+      $('error').textContent = '';
+    } catch {
+      $('error').textContent = 'Mất kết nối với server. Cửa sổ chạy game còn mở không?';
+    }
+  }
+  refresh();
+  setInterval(refresh, 2000);
+</script>
+</body>
+</html>

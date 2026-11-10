@@ -1,0 +1,76 @@
+{
+  "events": [
+    {
+      "key": "mung_1",
+      "name": "Mùng 1",
+      "enabled": true,
+      "priority": 10,
+      "multiplier": 1.5,
+      "lunarMonthlyDay": 1,
+      "theme": ["lantern_string", "lotus"]
+    },
+    {
+      "key": "ram",
+      "name": "Ngày Rằm",
+      "enabled": true,
+      "priority": 20,
+      "multiplier": 2,
+      "lunarMonthlyDay": 15,
+      "theme": ["moon", "lantern_string", "lotus_lantern"]
+    },
+    {
+      "key": "ram_thang_gieng",
+      "name": "Rằm tháng Giêng",
+      "enabled": true,
+      "priority": 50,
+      "multiplier": 3,
+      "lunar": "01-15",
+      "theme": ["moon", "lotus_lantern", "firework"]
+    },
+    {
+      "key": "phat_dan",
+      "name": "Phật Đản",
+      "enabled": true,
+      "priority": 50,
+      "multiplier": 3,
+      "lunar": "04-15",
+      "theme": ["lotus", "lantern_string", "flag"]
+    },
+    {
+      "key": "vu_lan",
+      "name": "Vu Lan",
+      "enabled": true,
+      "priority": 50,
+      "multiplier": 2,
+      "lunar": "07-15",
+      "theme": ["rose", "lantern_string"]
+    },
+    {
+      "key": "trung_thu",
+      "name": "Tết Trung Thu",
+      "enabled": true,
+      "priority": 50,
+      "multiplier": 2,
+      "lunar": "08-15",
+      "theme": ["moon", "star_lantern", "lion_dance"]
+    },
+    {
+      "key": "tet",
+      "name": "Tết Nguyên Đán",
+      "enabled": true,
+      "priority": 60,
+      "multiplier": 2,
+      "lunarRange": { "from": "12-last", "to": "01-03" },
+      "theme": ["peach_blossom", "couplet", "firework"]
+    },
+    {
+      "key": "cuoi_tuan",
+      "name": "Cuối tuần",
+      "enabled": true,
+      "priority": 5,
+      "multiplier": 1.5,
+      "weekdays": [6, 0],
+      "time": { "from": "20:00", "to": "22:00" }
+    }
+  ]
+}

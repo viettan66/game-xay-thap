@@ -1,0 +1,65 @@
+{
+  "liveSource": "tiktok-connector",
+  "channelUsername": "",
+  "server": {
+    "port": 3000
+  },
+  "points": {
+    "giftPointsPerCoin": 100,
+    "likePoints": 1,
+    "commentPoints": 5,
+    "commentCooldownSec": 30,
+    "dailyLikeCommentCap": 2000
+  },
+  "multipliers": {
+    "maxTotalMultiplier": 4,
+    "eventCombine": "max",
+    "goldenHourCombine": "multiply"
+  },
+  "goldenHour": {
+    "multiplier": 2,
+    "schedule": []
+  },
+  "tower": {
+    "totalFloors": 100,
+    "foundationCost": 10000,
+    "baseFloorCost": 20000,
+    "tierSize": 10,
+    "tierIncreasePct": 25,
+    "costRoundTo": 100,
+    "stageRatios": [20, 20, 20, 20, 20],
+    "floorCostOverrides": {}
+  },
+  "session": {
+    "autoEndOfflineMin": 15
+  },
+  "backup": {
+    "keep": 30,
+    "dailyTime": "04:00"
+  },
+  "titles": [
+    { "minPoints": 1000, "label": "Thợ phụ" },
+    { "minPoints": 10000, "label": "Thợ cả" },
+    { "minPoints": 100000, "label": "Đốc công" },
+    { "minPoints": 1000000, "label": "Đại đốc công" },
+    { "minPoints": 10000000, "label": "Tổng công trình sư" }
+  ],
+  "labels": {
+    "pointUnitLabel": "công",
+    "disclaimer": "Trò chơi mô phỏng xây tháp – không phải quyên góp tôn giáo",
+    "goldenHour": "Giờ vàng",
+    "abbotName": "Thầy trụ trì",
+    "anonymousName": "Thiện hữu ẩn danh",
+    "testBadge": "CHẾ ĐỘ THỬ",
+    "rehearsalBadge": "DIỄN TẬP",
+    "foundationName": "Nền móng",
+    "floorName": "Tầng {floor}",
+    "foundationStages": ["Dọn mặt bằng", "Đào móng", "Đóng cọc", "Xây bệ đá", "Hoàn thiện bệ"],
+    "floorStages": ["Sàn và mái hiên", "Dựng cột", "Xây tường", "Lắp cửa", "Hoàn thiện"],
+    "boards": {
+      "sessionTop": "Top phiên này",
+      "totalTop": "Bảng góp công",
+      "floorTop": "Bia ghi danh tầng {floor}"
+    }
+  }
+}
