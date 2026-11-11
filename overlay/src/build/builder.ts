@@ -440,6 +440,23 @@ export class BuildSite {
     return this.flights.length > 0 || this.bounces.length > 0;
   }
 
+  /** Số vật liệu đang bay. */
+  get flying(): number {
+    return this.flights.length;
+  }
+
+  /** Bỏ mọi mảnh đang bay, đang nảy, bụi (trang thử đổi giai đoạn: dựng lại từ đầu, không để mảnh cũ rơi vào). */
+  clearMotion(): void {
+    for (const f of this.flights.splice(0)) f.sprite.destroy();
+    for (const b of this.bounces.splice(0)) {
+      b.sprite.texture.destroy(false);
+      b.sprite.destroy();
+    }
+    for (const d of this.dusts.splice(0)) d.g.destroy();
+    this.stock = 0;
+    this.flashAlpha = 0;
+  }
+
   tick(dt: number, stage: number, placed: number): void {
     for (let i = this.flights.length - 1; i >= 0; i--) {
       const f = this.flights[i]!;
@@ -521,6 +538,16 @@ interface Burst {
   t: number;
 }
 
+export interface BuilderStats {
+  itemId: string | null;
+  stage: number;
+  placed: number;
+  count: number;
+  pending: number;
+  flying: number;
+  done: boolean;
+}
+
 export interface BuilderEvents {
   /** Hạng mục đang hiện thay đổi (để bản đồ ẩn/hiện công trình). */
   onDisplay(): void;
@@ -595,6 +622,35 @@ export class Builder {
 
   setProgress(p: ProgressView): void {
     this.progress = p;
+  }
+
+  /** Bỏ hàng đợi và mảnh đang bay, dựng lại ngay đúng tiến độ hiện có (trang thử chọn hạng mục, giai đoạn khác). */
+  resync(): void {
+    this.queue = [];
+    this.site?.clearMotion();
+    for (const b of this.bursts.splice(0)) {
+      b.label.destroy();
+      b.glow.destroy();
+    }
+    this.shown = null;
+    this.shownDone = false;
+    this.budget = 0;
+  }
+
+  /** Số liệu cho trang thử: giai đoạn đang hiện, số mảnh đã cho bay / tổng, đang chờ, đang bay. */
+  stats(): BuilderStats {
+    const site = this.siteReady ? this.site! : null;
+    const shown = this.shown;
+    if (!shown || !site) return { itemId: shown?.itemId ?? null, stage: shown?.stage ?? 0, placed: 0, count: 0, pending: 0, flying: 0, done: this.shownDone };
+    return {
+      itemId: shown.itemId,
+      stage: shown.stage,
+      placed: this.shownDone ? site.count(shown.stage) : shown.placed,
+      count: site.count(shown.stage),
+      pending: this.pendingPieces(site),
+      flying: site.flying,
+      done: this.shownDone,
+    };
   }
 
   private item(itemId: string): ProgressItem | undefined {
@@ -869,9 +925,33 @@ export class Builder {
     label.anchor.set(0.5, 1);
     label.scale.set(1 / this.worldScale());
     label.position.set(tx + (box.x + box.x1) / 2, ty + box.y - 10);
+    // Nhiều quà liền nhau: bỏ nhãn cũ nhất khi quá MAX_BURSTS, nhãn cũ bị nhãn mới che thì đẩy lên trên.
+    while (this.bursts.length >= MAX_BURSTS) {
+      const old = this.bursts.shift()!;
+      old.label.destroy();
+      old.glow.destroy();
+    }
+    const placed = [labelRect(label)];
+    for (const b of [...this.bursts].reverse()) {
+      let guard = 0;
+      while (placed.some((r) => overlaps(r, labelRect(b.label))) && guard++ < MAX_BURSTS) b.label.y = Math.min(...placed.map((r) => r.y)) - 2 / this.worldScale();
+      placed.push(labelRect(b.label));
+    }
     this.fx.addChild(glow, label);
     this.bursts.push({ label, glow, t: 0 });
   }
+}
+
+/** Số nhãn piece_burst hiện cùng lúc tối đa. */
+const MAX_BURSTS = 4;
+
+/** Khung nhãn (neo giữa, đáy) trong tọa độ bản đồ. */
+function labelRect(t: Text): Rect {
+  return { x: t.x - t.width / 2, y: t.y - t.height, w: t.width, h: t.height };
+}
+
+function overlaps(a: Rect, b: Rect): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 }
 
 const DEFAULT_PIECES: PiecesConfig = {

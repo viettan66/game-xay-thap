@@ -6,8 +6,9 @@ mỗi hạng mục qua nhiều giai đoạn thi công.
 Đặc tả đầy đủ: [SPEC.md](SPEC.md). Bản cũ "tháp 100 tầng" được lưu ở git tag `thap-100-tang` và file [SPEC_old.md](SPEC_old.md).
 
 > **Tiến độ:** đã xong **R1** (mô hình hạng mục và giai đoạn), **R2** (bản đồ chùa thật: ghép nền, phóng to bằng AI,
-> cắt từng công trình từ ảnh, lớp tiền cảnh, trang chỉnh khung cắt), **R3a** (trang chia vùng `/tools/parts`) và **R3b**
-> ("xây từng mảnh": mỗi lần có công, từng viên gạch, viên ngói, thanh gỗ bay vào đúng chỗ). Sắp tới: R3c trang thử có FPS, R4 camera và bố cục mới.
+> cắt từng công trình từ ảnh, lớp tiền cảnh, trang chỉnh khung cắt), **R3a** (trang chia vùng `/tools/parts`), **R3b**
+> ("xây từng mảnh": mỗi lần có công, từng viên gạch, viên ngói, thanh gỗ bay vào đúng chỗ) và **R3c** (trang thử xây
+> `/tools/build`: chọn hạng mục, giai đoạn, nút tim và quà, đo FPS). Sắp tới: R4 camera và bố cục mới.
 > Chưa có nhân vật và trụ trì (giai đoạn 4), chưa kết nối TikTok (giai đoạn 6).
 
 ---
@@ -157,6 +158,20 @@ Mở trang: trên trang trạng thái bấm **Chia vùng ↗**, hoặc vào `htt
 - Bấm **Lưu** để ghi vào `assets\game\buildings\<mã>\parts\<vùng>.png`.
   Cắt lại công trình ở `/tools/assets` sau đó thì vùng đã tô vẫn được giữ (dời theo vị trí trên bản đồ).
 
+### Thử xây: trang `/tools/build` (R3c)
+Xem một hạng mục được xây từng mảnh mà không cần chờ người xem, không đụng dữ liệu game.
+Mở trang: trên trang trạng thái bấm **Thử xây ↗**, hoặc vào `http://127.0.0.1:3000/tools/build`.
+- **Chỗ bắt đầu**: chọn hạng mục và giai đoạn. Các hạng mục trước hiện đủ, hạng mục đã chọn xây từ đầu giai đoạn đó.
+  Dưới ô chọn ghi giá giai đoạn và vùng sẽ xây (ví dụ "Cột (gỗ thô, dải 15–100% chiều cao)"). Nút **↺ Xây lại từ đầu giai đoạn này**.
+- **Góp công**: 4 nút **Thả 10 tim**, **Tặng quà nhỏ**, **Tặng quà lớn**, **Tặng quà cực lớn** (hoặc phím `1` `2` `3` `4`).
+  - Số xu của từng quà sửa được (mặc định 1, 100, 1.000 xu). Dòng dưới nút ghi ra số công, tính đúng như game.
+  - Ô "Tên hiện trên nhãn" là tên hiện trong nhãn "… vừa xây …".
+- **Bắn liên tục**: tự bấm ngẫu nhiên 2–20 lần mỗi giây (phần lớn là tim và quà nhỏ) để thử độ mượt.
+- **Tốc độ đặt mảnh**: số mảnh tối đa mỗi giây theo độ đông của phòng (vắng, vừa, đông, rất đông).
+- **Số liệu**: FPS (cũng hiện ở góc khung hình), mức thấp nhất trong 10 giây; đang hiện giai đoạn nào; số mảnh đã đặt / tổng;
+  số mảnh đang chờ, đang bay; tiến độ theo game.
+- Mọi thứ chỉ nằm trong trang đó. Tải lại trang (F5) là xây lại từ đầu chỗ đã chọn. Overlay và bảng xếp hạng không đổi.
+
 ### Làm lại bản đồ từ ảnh gốc (chỉ khi thay ảnh bản đồ trong `assets\raw\`)
 Cần Python + rembg và Real-ESRGAN như bên dưới. Mở cửa sổ lệnh tại thư mục dự án rồi gõ lần lượt:
 1. `npm run assets:upscale`: phóng ×4 ba ảnh bản đồ bằng Real-ESRGAN (vài phút; ảnh đã phóng thì bỏ qua).
@@ -260,7 +275,18 @@ Mở cửa sổ lệnh **tại thư mục dự án**: mở thư mục `game-xay-
 6. Vào **Chia vùng ↗**, tô lại một vùng của công trình đang xây, bấm **Lưu**: overlay tự tải lại vùng mới.
 7. Chọn **Phòng rất đông**, tốc độ **×10**, bấm **▶ Chạy**: mảnh bay dày nhưng overlay vẫn mượt.
 
-**f) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
+**f) R3c: trang thử xây**
+1. Nhấp đúp `start-test.bat`, trên trang trạng thái bấm **Thử xây ↗**.
+2. Chọn hạng mục **Gác chuông**, giai đoạn **1**. Bấm **Thả 10 tim** vài lần: vật liệu bay ra đống, chưa đủ một mảnh thì chưa xây.
+3. Bấm **Tặng quà nhỏ**, rồi **Tặng quà lớn**: mảnh bay vào, có nhãn "Khách thử vừa xây …". Ô "Mảnh" tăng đúng theo số công.
+4. Chọn giai đoạn khác (ví dụ **5. Dựng cột**): công trình dựng lại ngay đúng giai đoạn đó, không bay lại từ đầu.
+5. Bấm **Tặng quà cực lớn**: vượt nhiều giai đoạn, mỗi giai đoạn xong nhanh khoảng 1 giây; xong hạng mục thì camera sang hạng mục sau.
+   Bấm quà lớn liên tiếp: các nhãn xếp chồng lên nhau, không đè chữ.
+6. Chọn **Chính điện & Tiền đường**, bấm **▶ Bắn liên tục** với **20 lần/giây**, chờ khoảng 30 giây.
+   FPS nên giữ quanh 60 (bằng tần số màn hình; màn 144Hz thì cao hơn). Mình báo em số "thấp nhất 10 giây qua".
+7. Mở overlay ở cửa sổ khác: overlay **không** thay đổi theo trang thử.
+
+**g) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
 Lệnh này xóa dữ liệu thử và chạy một chuỗi sự kiện mẫu. Màn hình in từng giai đoạn, từng hạng mục vừa xong, kèm các bảng xếp hạng.
 
 ---

@@ -10,7 +10,7 @@ import { fillTemplate } from '../../shared/project.js';
 export const BOARD_LIMITS = { session: 5, total: 10, item: 5 } as const;
 
 /** Câu đang bật của một nhóm thoại. Live thật (không có nhãn thử) thì chỉ dùng câu đã duyệt (mục 9C). */
-function dialogueLines(core: GameCore, group: string, liveOnly: boolean): string[] {
+export function dialogueLines(core: GameCore, group: string, liveOnly: boolean): string[] {
   const g = core.configStore.getDialogues().groups[group];
   return (g?.lines ?? []).filter((l) => l.enabled && (!liveOnly || l.verified)).map((l) => l.text);
 }

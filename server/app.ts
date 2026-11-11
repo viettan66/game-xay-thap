@@ -7,7 +7,7 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import type { GameCore } from './core.js';
 import { SimulatorNotAllowed, type LiveService, type SourceMode } from './live/service.js';
 import { FIRE_KINDS, SCENARIO_KEYS, SCENARIOS, type FireKind, type ScenarioKey } from './live/simulator.js';
-import { chooseBackground, gameAssetsDir, loadManifest, ManifestError, missingFiles, saveManifest } from './assets/manifest.js';
+import { assetsVersion, chooseBackground, gameAssetsDir, loadManifest, ManifestError, missingFiles, saveManifest } from './assets/manifest.js';
 import { loadCuts, MapCutError, missingSegments } from './assets/mapCut.js';
 import { partsForEditing, partsStatus, proposeForBuilding, saveParts, syncManifestParts, validateLabels } from './assets/parts.js';
 import { PARTS } from '../shared/parts.js';
@@ -15,7 +15,7 @@ import { MapCutQueue, updateBuildingCut, type MapTools } from './assets/mapTools
 import { applyToManifest, parseToolUpdate } from './assets/tools.js';
 import { ConfigError } from './config/store.js';
 import type { StateBroadcaster } from './overlay/broadcaster.js';
-import { buildOverlayState } from './overlay/state.js';
+import { buildOverlayState, dialogueLines } from './overlay/state.js';
 
 export interface AppDeps {
   core: GameCore;
@@ -231,17 +231,34 @@ export function createApp(deps: AppDeps): express.Express {
     broadcaster.markDirty(); // overlay đang mở tải lại vùng mới
     res.json({ ok: true, ...partsStatus(rootDir, b.id) });
   });
-  app.get('/tools/parts', (_req, res) => {
-    const page = path.join(overlayDir(rootDir), 'parts.html');
-    if (!fs.existsSync(page)) return res.status(503).type('html').send('<meta charset="utf-8"><p>Chưa đóng gói. Chạy <code>npm run build</code>.</p>');
-    res.sendFile(page);
+  // ---- Trang thử xây /tools/build (R3c): xây thử trong trình duyệt, không ghi vào dữ liệu game ----
+  app.get('/api/tools/build', (_req, res) => {
+    const cfg = core.config;
+    const now = core.engine.status();
+    res.json({
+      project: core.project,
+      current: { itemId: now.item.id, stageIndex: now.stage.number - 1, completed: now.completed },
+      progressLabels: cfg.labels.progress,
+      points: cfg.points,
+      pieces: { size: cfg.pieces.size, maxPerSec: cfg.pieces.maxPerSec, materials: cfg.pieces.materials, burstSec: cfg.pieces.burstSec },
+      // Trang thử không lên sóng: dùng mọi câu đang bật, kể cả câu chưa duyệt (như hồ sơ test).
+      texts: { pieceBurst: dialogueLines(core, 'piece_burst', false) },
+      labels: { badge: cfg.labels.testBadge, disclaimer: cfg.labels.disclaimer, pointUnit: cfg.labels.pointUnitLabel },
+      safeArea: cfg.overlay.safeArea,
+      assetsVersion: assetsVersion(rootDir),
+    });
   });
 
-  app.get('/tools/assets', (_req, res) => {
-    const page = path.join(overlayDir(rootDir), 'tools.html');
-    if (!fs.existsSync(page)) return res.status(503).type('html').send('<meta charset="utf-8"><p>Chưa đóng gói. Chạy <code>npm run build</code>.</p>');
-    res.sendFile(page);
-  });
+  // Trang công cụ (đóng gói bằng Vite vào dist/overlay).
+  const toolPage = (url: string, file: string) =>
+    app.get(url, (_req, res) => {
+      const page = path.join(overlayDir(rootDir), file);
+      if (!fs.existsSync(page)) return res.status(503).type('html').send('<meta charset="utf-8"><p>Chưa đóng gói. Chạy <code>npm run build</code>.</p>');
+      res.sendFile(page);
+    });
+  toolPage('/tools/parts', 'parts.html');
+  toolPage('/tools/assets', 'tools.html');
+  toolPage('/tools/build', 'build.html');
 
   app.get('/admin', (_req, res) => {
     res.sendFile(path.join(rootDir, 'admin', 'index.html'));

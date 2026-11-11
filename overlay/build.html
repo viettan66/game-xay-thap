@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thử xây – Đại Danh Lam Thiên Phúc</title>
+<style>
+  :root { --bg: #f6f1e7; --card: #fffdf8; --ink: #2b2118; --muted: #7a6a58; --line: #e4d9c6; --accent: #b5462b; --ok: #2e7d32; --warn: #b26a00; --bad: #b3261e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+  header { padding: 10px 20px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); background: var(--card); }
+  header h1 { font-size: 19px; margin: 0; }
+  header a { color: var(--accent); font-size: 14px; }
+  main { display: grid; grid-template-columns: auto 400px; gap: 14px; padding: 14px 20px; justify-content: start; }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+  #stage { position: relative; height: calc(100vh - 90px); aspect-ratio: 1080 / 1920; background: #111; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
+  #stage canvas { width: 100% !important; height: 100% !important; display: block; }
+  #stage .fpsbadge { position: absolute; top: 8px; right: 8px; padding: 3px 8px; border-radius: 6px; background: #000a; color: #fff; font: 600 14px/1.3 "Segoe UI", system-ui, sans-serif; font-variant-numeric: tabular-nums; pointer-events: none; }
+  #stage .msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 30px; text-align: center; color: #fff; font-size: 18px; }
+  aside { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; height: calc(100vh - 90px); overflow: auto; }
+  aside h2 { font-size: 15px; margin: 16px 0 6px; color: var(--accent); }
+  aside h2:first-child { margin-top: 0; }
+  .note { color: var(--muted); font-size: 13px; margin: 4px 0; }
+  .err { color: var(--bad); font-weight: 600; }
+  button, select, input { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid #c9b79a; background: #fff; color: var(--ink); }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  button:disabled { opacity: .5; cursor: default; }
+  select { max-width: 100%; }
+  .field { display: grid; grid-template-columns: 90px 1fr; gap: 8px; align-items: center; margin: 6px 0; font-size: 14px; }
+  .act { display: grid; grid-template-columns: 1fr 74px 26px; gap: 6px; align-items: center; margin: 6px 0; }
+  .act button { text-align: left; }
+  .act input { width: 74px; padding: 6px; text-align: right; }
+  .act .pts { grid-column: 1 / -1; margin: -2px 0 4px 4px; color: var(--muted); font-size: 13px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+  .fps { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  .fps.good { color: var(--ok); } .fps.warn { color: var(--warn); } .fps.bad { color: var(--bad); }
+  table.stats { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.stats td { padding: 3px 0; vertical-align: top; }
+  table.stats td:first-child { color: var(--muted); width: 120px; }
+  table.stats td:last-child { font-variant-numeric: tabular-nums; }
+  kbd { font: 12px monospace; border: 1px solid #ccc; border-radius: 4px; padding: 0 4px; background: #fff; color: var(--ink); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Thử xây</h1>
+  <a href="/admin">← Trang trạng thái</a>
+  <a href="/tools/parts">Chia vùng ↗</a>
+  <a href="/tools/assets">Kiểm tra ảnh, bản đồ ↗</a>
+  <span class="note">Xây thử ngay trong trang này, không ghi vào dữ liệu game, không hiện trên overlay. Tải lại trang là xây lại từ đầu.</span>
+</header>
+<main>
+  <div id="stage"><div class="fpsbadge" id="fps-badge"></div><div class="msg" id="stage-msg">Đang tải…</div></div>
+  <aside>
+    <h2>Chỗ bắt đầu</h2>
+    <label class="field">Hạng mục <select id="item"></select></label>
+    <label class="field">Giai đoạn <select id="stage-sel"></select></label>
+    <div class="row"><button id="restart">↺ Xây lại từ đầu giai đoạn này</button></div>
+    <p class="note" id="stage-info"></p>
+
+    <h2>Góp công</h2>
+    <label class="field">Tên hiện trên nhãn <input id="name" value="Khách thử" maxlength="30"></label>
+    <div class="act"><button data-act="like10">❤ Thả 10 tim <kbd>1</kbd></button><span></span><span></span><div class="pts" id="pts-like10"></div></div>
+    <div class="act"><button data-act="small">🎁 Tặng quà nhỏ <kbd>2</kbd></button><input type="number" id="coins-small" min="1" step="1"><span>xu</span><div class="pts" id="pts-small"></div></div>
+    <div class="act"><button data-act="large">🎁 Tặng quà lớn <kbd>3</kbd></button><input type="number" id="coins-large" min="1" step="1"><span>xu</span><div class="pts" id="pts-large"></div></div>
+    <div class="act"><button data-act="huge">🎁 Tặng quà cực lớn <kbd>4</kbd></button><input type="number" id="coins-huge" min="1" step="1"><span>xu</span><div class="pts" id="pts-huge"></div></div>
+    <p class="note">Số xu sửa được. Tính công đúng như game (hệ số ×1, không tính trần tim trong ngày).</p>
+
+    <h2>Bắn liên tục (thử độ mượt)</h2>
+    <div class="row">
+      <button id="auto">▶ Bắn liên tục</button>
+      <select id="auto-rate">
+        <option value="2">2 lần/giây</option>
+        <option value="5" selected>5 lần/giây</option>
+        <option value="10">10 lần/giây</option>
+        <option value="20">20 lần/giây</option>
+      </select>
+    </div>
+    <p class="note">Ngẫu nhiên: phần lớn là tim, quà nhỏ, thỉnh thoảng quà lớn.</p>
+
+    <h2>Tốc độ đặt mảnh</h2>
+    <label class="field">Theo phòng <select id="crowd"></select></label>
+
+    <h2>Số liệu</h2>
+    <div class="row"><span class="fps" id="fps">–</span><span>FPS</span><span class="note" id="fps-low"></span></div>
+    <table class="stats">
+      <tr><td>Đang hiện</td><td id="st-shown">–</td></tr>
+      <tr><td>Mảnh</td><td id="st-pieces">–</td></tr>
+      <tr><td>Đang chờ / bay</td><td id="st-queue">–</td></tr>
+      <tr><td>Tiến độ (game)</td><td id="st-progress">–</td></tr>
+      <tr><td>Đã góp</td><td id="st-total">–</td></tr>
+    </table>
+    <p class="err" id="error"></p>
+  </aside>
+</main>
+<script type="module" src="./src/tools/build.ts"></script>
+</body>
+</html>

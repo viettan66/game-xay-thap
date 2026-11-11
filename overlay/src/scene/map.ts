@@ -7,7 +7,7 @@ import { Container, Rectangle, Sprite, Texture, type Renderer } from 'pixi.js';
 import { drawOrder, floorBand, itemRect, textureKey, type MapBuilding, type MapManifest } from '../../../shared/map.js';
 import type { PiecesConfig, ProgressView, ServerMessage } from '../../../shared/protocol.js';
 import type { Art } from '../art.js';
-import { Builder, type BuildSite } from '../build/builder.js';
+import { Builder, type BuilderStats, type BuildSite } from '../build/builder.js';
 import { lerpCamera } from '../layout.js';
 import { mapCamera, type ViewBand } from '../mapLayout.js';
 
@@ -135,6 +135,16 @@ export class MapView {
 
   contribution(msg: Extract<ServerMessage, { type: 'contribution' }>): void {
     this.builder.onContribution(msg);
+  }
+
+  /** Dựng lại ngay theo tiến độ hiện có, camera đặt thẳng vào chỗ (trang thử /tools/build). */
+  resync(): void {
+    this.builder.resync();
+    this.hasCam = false;
+  }
+
+  stats(): BuilderStats {
+    return this.builder.stats();
   }
 
   /** Khung hạng mục đang hiện trên màn hình (để giao diện tự mờ đi khi che nó). */

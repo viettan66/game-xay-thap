@@ -12,12 +12,14 @@ export default defineConfig({
     outDir: fileURLToPath(new URL('../dist/overlay', import.meta.url)),
     emptyOutDir: true,
     chunkSizeWarningLimit: 2000,
-    // Các trang: overlay (index.html), kiểm tra ảnh /tools/assets (tools.html), chia vùng /tools/parts (parts.html).
+    // Các trang: overlay (index.html), kiểm tra ảnh /tools/assets (tools.html), chia vùng /tools/parts (parts.html),
+    // thử xây /tools/build (build.html).
     rollupOptions: {
       input: {
         index: fileURLToPath(new URL('./index.html', import.meta.url)),
         tools: fileURLToPath(new URL('./tools.html', import.meta.url)),
         parts: fileURLToPath(new URL('./parts.html', import.meta.url)),
+        build: fileURLToPath(new URL('./build.html', import.meta.url)),
       },
     },
   },

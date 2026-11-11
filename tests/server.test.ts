@@ -167,3 +167,37 @@ describe('API điều khiển', () => {
     expect(await r.text()).toContain('<title>ok</title>');
   });
 });
+
+describe('trang thử xây /tools/build', () => {
+  it('trả về danh sách hạng mục, chỗ đang xây, quy tắc tính công; không ghi gì vào dữ liệu game', async () => {
+    await start();
+    await post('/api/sim/fire', { kind: 'gift_large' });
+    const before = srv.core.engine.status();
+    const r = await fetch(`${srv.url}/api/tools/build`);
+    expect(r.status).toBe(200);
+    const b = (await r.json()) as {
+      project: { items: { id: string; stages: { cost: number; build: { parts: string[] } }[] }[] };
+      current: { itemId: string; stageIndex: number; completed: boolean };
+      points: { giftPointsPerCoin: number };
+      pieces: { maxPerSec: Record<string, number> };
+      texts: { pieceBurst: string[] };
+      labels: { badge: string; disclaimer: string };
+    };
+    expect(b.project.items.map((i) => i.id)).toEqual(srv.core.project.items.map((i) => i.id));
+    expect(b.project.items[0]!.stages[0]!.build.parts).toBeDefined();
+    expect(b.current).toEqual({ itemId: before.item.id, stageIndex: before.stage.number - 1, completed: false });
+    expect(b.points.giftPointsPerCoin).toBe(srv.core.config.points.giftPointsPerCoin);
+    expect(b.pieces.maxPerSec).toEqual({ vang: 20, vua: 20, dong: 14, ratdong: 10 });
+    expect(b.texts.pieceBurst.length).toBeGreaterThan(0);
+    expect(b.labels.badge).toBe(srv.core.config.labels.testBadge);
+    expect(b.labels.disclaimer).toBe(srv.core.config.labels.disclaimer);
+    expect(srv.core.engine.status()).toEqual(before);
+  });
+
+  it('trang chưa đóng gói thì báo cách làm', async () => {
+    await start();
+    const r = await fetch(`${srv.url}/tools/build`);
+    expect(r.status).toBe(503);
+    expect(await r.text()).toContain('npm run build');
+  });
+});

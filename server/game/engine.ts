@@ -7,17 +7,16 @@ import { scoreEvent, type ScoreResult } from '../../shared/points.js';
 import {
   applyPoints,
   extendIfNeeded,
-  fillTemplate,
   initialProgress,
   itemIndexOf,
-  progressNumbers,
   repriceCurrentStage,
   startedItemProblems,
   type ApplyResult,
   type ProgressState,
   type ResolvedProject,
 } from '../../shared/project.js';
-import type { ProgressItem, ProgressView } from '../../shared/protocol.js';
+import type { ProgressView } from '../../shared/protocol.js';
+import { progressView } from '../../shared/progressView.js';
 import { vnDayKey } from '../../shared/time.js';
 import type { LiveEvent } from '../../shared/types.js';
 import type { GameConfig } from '../config/schema.js';
@@ -206,44 +205,7 @@ export class GameEngine {
   }
 
   status(): ProgressView {
-    const cfg = this.deps.config();
-    const p = this.deps.project();
-    const r = this.row();
-    const s = this.progressState();
-    const n = progressNumbers(s, p);
-    const item = p.items[n.itemNumber - 1]!;
-    const stage = item.stages[s.stageIndex]!;
-    const L = cfg.labels.progress;
-    const items: ProgressItem[] = p.items.map((it, i) => ({
-      id: it.id,
-      name: it.name,
-      area: it.area,
-      status: s.completed || i < n.itemNumber - 1 ? 'done' : i === n.itemNumber - 1 ? 'building' : 'todo',
-      // Giá giai đoạn đang xây là giá đã chốt (có thể khác config sau khi đổi giá).
-      stages: it.stages.map((st, k) => ({ name: st.name, cost: it.id === s.itemId && k === s.stageIndex ? s.stageCost : st.cost, build: st.build })),
-    }));
-    return {
-      projectName: p.name,
-      item: { id: item.id, name: item.name, number: n.itemNumber, count: n.itemCount, size: item.size, area: item.area },
-      stage: { number: s.stageIndex + 1, count: n.stageCount, name: stage.name, ritual: stage.ritual, build: stage.build },
-      stagePoints: s.stagePoints,
-      stageCost: s.stageCost,
-      percent: n.percent,
-      itemPercent: n.itemPercent,
-      projectPercent: n.projectPercent,
-      donePoints: n.donePoints,
-      projectCost: n.projectCost,
-      totalPoints: r.total_points,
-      completed: s.completed,
-      lines: s.completed
-        ? { item: fillTemplate(L.completed, { project: p.name }), stage: '', project: fillTemplate(L.project, { percent: 100 }) }
-        : {
-            item: fillTemplate(L.item, { number: n.itemNumber, count: n.itemCount, item: item.name }),
-            stage: fillTemplate(L.stage, { number: s.stageIndex + 1, count: n.stageCount, stage: stage.name }),
-            project: fillTemplate(L.project, { percent: n.projectPercent }),
-          },
-      items,
-    };
+    return progressView(this.progressState(), this.deps.project(), this.deps.config().labels.progress, this.row().total_points);
   }
 
   goldenManualUntil(): number | null {
