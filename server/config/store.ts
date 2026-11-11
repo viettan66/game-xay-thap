@@ -90,6 +90,40 @@ export function upgradeLegacyConfig(raw: unknown): { value: unknown; removed: st
   return { value, removed };
 }
 
+/**
+ * Chuy\u1EC3n project.json t\u1EA1o tr\u01B0\u1EDBc R3b (giai \u0111o\u1EA1n c\u00F3 `visual`) sang c\u00E1ch x\u00E2y t\u1EEBng m\u1EA3nh (`build`, m\u1EE5c 5, 7):
+ * b\u1ECF `visual`; giai \u0111o\u1EA1n ch\u01B0a c\u00F3 `build` th\u00EC l\u1EA5y `build` c\u1EE7a b\u1EA3n m\u1EB7c \u0111\u1ECBnh \u1EDF c\u00F9ng ch\u1ED7 n\u1EBFu tr\u00F9ng t\u00EAn giai \u0111o\u1EA1n
+ * (m\u1EABu c\u00F9ng t\u00EAn, ho\u1EB7c h\u1EA1ng m\u1EE5c c\u00F9ng m\u00E3). Giai \u0111o\u1EA1n m\u00ECnh t\u1EF1 th\u00EAm th\u00EC \u0111\u1EC3 tr\u1ED1ng (game x\u00E2y ph\u1EA7n c\u00F2n l\u1EA1i).
+ * Tr\u1EA3 v\u1EC1 file \u0111\u00E3 chuy\u1EC3n v\u00E0 s\u1ED1 giai \u0111o\u1EA1n \u0111\u00E3 s\u1EEDa.
+ */
+export function upgradeLegacyProject(raw: unknown, defaults: unknown): { value: unknown; changed: number } {
+  if (!isPlain(raw)) return { value: raw, changed: 0 };
+  const value = structuredClone(raw);
+  const def = isPlain(defaults) ? defaults : {};
+  let changed = 0;
+  const fix = (stages: unknown, defStages: unknown) => {
+    if (!Array.isArray(stages)) return;
+    stages.forEach((s, k) => {
+      if (!isPlain(s) || !('visual' in s)) return;
+      delete s.visual;
+      changed++;
+      const d = Array.isArray(defStages) ? defStages[k] : undefined;
+      if (!('build' in s) && isPlain(d) && d.name === s.name && d.build !== undefined) s.build = structuredClone(d.build);
+    });
+  };
+  const defTemplates = isPlain(def.stageTemplates) ? def.stageTemplates : {};
+  if (isPlain(value.stageTemplates)) for (const [key, stages] of Object.entries(value.stageTemplates)) fix(stages, defTemplates[key]);
+  const defItems = Array.isArray(def.items) ? def.items.filter(isPlain) : [];
+  if (Array.isArray(value.items)) {
+    for (const it of value.items) {
+      if (!isPlain(it)) continue;
+      const d = defItems.find((x) => x.id === it.id);
+      for (const key of ['stages', 'stagesBefore', 'stagesAfter']) fix(it[key], d?.[key]);
+    }
+  }
+  return { value, changed };
+}
+
 function readJson(file: string): unknown {
   const text = fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '');
   try {
@@ -121,6 +155,8 @@ export class ConfigStore {
   private listeners: ConfigListener[] = [];
   /** Các khóa cũ (bản tháp) vừa được dọn khỏi config.json ở lần đọc gần nhất. */
   upgradedKeys: string[] = [];
+  /** Số giai đoạn trong project.json vừa được chuyển từ `visual` sang `build` ở lần đọc gần nhất. */
+  upgradedProjectStages = 0;
 
   constructor(readonly configDir: string) {}
 
@@ -144,7 +180,11 @@ export class ConfigStore {
     this.upgradedKeys = upgraded.removed;
     if (upgraded.removed.length > 0) writeJsonAtomic(configPath, upgraded.value);
     this.eventsFile = validate(eventsFileSchema, readJson(path.join(this.configDir, EVENTS_FILE)), EVENTS_FILE);
-    this.project = this.validateProject(readJson(path.join(this.configDir, PROJECT_FILE)));
+    const projectPath = path.join(this.configDir, PROJECT_FILE);
+    const project = upgradeLegacyProject(readJson(projectPath), readJson(path.join(this.defaultsDir, PROJECT_FILE)));
+    this.project = this.validateProject(project.value);
+    this.upgradedProjectStages = project.changed;
+    if (project.changed > 0) writeJsonAtomic(projectPath, project.value);
     const dialoguesDefaults = readJson(path.join(this.defaultsDir, DIALOGUES_FILE));
     this.dialogues = validate(dialoguesFileSchema, deepMerge(dialoguesDefaults, readJson(path.join(this.configDir, DIALOGUES_FILE))), DIALOGUES_FILE);
     return created;

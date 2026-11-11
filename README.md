@@ -243,6 +243,9 @@ Mở cửa sổ lệnh **tại thư mục dự án**: mở thư mục `game-xay-
 5. Bấm **Lưu**. Ô chọn công trình đổi thành "Gác chuông – đã chỉnh tay". Tải lại trang: vẫn đúng như vừa lưu.
 
 **e) R3b: xây từng mảnh**
+0. Nếu trang trạng thái báo công trình **đã hoàn thành 100%** (dữ liệu thử cũ) thì chưa thấy xây gì. Muốn xây lại từ đầu:
+   đóng cửa sổ `start-test.bat`, mở thư mục `data\test`, xóa các file `game.db`, `game.db-wal`, `game.db-shm` (file nào có thì xóa).
+   Đây chỉ là dữ liệu thử, không đụng hồ sơ thật.
 1. Nhấp đúp `start-test.bat`, bấm **Mở overlay ↗**. Đặt cửa sổ overlay và trang trạng thái cạnh nhau.
 2. Bấm **Quà vừa (100 xu)** vài lần. Mỗi lần:
    - một đợt mảnh bay từ đống vật liệu vào công trình đang xây;

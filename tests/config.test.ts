@@ -120,6 +120,49 @@ describe('config.json của bản tháp cũ', () => {
   });
 });
 
+describe('project.json tạo trước khi có cách xây từng mảnh', () => {
+  type Stage = { name: string; visual?: unknown; build?: unknown };
+  type Item = { id: string; stages?: Stage[]; stagesBefore?: Stage[]; stagesAfter?: Stage[] };
+  type File = { stageTemplates: Record<string, Stage[]>; items: Item[] };
+  const load = (): File => JSON.parse(fs.readFileSync(path.join(configDir(), 'defaults', 'project.json'), 'utf8')) as File;
+  const toOld = ({ build: _build, ...rest }: Stage): Stage => ({ ...rest, visual: { kind: 'fade' } });
+  const allStages = (f: File): Stage[] => [
+    ...Object.values(f.stageTemplates).flat(),
+    ...f.items.flatMap((it) => [...(it.stages ?? []), ...(it.stagesBefore ?? []), ...(it.stagesAfter ?? [])]),
+  ];
+
+  it('bỏ "visual", lấy "build" của bản mặc định cho giai đoạn trùng tên, ghi lại file', () => {
+    const def = load();
+    const old = structuredClone(def);
+    for (const list of Object.values(old.stageTemplates)) list.splice(0, list.length, ...list.map(toOld));
+    for (const it of old.items) {
+      for (const key of ['stages', 'stagesBefore', 'stagesAfter'] as const) if (it[key]) it[key] = it[key].map(toOld);
+    }
+    // Một giai đoạn mình tự đặt tên khác: không có build mặc định để lấy.
+    const custom = old.items.find((it) => it.stages)!;
+    custom.stages![0] = { name: 'Giai đoạn mình tự đặt', visual: { kind: 'fade' } };
+    const total = allStages(old).length;
+    fs.writeFileSync(path.join(configDir(), 'project.json'), JSON.stringify(old));
+
+    const store = new ConfigStore(configDir());
+    store.load();
+    expect(store.upgradedProjectStages).toBe(total);
+    const saved = JSON.parse(fs.readFileSync(path.join(configDir(), 'project.json'), 'utf8')) as File;
+    expect(allStages(saved).some((s) => 'visual' in s)).toBe(false);
+    expect(saved.stageTemplates).toEqual(def.stageTemplates);
+    const savedCustom = saved.items.find((it) => it.id === custom.id)!;
+    expect(savedCustom.stages![0]).toEqual({ name: 'Giai đoạn mình tự đặt' });
+    const defCustom = def.items.find((it) => it.id === custom.id)!;
+    expect(savedCustom.stages!.slice(1)).toEqual(defCustom.stages!.slice(1));
+    expect(saved.items.filter((it) => it.id !== custom.id)).toEqual(def.items.filter((it) => it.id !== custom.id));
+
+    // Lần đọc sau không còn gì phải chuyển.
+    const again = new ConfigStore(configDir());
+    again.load();
+    expect(again.upgradedProjectStages).toBe(0);
+  });
+});
+
 describe('project.json', () => {
   const writeProject = (p: unknown) => fs.writeFileSync(path.join(configDir(), 'project.json'), JSON.stringify(p));
   const defaults = () => JSON.parse(fs.readFileSync(path.join(configDir(), 'defaults', 'project.json'), 'utf8'));

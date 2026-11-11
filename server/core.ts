@@ -59,6 +59,9 @@ export class GameCore {
     if (this.configStore.upgradedKeys.length > 0) {
       this.log.info(`Đã dọn khóa của bản tháp cũ khỏi config.json: ${this.configStore.upgradedKeys.join(', ')}`);
     }
+    if (this.configStore.upgradedProjectStages > 0) {
+      this.log.info(`Đã chuyển ${this.configStore.upgradedProjectStages} giai đoạn trong project.json sang cách xây từng mảnh (visual → build)`);
+    }
 
     ensureProfileDirs(this.paths);
     const retired = retireLegacyTowerDb(this.paths.dbFile);
