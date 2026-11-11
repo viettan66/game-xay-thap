@@ -15,7 +15,7 @@ node_modules/
 
 # --- Kết quả build, cache ---
 dist/
-build/
+/build/
 .vite/
 *.tsbuildinfo
 vite.config.*.timestamp-*
