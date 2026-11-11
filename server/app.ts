@@ -9,7 +9,7 @@ import { SimulatorNotAllowed, type LiveService, type SourceMode } from './live/s
 import { FIRE_KINDS, SCENARIO_KEYS, SCENARIOS, type FireKind, type ScenarioKey } from './live/simulator.js';
 import { chooseBackground, gameAssetsDir, loadManifest, ManifestError, missingFiles, saveManifest } from './assets/manifest.js';
 import { loadCuts, MapCutError, missingSegments } from './assets/mapCut.js';
-import { partsForEditing, partsStatus, proposeForBuilding, saveParts, validateLabels } from './assets/parts.js';
+import { partsForEditing, partsStatus, proposeForBuilding, saveParts, syncManifestParts, validateLabels } from './assets/parts.js';
 import { PARTS } from '../shared/parts.js';
 import { MapCutQueue, updateBuildingCut, type MapTools } from './assets/mapTools.js';
 import { applyToManifest, parseToolUpdate } from './assets/tools.js';
@@ -227,6 +227,8 @@ export function createApp(deps: AppDeps): express.Express {
     if (problem) throw new BadRequest(problem);
     const source = body(req).edited === false ? 'auto' : 'edited';
     await saveParts(rootDir, b, labels, source);
+    syncManifestParts(rootDir, b.id);
+    broadcaster.markDirty(); // overlay đang mở tải lại vùng mới
     res.json({ ok: true, ...partsStatus(rootDir, b.id) });
   });
   app.get('/tools/parts', (_req, res) => {

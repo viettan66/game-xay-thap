@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { STAGE_H } from '../overlay/src/layout.js';
-import { lookAlpha, mapCamera } from '../overlay/src/mapLayout.js';
+import { mapCamera } from '../overlay/src/mapLayout.js';
 import type { MapTools } from '../server/assets/mapTools.js';
 import { loadCuts } from '../server/assets/mapCut.js';
 import { startServer, type RunningServer } from '../server/server.js';
@@ -29,15 +29,6 @@ describe('camera tạm trên bản đồ (R2)', () => {
     const none = mapCamera(map, null, view);
     expect(none.y).toBeLessThanOrEqual(0);
     expect(none.y).toBeGreaterThanOrEqual(STAGE_H - map.height * none.scale);
-  });
-
-  it('đã xong hiện đủ, đang xây hiện mờ, chưa xây ẩn', () => {
-    expect(lookAlpha('done', 0)).toBe(1);
-    expect(lookAlpha('todo', 0)).toBe(0);
-    for (const t of [0, 0.3, 1, 2]) {
-      expect(lookAlpha('building', t)).toBeGreaterThan(0.2);
-      expect(lookAlpha('building', t)).toBeLessThan(0.6);
-    }
   });
 });
 

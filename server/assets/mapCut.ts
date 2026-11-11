@@ -19,6 +19,8 @@ import type { Manifest } from '../../shared/manifest.js';
 import { formatZodError } from '../config/schema.js';
 import { gameAssetsDir, loadManifest, saveManifest } from './manifest.js';
 import { bbox, boxBlur, components, dilate, erode, fillHoles, open, polygonMask, smoothstep } from './mask.js';
+import { KIND_APRON, KIND_CORE, KIND_GROUND, KIND_HOLE } from './kinds.js';
+import { ensureParts } from './parts.js';
 import { rawPath, upscaledPath } from './rawFiles.js';
 
 /** Độ khác màu (khoảng cách RGB sau khi làm mờ nhẹ) dưới mức này coi là "giống hệt ảnh đồi trống". */
@@ -230,11 +232,6 @@ export interface BuildingMask {
   kinds: Uint8Array;
 }
 
-/** Loại điểm ảnh của công trình: thân (rembg), lỗ kín được lấp, viền chân, phần nền. */
-export const KIND_CORE = 1;
-export const KIND_HOLE = 2;
-export const KIND_APRON = 3;
-export const KIND_GROUND = 4;
 
 /** Đọc mặt nạ rembg của một phần object, đặt vào khung (tọa độ trong khung). */
 async function rembgInBox(root: string, key: string, b: [number, number, number, number]): Promise<Uint8Array> {
@@ -620,6 +617,8 @@ export async function buildMap(root: string, opts: BuildMapOptions = {}): Promis
     if (items.length > 1) {
       b.tierLinesY = c.tierLinesY ? c.tierLinesY.map((v) => Math.round(v * src.scale)) : defaultTierLines(placed.y, placed.y + placed.h, items.length);
     }
+    // Vùng xây từng mảnh: chưa có hoặc là bản máy đề xuất thì đề xuất lại theo ảnh mới; bản chỉnh tay thì giữ.
+    b.parts = await ensureParts(root, b);
     buildings.push(b);
     log(`  ${c.id}: ${placed.w}×${placed.h} tại (${placed.x}, ${placed.y})${fg ? ', có tiền cảnh' : ''}`);
   }

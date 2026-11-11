@@ -12,8 +12,9 @@ const params: TowerParams = { floor1WidthPx: 520, towerTaper: 0.995, anchor: { x
 const tower = (floor: number, stage = 1, completed = false, totalFloors = 100) => ({ floor, stage, completed, totalFloors });
 
 describe('assets/manifest.json của dự án', () => {
-  it('đủ 57 ảnh theo mục 7, file nào cũng có', () => {
-    expect(Object.keys(manifest.images)).toHaveLength(57);
+  it('đủ 57 ảnh của giai đoạn 3 + 18 ảnh đống vật liệu (R3b), file nào cũng có', () => {
+    expect(Object.keys(manifest.images)).toHaveLength(57 + 18);
+    expect(Object.keys(manifest.images).filter((k) => k.startsWith('props/'))).toHaveLength(18);
     expect(missingFiles(REPO_ROOT, manifest)).toEqual([]);
     for (const k of ['bg/background', 'bg/sky_upper', 'tower/spire', 'stele/stele', 'abbot/abbot_pray', 'ui/banner', 'items/guardian']) {
       expect(manifest.images[k], k).toBeDefined();

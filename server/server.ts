@@ -66,8 +66,17 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
   let socket: ReturnType<typeof attachOverlaySocket> | undefined;
   const live: LiveService = new LiveService(core, {
     logger: o.logger,
-    onProcessed: (r) => {
+    onProcessed: (r, ev) => {
       broadcaster.markDirty();
+      if (r.status === 'counted' && r.score && ev.type !== 'viewers' && r.score.source !== 'none') {
+        broadcaster.contribution({
+          type: 'contribution',
+          name: ev.user.nickname,
+          source: r.score.source,
+          points: r.score.points,
+          allocations: r.progress?.allocations ?? [],
+        });
+      }
       if (r.progress) broadcaster.progress(r.progress.transitions);
     },
     onStatus: () => broadcaster.markDirty(),

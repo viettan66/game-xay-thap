@@ -4,49 +4,49 @@
   "costRoundTo": 100,
   "stageTemplates": {
     "lon": [
-      { "name": "Phát quang, cắm mốc", "ritual": "Lễ khởi công", "visual": { "kind": "markers" } },
-      { "name": "Đào móng", "visual": { "kind": "foundation" } },
-      { "name": "Đổ móng, kè đá", "visual": { "kind": "foundation" } },
-      { "name": "Xây bó nền, bậc thềm", "visual": { "kind": "foundation" } },
-      { "name": "Kê chân tảng", "visual": { "kind": "foundation" } },
-      { "name": "Dựng cột cái, cột quân", "ritual": "Lễ dựng cột", "visual": { "kind": "frame" } },
-      { "name": "Lắp xà, kèo, vì kèo", "visual": { "kind": "frame" } },
-      { "name": "Thượng lương", "ritual": "Lễ thượng lương", "visual": { "kind": "frame" } },
-      { "name": "Lắp hoành, rui, mè", "visual": { "kind": "frame" } },
-      { "name": "Lợp ngói", "visual": { "kind": "roof" } },
-      { "name": "Đắp bờ nóc, đầu đao", "visual": { "kind": "roof" } },
-      { "name": "Xây tường, lắp cửa bức bàn", "visual": { "kind": "build" } },
-      { "name": "Lát nền gạch", "visual": { "kind": "build" } },
-      { "name": "Chạm khắc, sơn son thếp vàng", "visual": { "kind": "decorate" } },
-      { "name": "Treo hoành phi, câu đối, đèn lồng", "visual": { "kind": "decorate" } },
-      { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+      { "name": "Phát quang, cắm mốc", "ritual": "Lễ khởi công", "build": { "part": "matdat", "look": "coc" } },
+      { "name": "Đào móng", "build": { "part": "matdat", "look": "dao" } },
+      { "name": "Đổ móng, kè đá", "build": { "part": "nen", "look": "full", "band": [0, 40] } },
+      { "name": "Xây bó nền, bậc thềm", "build": { "part": "nen", "look": "full", "band": [40, 80] } },
+      { "name": "Kê chân tảng", "build": { "part": "cot", "look": "wood", "band": [0, 15] } },
+      { "name": "Dựng cột cái, cột quân", "ritual": "Lễ dựng cột", "build": { "part": "cot", "look": "wood", "band": [15, 100] } },
+      { "name": "Lắp xà, kèo, vì kèo", "build": { "part": "khung", "look": "wood", "band": [0, 55] } },
+      { "name": "Thượng lương", "ritual": "Lễ thượng lương", "build": { "part": "khung", "look": "wood", "band": [55, 100] } },
+      { "name": "Lắp hoành, rui, mè", "build": { "part": "mai", "look": "wood" } },
+      { "name": "Lợp ngói", "build": { "part": "mai", "look": "full" } },
+      { "name": "Đắp bờ nóc, đầu đao", "build": { "part": "trangtri", "look": "full", "band": [55, 100] } },
+      { "name": "Xây tường, lắp cửa bức bàn", "build": { "part": "tuong", "look": "full" } },
+      { "name": "Lát nền gạch", "build": { "part": "nen", "look": "full", "band": [80, 100] } },
+      { "name": "Chạm khắc, sơn son thếp vàng", "build": { "part": ["cot", "khung"], "look": "full" } },
+      { "name": "Treo hoành phi, câu đối, đèn lồng", "build": { "part": "trangtri", "look": "full", "band": [20, 55] } },
+      { "name": "Hoàn thiện", "build": { "part": ["nen", "cot", "khung", "mai", "tuong", "trangtri", "nuoc"], "look": "full" } }
     ],
     "vua": [
-      { "name": "Phát quang, cắm mốc", "visual": { "kind": "markers" } },
-      { "name": "Đào và đổ móng", "visual": { "kind": "foundation" } },
-      { "name": "Xây bó nền, bậc thềm", "visual": { "kind": "foundation" } },
-      { "name": "Kê chân tảng", "visual": { "kind": "foundation" } },
-      { "name": "Dựng cột", "ritual": "Lễ dựng cột", "visual": { "kind": "frame" } },
-      { "name": "Lắp khung xà kèo, thượng lương", "ritual": "Lễ thượng lương", "visual": { "kind": "frame" } },
-      { "name": "Lợp ngói", "visual": { "kind": "roof" } },
-      { "name": "Xây tường, lắp cửa", "visual": { "kind": "build" } },
-      { "name": "Trang trí, sơn son", "visual": { "kind": "decorate" } },
-      { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+      { "name": "Phát quang, cắm mốc", "build": { "part": "matdat", "look": "coc" } },
+      { "name": "Đào và đổ móng", "build": { "part": "matdat", "look": "dao" } },
+      { "name": "Xây bó nền, bậc thềm", "build": { "part": "nen", "look": "full" } },
+      { "name": "Kê chân tảng", "build": { "part": "cot", "look": "wood", "band": [0, 15] } },
+      { "name": "Dựng cột", "ritual": "Lễ dựng cột", "build": { "part": "cot", "look": "wood", "band": [15, 100] } },
+      { "name": "Lắp khung xà kèo, thượng lương", "ritual": "Lễ thượng lương", "build": { "part": "khung", "look": "wood" } },
+      { "name": "Lợp ngói", "build": { "part": "mai", "look": "full" } },
+      { "name": "Xây tường, lắp cửa", "build": { "part": "tuong", "look": "full" } },
+      { "name": "Trang trí, sơn son", "build": { "part": ["cot", "khung"], "look": "full" } },
+      { "name": "Hoàn thiện", "build": { "part": ["nen", "cot", "khung", "mai", "tuong", "trangtri", "nuoc"], "look": "full" } }
     ],
     "nho": [
-      { "name": "Cắm mốc, chuẩn bị", "visual": { "kind": "markers" } },
-      { "name": "Làm nền", "visual": { "kind": "foundation" } },
-      { "name": "Thi công", "visual": { "kind": "build" } },
-      { "name": "Trang trí", "visual": { "kind": "decorate" } },
-      { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+      { "name": "Cắm mốc, chuẩn bị", "build": { "part": "matdat", "look": "coc" } },
+      { "name": "Làm nền", "build": { "part": "matdat", "look": "dao" } },
+      { "name": "Thi công", "build": { "part": "nen", "look": "full" } },
+      { "name": "Trang trí", "build": { "part": ["tuong", "mai", "cot", "khung"], "look": "full" } },
+      { "name": "Hoàn thiện", "build": { "part": ["nen", "cot", "khung", "mai", "tuong", "trangtri", "nuoc"], "look": "full" } }
     ],
     "thap_tang": [
-      { "name": "Tập kết gạch", "visual": { "kind": "markers" } },
-      { "name": "Xây thân tầng", "visual": { "kind": "build" } },
-      { "name": "Trổ cửa vòm", "visual": { "kind": "build" } },
-      { "name": "Lợp mái hiên", "visual": { "kind": "roof" } },
-      { "name": "Gắn đèn, chuông gió", "visual": { "kind": "decorate" } },
-      { "name": "Hoàn thành tầng", "visual": { "kind": "finish" } }
+      { "name": "Tập kết gạch", "build": { "part": "matdat", "look": "dong" } },
+      { "name": "Xây thân tầng", "build": { "part": "tuong", "look": "full", "band": [0, 50] } },
+      { "name": "Trổ cửa vòm", "build": { "part": "tuong", "look": "full", "band": [50, 100] } },
+      { "name": "Lợp mái hiên", "build": { "part": "mai", "look": "full" } },
+      { "name": "Gắn đèn, chuông gió", "build": { "part": "trangtri", "look": "full" } },
+      { "name": "Hoàn thành tầng", "build": { "part": ["nen", "cot", "khung", "mai", "tuong", "trangtri", "nuoc"], "look": "full" } }
     ]
   },
   "items": [
@@ -57,11 +57,11 @@
       "size": "nho",
       "area": "toan_khu",
       "stages": [
-        { "name": "Phát quang, cắm mốc", "ritual": "Lễ khởi công", "visual": { "kind": "markers" } },
-        { "name": "San ủi mặt bằng", "visual": { "kind": "foundation" } },
-        { "name": "Đầm nền", "visual": { "kind": "foundation" } },
-        { "name": "Đào rãnh thoát nước", "visual": { "kind": "build" } },
-        { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+        { "name": "Phát quang, cắm mốc", "ritual": "Lễ khởi công", "build": { "part": "matdat", "look": "coc" } },
+        { "name": "San ủi mặt bằng", "build": { "part": "matdat", "look": "dao" } },
+        { "name": "Đầm nền", "build": { "part": "nen", "look": "full", "band": [0, 50] } },
+        { "name": "Đào rãnh thoát nước", "build": { "part": "nen", "look": "full", "band": [50, 100] } },
+        { "name": "Hoàn thiện", "build": { "part": ["nen", "cot", "khung", "mai", "tuong", "trangtri", "nuoc"], "look": "full" } }
       ]
     },
     {
@@ -71,11 +71,11 @@
       "size": "nho",
       "area": "san_giua",
       "stages": [
-        { "name": "Dọn quanh gốc cây", "visual": { "kind": "markers" } },
-        { "name": "Đào móng bệ", "visual": { "kind": "foundation" } },
-        { "name": "Xếp đá bát giác", "visual": { "kind": "build" } },
-        { "name": "Lát mặt bệ", "visual": { "kind": "decorate" } },
-        { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+        { "name": "Dọn quanh gốc cây", "build": { "part": "matdat", "look": "coc" } },
+        { "name": "Đào móng bệ", "build": { "part": "matdat", "look": "dao" } },
+        { "name": "Xếp đá bát giác", "build": { "part": "nen", "look": "full", "band": [0, 60] } },
+        { "name": "Lát mặt bệ", "build": { "part": "nen", "look": "full", "band": [60, 100] } },
+        { "name": "Hoàn thiện", "build": { "part": ["nen", "cot", "khung", "mai", "tuong", "trangtri", "nuoc"], "look": "full" } }
       ]
     },
     {
@@ -85,11 +85,11 @@
       "size": "nho",
       "area": "san_giua",
       "stages": [
-        { "name": "Cắm mốc, căng dây", "visual": { "kind": "markers" } },
-        { "name": "San phẳng, đầm nền", "visual": { "kind": "foundation" } },
-        { "name": "Rải cát lót", "visual": { "kind": "foundation" } },
-        { "name": "Lát gạch", "visual": { "kind": "build" } },
-        { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+        { "name": "Cắm mốc, căng dây", "build": { "part": "matdat", "look": "coc" } },
+        { "name": "San phẳng, đầm nền", "build": { "part": "matdat", "look": "dao" } },
+        { "name": "Rải cát lót", "build": { "part": "matdat", "look": "dong" } },
+        { "name": "Lát gạch", "build": { "part": "nen", "look": "full" } },
+        { "name": "Hoàn thiện", "build": { "part": ["nen", "cot", "khung", "mai", "tuong", "trangtri", "nuoc"], "look": "full" } }
       ]
     },
     { "id": "tam_quan", "name": "Cổng tam quan", "cost": 160000, "size": "vua", "area": "cong", "template": "vua" },
@@ -100,11 +100,11 @@
       "size": "nho",
       "area": "ho_sen",
       "stages": [
-        { "name": "Đào hồ", "visual": { "kind": "foundation" } },
-        { "name": "Kè đá bờ hồ", "visual": { "kind": "build" } },
-        { "name": "Dẫn nước", "visual": { "kind": "build" } },
-        { "name": "Trồng sen", "visual": { "kind": "decorate" } },
-        { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+        { "name": "Đào hồ", "build": { "part": "matdat", "look": "dao" } },
+        { "name": "Kè đá bờ hồ", "build": { "part": "nen", "look": "full" } },
+        { "name": "Dẫn nước", "build": { "part": "nuoc", "look": "full" } },
+        { "name": "Trồng sen", "build": { "part": "trangtri", "look": "full" } },
+        { "name": "Hoàn thiện", "build": { "part": ["nen", "cot", "khung", "mai", "tuong", "trangtri", "nuoc"], "look": "full" } }
       ]
     },
     {
@@ -114,11 +114,11 @@
       "size": "nho",
       "area": "ho_sen",
       "stages": [
-        { "name": "Đóng cọc", "visual": { "kind": "markers" } },
-        { "name": "Xây trụ cầu", "visual": { "kind": "foundation" } },
-        { "name": "Bắc dầm đá", "visual": { "kind": "build" } },
-        { "name": "Lát mặt cầu, lan can", "visual": { "kind": "decorate" } },
-        { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+        { "name": "Đóng cọc", "build": { "part": "matdat", "look": "coc" } },
+        { "name": "Xây trụ cầu", "build": { "part": "nen", "look": "full", "band": [0, 50] } },
+        { "name": "Bắc dầm đá", "build": { "part": "nen", "look": "full", "band": [50, 100] } },
+        { "name": "Lát mặt cầu, lan can", "build": { "part": ["tuong", "trangtri"], "look": "full" } },
+        { "name": "Hoàn thiện", "build": { "part": ["nen", "cot", "khung", "mai", "tuong", "trangtri", "nuoc"], "look": "full" } }
       ]
     },
     {
@@ -128,11 +128,11 @@
       "size": "nho",
       "area": "cong",
       "stages": [
-        { "name": "Cắm mốc, đào móng", "visual": { "kind": "markers" } },
-        { "name": "Xây chân tường", "visual": { "kind": "foundation" } },
-        { "name": "Xây thân tường", "visual": { "kind": "build" } },
-        { "name": "Lợp mái tường, trổ hoa", "visual": { "kind": "roof" } },
-        { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+        { "name": "Cắm mốc, đào móng", "build": { "part": "matdat", "look": "coc" } },
+        { "name": "Xây chân tường", "build": { "part": "nen", "look": "full" } },
+        { "name": "Xây thân tường", "build": { "part": "tuong", "look": "full" } },
+        { "name": "Lợp mái tường, trổ hoa", "build": { "part": ["mai", "trangtri"], "look": "full" } },
+        { "name": "Hoàn thiện", "build": { "part": ["nen", "cot", "khung", "mai", "tuong", "trangtri", "nuoc"], "look": "full" } }
       ]
     },
     { "id": "gac_chuong", "name": "Gác chuông", "cost": 120000, "size": "vua", "area": "hai_gac", "template": "vua" },
@@ -144,11 +144,11 @@
       "size": "nho",
       "area": "san_giua",
       "stages": [
-        { "name": "Chọn đá", "visual": { "kind": "markers" } },
-        { "name": "Đục phôi", "visual": { "kind": "frame" } },
-        { "name": "Chạm khắc", "visual": { "kind": "build" } },
-        { "name": "Dựng bệ, đặt tượng", "visual": { "kind": "decorate" } },
-        { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+        { "name": "Chọn đá", "build": { "part": "matdat", "look": "dong" } },
+        { "name": "Đục phôi", "build": { "part": "nen", "look": "full" } },
+        { "name": "Chạm khắc", "build": { "part": "tuong", "look": "full" } },
+        { "name": "Dựng bệ, đặt tượng", "build": { "part": "trangtri", "look": "full" } },
+        { "name": "Hoàn thiện", "build": { "part": ["nen", "cot", "khung", "mai", "tuong", "trangtri", "nuoc"], "look": "full" } }
       ]
     },
     { "id": "chinh_dien", "name": "Chính điện & Tiền đường", "cost": 800000, "size": "lon", "area": "chinh_dien", "template": "lon" },
@@ -163,8 +163,8 @@
       "area": "bao_thap",
       "template": "thap_tang",
       "stagesBefore": [
-        { "name": "Đắp nền tháp", "visual": { "kind": "foundation" } },
-        { "name": "Xây bậc đá", "visual": { "kind": "foundation" } }
+        { "name": "Đắp nền tháp", "build": { "part": "nen", "look": "full", "band": [0, 50] } },
+        { "name": "Xây bậc đá", "build": { "part": "nen", "look": "full", "band": [50, 100] } }
       ]
     },
     { "id": "thap_tang_2", "name": "Bảo tháp – Tầng 2", "cost": 80000, "size": "nho", "area": "bao_thap", "template": "thap_tang" },
@@ -182,7 +182,7 @@
       "area": "bao_thap",
       "template": "thap_tang",
       "stagesAfter": [
-        { "name": "Đặt chóp tháp", "ritual": "Lễ đặt chóp tháp", "visual": { "kind": "finish" } }
+        { "name": "Đặt chóp tháp", "ritual": "Lễ đặt chóp tháp", "build": { "part": "trangtri", "look": "full", "band": [60, 100] } }
       ]
     }
   ]

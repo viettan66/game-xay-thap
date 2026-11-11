@@ -6,8 +6,8 @@ mỗi hạng mục qua nhiều giai đoạn thi công.
 Đặc tả đầy đủ: [SPEC.md](SPEC.md). Bản cũ "tháp 100 tầng" được lưu ở git tag `thap-100-tang` và file [SPEC_old.md](SPEC_old.md).
 
 > **Tiến độ:** đã xong **R1** (mô hình hạng mục và giai đoạn), **R2** (bản đồ chùa thật: ghép nền, phóng to bằng AI,
-> cắt từng công trình từ ảnh, lớp tiền cảnh, trang chỉnh khung cắt) và **R3a** (trang chia vùng `/tools/parts`, thử với Gác chuông).
-> Đang làm: R3 "xây từng mảnh" (mỗi lần có công, từng viên gạch, viên ngói, thanh gỗ bay vào đúng chỗ). Sau đó R4 camera và bố cục mới.
+> cắt từng công trình từ ảnh, lớp tiền cảnh, trang chỉnh khung cắt), **R3a** (trang chia vùng `/tools/parts`) và **R3b**
+> ("xây từng mảnh": mỗi lần có công, từng viên gạch, viên ngói, thanh gỗ bay vào đúng chỗ). Sắp tới: R3c trang thử có FPS, R4 camera và bố cục mới.
 > Chưa có nhân vật và trụ trì (giai đoạn 4), chưa kết nối TikTok (giai đoạn 6).
 
 ---
@@ -57,10 +57,28 @@ Trên trang trạng thái có nút **Mở overlay ↗** để xem nhanh.
 Trên overlay hiện có:
 - **Bản đồ quần thể chùa** (đồi, núi, trời, đường đá nối dài phía dưới). Mỗi hạng mục là một công trình cắt từ ảnh chùa hoàn chỉnh:
   - **đã xong:** hiện đầy đủ;
-  - **đang xây:** hiện mờ, nhấp nháy nhẹ (R3 sẽ thay bằng từng giai đoạn: cắm mốc, đào móng, dựng khung, lợp mái…);
+  - **đang xây:** **xây từng mảnh** (xem dưới);
   - **chưa xây:** chưa có, chỗ đó là đất trống. Riêng sân gạch chừa sẵn các ô đất đúng chỗ sẽ xây công trình.
-  - Bảo tháp: mỗi tầng một dải, tầng chưa xây thì chưa có.
-  - Xong giai đoạn thì công trình chớp sáng nhẹ, xong hạng mục thì chớp mạnh.
+  - Bảo tháp: mỗi tầng một dải, mảnh của tầng nào chỉ nằm trong dải tầng đó.
+- **Xây từng mảnh** (SPEC mục 7). Mỗi lần có quà, tim, bình luận được tính công:
+  - **Mảnh bay:** viên gạch, viên ngói, thanh gỗ, khối đá… bay vòng cung từ **đống vật liệu** cạnh công trình vào đúng chỗ,
+    nảy nhẹ, tung bụi.
+  - **Thứ tự đặt:** nền từng hàng từ dưới lên; cột từng cây từ chân lên; mái từ mép hiên lên nóc; trang trí rải dần;
+    nước lan từ mép bờ vào.
+  - **Công lẻ:** cộng dồn, đủ một mảnh mới đặt. Tim, bình luận chưa đủ một mảnh thì vật liệu bay ra đống, đống to dần.
+  - **Quà:** số mảnh tương ứng bay vào thành một đợt. Vùng vừa xây sáng viền vàng khoảng 3 giây, kèm nhãn nhỏ
+    `Lan vừa xây 85 khối đá` hoặc `+85 khối đá từ Lan`.
+  - **Tốc độ:** tối đa 20 mảnh/giây. Quà rất lớn thì mảnh bay theo cụm; giai đoạn bị vượt qua chỉ mất khoảng 1 giây.
+  - **Gỗ thô:** giai đoạn dựng cột, dựng khung hiện màu **gỗ thô**. Giai đoạn "sơn son", "hoàn thiện" thay dần bằng màu thật.
+  - **Giai đoạn mặt đất:**
+    - cắm mốc: **cọc và dây căng** hiện từng cái;
+    - đào móng, đào hồ: **đất lõm** từng mảng, **đống đất** cao dần;
+    - tập kết vật liệu: đống vật liệu to dần.
+  - **Giàn giáo tre** dựng quanh thân công trình, cao dần theo phần đã xây, tháo dần ở giai đoạn cuối.
+  - Xong giai đoạn thì công trình chớp sáng nhẹ, xong hạng mục thì chớp mạnh. Lễ (giai đoạn 5) sẽ bắt đầu đúng lúc
+    mảnh cuối đặt xong.
+  - **Mở lại overlay** (hoặc mất mạng) thì công trình hiện ngay đúng tiến độ: game không lưu từng mảnh, chỉ cần tiến độ giai đoạn.
+  - Chưa có âm thanh đặt gạch, lợp ngói (làm ở giai đoạn 5b) và chưa có dân phu khiêng (giai đoạn 4).
 - **Camera tạm:** bản đồ co vừa bề ngang, tự lia lên xuống để hạng mục đang xây nằm giữa màn hình (R4 làm camera đầy đủ:
   phóng to, toàn cảnh, lia giới thiệu). Hạng mục ở đỉnh bản đồ (bảo tháp, nhà tổ) bị banner che thì banner tự mờ đi.
 - Chưa dựng bản đồ (thiếu ảnh) thì overlay tự quay về vẽ tạm bằng hình khối có tên, không bị dừng.
@@ -224,20 +242,36 @@ Mở cửa sổ lệnh **tại thư mục dự án**: mở thư mục `game-xay-
 4. Chỗ nào máy chia chưa đúng (ví dụ chóp mái lẫn màu mái, vài vệt xanh "tường" ở mép): chọn vùng đúng, tô lại bằng cọ.
 5. Bấm **Lưu**. Ô chọn công trình đổi thành "Gác chuông – đã chỉnh tay". Tải lại trang: vẫn đúng như vừa lưu.
 
-**e) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
+**e) R3b: xây từng mảnh**
+1. Nhấp đúp `start-test.bat`, bấm **Mở overlay ↗**. Đặt cửa sổ overlay và trang trạng thái cạnh nhau.
+2. Bấm **Quà vừa (100 xu)** vài lần. Mỗi lần:
+   - một đợt mảnh bay từ đống vật liệu vào công trình đang xây;
+   - vùng vừa xây sáng viền vàng, có nhãn "… vừa xây … khối đá" (hoặc cọc mốc, mảng đất… tùy giai đoạn).
+3. Bấm **1.000 tim**: mảnh bay vào. Bấm **Comment** vài lần: chưa đủ một mảnh thì vật liệu bay ra đống, đống to dần.
+4. Bấm **Quà lớn (1.000 xu)** vài lần để qua nhiều giai đoạn, nhiều hạng mục:
+   - cọc và dây, đất đào;
+   - nền đá từng hàng, cột và khung màu gỗ thô, mái lợp từ mép hiên lên;
+   - giàn giáo cao dần, rồi tháo dần ở giai đoạn cuối;
+   - xong hạng mục thì công trình hiện đủ màu thật.
+5. Đang xây dở thì bấm **F5** trên overlay: công trình hiện ngay đúng như trước khi tải lại (không bay lại từ đầu).
+6. Vào **Chia vùng ↗**, tô lại một vùng của công trình đang xây, bấm **Lưu**: overlay tự tải lại vùng mới.
+7. Chọn **Phòng rất đông**, tốc độ **×10**, bấm **▶ Chạy**: mảnh bay dày nhưng overlay vẫn mượt.
+
+**f) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
 Lệnh này xóa dữ liệu thử và chạy một chuỗi sự kiện mẫu. Màn hình in từng giai đoạn, từng hạng mục vừa xong, kèm các bảng xếp hạng.
 
 ---
 
 ## 6. Chỉnh cấu hình
 
-Ba file được tạo tự động ở lần chạy đầu, từ bản mặc định trong `config\defaults\`:
+Các file sau được tạo tự động ở lần chạy đầu, từ bản mặc định trong `config\defaults\`:
 
 | File | Nội dung |
 |---|---|
 | `config\config.json` | Điểm quy đổi, trần ngày, giờ vàng, nhãn chữ trên overlay, danh hiệu, bố cục overlay… |
 | `config\project.json` | **Danh sách hạng mục** theo thứ tự xây, giá, các mẫu giai đoạn (mục 5 của SPEC) |
 | `config\events.json` | Lịch sự kiện dương lịch, âm lịch (Mùng 1, Rằm, Tết…) |
+| `config\dialogues.json` | Kho thoại (mục 9C). Hiện có nhóm `piece_burst`: nhãn nhỏ khi một đợt mảnh bay vào. Thêm câu tùy ý, giữ `{name}`, `{n}`, `{material}`; câu `verified: false` không hiện khi live thật |
 
 - Mở bằng Notepad để sửa, lưu lại rồi tắt và bật lại game. Từ giai đoạn 7, sửa trực tiếp trên trang admin.
 - Ghi sai thì game không chạy và báo rõ chỗ sai, ví dụ: `items: Hạng mục "tam_quan": không có mẫu giai đoạn "vuaa"`.
@@ -256,7 +290,21 @@ Mỗi hạng mục trong `items` có:
 | `template` hoặc `stages` | Dùng một mẫu giai đoạn có sẵn (`lon`, `vua`, `nho`, `thap_tang`) hoặc tự liệt kê giai đoạn riêng |
 | `stagesBefore`, `stagesAfter` | Giai đoạn thêm vào trước / sau mẫu (ví dụ tầng 1 bảo tháp thêm "Đắp nền tháp") |
 
-Mỗi giai đoạn có `name`, có thể có `ritual` (tên lễ, ví dụ "Lễ dựng cột") và `visual` (cách vẽ ở R3).
+Mỗi giai đoạn có `name`, có thể có `ritual` (tên lễ, ví dụ "Lễ dựng cột") và `build` (xây vùng nào, mục 7 SPEC):
+
+| Trong `build` | Ý nghĩa |
+|---|---|
+| `part` | Vùng được xây: `nen`, `cot`, `khung`, `mai`, `tuong`, `trangtri`, `nuoc`, hoặc danh sách vùng. `matdat` = giai đoạn chỉ tác động mặt đất |
+| `look` | `full` (màu thật) hoặc `wood` (gỗ thô). Với `matdat`: `coc` (cọc, dây), `dao` (đất đào), `dong` (đống vật liệu) |
+| `band` | `[từ, đến]` phần trăm chiều cao của vùng tính từ dưới lên, ví dụ nền `[0, 40]` rồi `[40, 80]` |
+
+Ví dụ: `"build": { "part": "cot", "look": "wood", "band": [15, 100] }` là dựng phần trên của cột bằng gỗ thô.
+
+Quy tắc chia mảnh:
+- Hai giai đoạn cùng xây một vùng: giai đoạn dải hẹp hơn được ưu tiên.
+- Giai đoạn ghi **đủ cả 7 vùng** nhận **phần còn lại** chưa xây (dùng cho "Hoàn thiện").
+- Xong hạng mục bao giờ cũng đủ hình.
+- Giai đoạn xây vùng mà công trình không có thì hiện đống vật liệu to dần, để vẫn có phản hồi nhìn thấy.
 
 Giá mặc định theo đơn vị 20.000 công:
 - nhỏ 2–3 đơn vị, vừa 6–8, Chính điện 40, mỗi tầng tháp 4;
@@ -274,6 +322,15 @@ Ví dụ đặt giờ vàng ×2 mỗi tối thứ Sáu 20:00–21:00 (0 = Chủ 
 ```json
 "goldenHour": { "multiplier": 2, "schedule": [ { "weekdays": [5], "from": "20:00", "to": "21:00" } ] }
 ```
+
+Mục `pieces` (xây từng mảnh):
+
+| Khóa | Mặc định | Ý nghĩa |
+|---|---|---|
+| `size` | nền 22×12, cột cao 14, khung dài 24, ngói 12×8, gạch 12×6, trang trí 10×10, nước 16×16 | Cỡ mảnh theo vùng (điểm ảnh bản đồ). Mảnh to hơn thì ít mảnh hơn |
+| `maxPerSec` | vắng 20, vừa 20, đông 14, rất đông 10 | Số mảnh bay tối đa mỗi giây (chế độ độ đông làm ở giai đoạn 4, hiện dùng mức "vừa") |
+| `materials` | "khối đá", "đoạn cột", "thanh gỗ", "viên ngói", "viên gạch"… | Tên vật liệu trong nhãn `{material}` |
+| `burstSec` | 3 | Vùng vừa xây sáng viền và nhãn hiện trong bao nhiêu giây |
 
 Chữ trên thanh tiến độ nằm ở `labels.progress` (đổi được câu chữ, giữ các chỗ `{...}`):
 
@@ -317,6 +374,7 @@ Riêng các khóa `floor1WidthPx`, `towerTaper`, `towerCenterX`, `towerBaseY` tr
 | `npm run assets:build` | (Tháp cũ) Cắt ảnh trụ trì, giao diện, bia… → `assets/game` + `assets/manifest.json` |
 | `npm run assets:upscale` | Phóng ×4 ba ảnh bản đồ bằng Real-ESRGAN → `assets/work/esrgan` |
 | `npm run assets:segment [mã…]` | Tách hình công trình bằng rembg theo `assets/map-cuts.json` → `assets/work/map/rembg` |
+| `npm run assets:nobg props` rồi `npm run assets:props` | Tách nền và cắt 18 ảnh đống vật liệu → `assets/game/props` + manifest |
 | `npm run assets:map` | Ghép nền, cắt công trình, tiền cảnh → `assets/game/map`, `buildings`, `fg` + phần `map` của manifest |
 | `node --import tsx scripts/slice-sheet.ts <sheet.png> <thư_mục> --names a,b --equal` | Cắt một sprite sheet nền trong suốt bất kỳ |
 

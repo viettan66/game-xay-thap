@@ -1,21 +1,19 @@
-// Bản đồ quần thể chùa (giai đoạn R2): nền ghép + công trình cắt từ ảnh + lớp tiền cảnh, lia dọc theo hạng mục đang xây.
-// Lớp từ sau ra trước (mục 8): nền → công trình nền (sân, hồ, tường) → công trình theo baseY → tiền cảnh.
-// Hiển thị TẠM: hạng mục đã xong hiện đủ, đang xây hiện mờ nhấp nháy, chưa xây thì ẩn. R3 thay bằng từng giai đoạn
-// (markers, foundation, frame…), R4 làm camera đầy đủ. Thiếu ảnh nào thì bỏ qua, không crash.
+// Bản đồ quần thể chùa: nền ghép + công trình cắt từ ảnh + lớp tiền cảnh, lia dọc theo hạng mục đang xây.
+// Lớp từ sau ra trước (mục 8): nền → công trình nền (sân, hồ, tường) → công trình theo baseY → tiền cảnh → hiệu ứng.
+// Hạng mục đã xong hiện đủ ảnh; hạng mục đang xây được XÂY TỪNG MẢNH (build/builder.ts, mục 7); chưa xây thì ẩn.
+// R4 làm camera đầy đủ. Thiếu ảnh nào thì bỏ qua, không crash.
 
-import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Container, Rectangle, Sprite, Texture, type Renderer } from 'pixi.js';
 import { drawOrder, floorBand, itemRect, textureKey, type MapBuilding, type MapManifest } from '../../../shared/map.js';
-import type { ProgressView } from '../../../shared/protocol.js';
+import type { PiecesConfig, ProgressView, ServerMessage } from '../../../shared/protocol.js';
 import type { Art } from '../art.js';
+import { Builder, type BuildSite } from '../build/builder.js';
 import { lerpCamera } from '../layout.js';
-import { lookAlpha, mapCamera, type ItemLook, type ViewBand } from '../mapLayout.js';
+import { mapCamera, type ViewBand } from '../mapLayout.js';
 
 interface Piece {
   itemId: string;
   sprite: Sprite;
-  flash: Sprite;
-  look: ItemLook;
-  flashAlpha: number;
 }
 
 export class MapView {
@@ -24,15 +22,29 @@ export class MapView {
   private readonly tiles = new Container();
   private readonly buildings = new Container();
   private readonly fg = new Container();
+  private readonly builder: Builder;
   private map: MapManifest | null = null;
   private pieces: Piece[] = [];
   private progress: ProgressView | null = null;
   private camY = 0;
   private hasCam = false;
-  private pulse = 0;
+  /** Gọi khi mảnh cuối của một giai đoạn đã đặt xong (sau này mở lễ, giai đoạn 5). */
+  onStageDone: (itemId: string, stageIndex: number, itemDone: boolean) => void = () => {};
 
-  constructor(private view: ViewBand) {
-    this.world.addChild(this.tiles, this.buildings, this.fg);
+  constructor(
+    private view: ViewBand,
+    renderer: Renderer,
+  ) {
+    this.builder = new Builder(
+      renderer,
+      {
+        onDisplay: () => this.refreshVisibility(),
+        onStageDone: (itemId, stage, itemDone) => this.onStageDone(itemId, stage, itemDone),
+        attach: (site) => this.attach(site),
+      },
+      () => this.world.scale.x,
+    );
+    this.world.addChild(this.tiles, this.buildings, this.fg, this.builder.fxLayer);
     this.container.addChild(this.world);
   }
 
@@ -49,6 +61,7 @@ export class MapView {
     this.pieces = [];
     this.map = art.manifest?.map ?? null;
     const map = this.map;
+    this.builder.setArt(map, art);
     if (!map) return;
     const tex = (file: string) => art.textures.get(textureKey(file)) ?? null;
     for (const t of map.tiles) {
@@ -68,25 +81,20 @@ export class MapView {
       if (!b.fg) continue;
       const t = tex(b.fg.file);
       if (!t) continue;
-      // Tiền cảnh gần giống hệt nền nên luôn hiện: cây vẫn đứng trước công trình, giàn giáo và nhân vật sau này.
+      // Tiền cảnh gần giống hệt nền nên luôn hiện: cây vẫn đứng trước công trình, giàn giáo và mảnh bay.
       const s = new Sprite(t);
       s.position.set(b.fg.x, b.fg.y);
       this.fg.addChild(s);
     }
-    if (this.progress) this.update(this.progress);
+    this.refreshVisibility();
   }
 
   private addPiece(itemId: string, texture: Texture, x: number, y: number): void {
     const sprite = new Sprite(texture);
     sprite.position.set(x, y);
     sprite.visible = false;
-    // Bản sao cộng sáng để chớp khi xong giai đoạn / hạng mục.
-    const flash = new Sprite(texture);
-    flash.position.set(x, y);
-    flash.blendMode = 'add';
-    flash.alpha = 0;
-    this.buildings.addChild(sprite, flash);
-    this.pieces.push({ itemId, sprite, flash, look: 'todo', flashAlpha: 0 });
+    this.buildings.addChild(sprite);
+    this.pieces.push({ itemId, sprite });
   }
 
   /** Bảo tháp: mỗi tầng một dải cắt ra từ cùng một ảnh. */
@@ -99,40 +107,51 @@ export class MapView {
     });
   }
 
-  update(p: ProgressView): void {
-    this.progress = p;
-    const status = new Map(p.items.map((i) => [i.id, i.status]));
-    for (const piece of this.pieces) {
-      const s = status.get(piece.itemId);
-      piece.look = s === 'done' ? 'done' : s === 'building' ? 'building' : 'todo';
-    }
+  /** Gắn công trường ngay sau ảnh của hạng mục đó, để giữ đúng thứ tự trước sau với công trình khác. */
+  private attach(site: BuildSite): void {
+    const piece = this.pieces.find((p) => p.itemId === site.target.itemId);
+    const idx = piece ? this.buildings.getChildIndex(piece.sprite) + 1 : this.buildings.children.length;
+    this.buildings.addChildAt(site.container, idx);
+    this.refreshVisibility();
   }
 
-  /** Khung hạng mục đang xây trên màn hình (để giao diện tự mờ đi khi che nó). */
+  /** Hạng mục đã hiện xong: đủ ảnh; hạng mục đang xây: công trường (ẩn ảnh đủ); hạng mục sau: ẩn. */
+  private refreshVisibility(): void {
+    const p = this.progress;
+    if (!p) return;
+    const done = this.builder.doneCount();
+    p.items.forEach((it, i) => {
+      const finished = done >= 0 ? i < done : it.status === 'done';
+      for (const piece of this.pieces) if (piece.itemId === it.id) piece.sprite.visible = finished;
+    });
+  }
+
+  update(p: ProgressView): void {
+    const first = !this.progress;
+    this.progress = p;
+    this.builder.setProgress(p);
+    if (first) this.refreshVisibility();
+  }
+
+  contribution(msg: Extract<ServerMessage, { type: 'contribution' }>): void {
+    this.builder.onContribution(msg);
+  }
+
+  /** Khung hạng mục đang hiện trên màn hình (để giao diện tự mờ đi khi che nó). */
   focusOnScreen(): { x: number; y: number; w: number; h: number } | null {
     if (!this.map || !this.progress) return null;
-    const r = itemRect(this.map, this.progress.item.id);
+    const r = itemRect(this.map, this.builder.displayItemId ?? this.progress.item.id);
     if (!r) return null;
     const k = this.world.scale.x;
     return { x: this.world.x + r.x * k, y: this.world.y + r.y * k, w: r.w * k, h: r.h * k };
   }
 
-  flash(itemId: string, strength: number): void {
-    for (const p of this.pieces) if (p.itemId === itemId) p.flashAlpha = Math.max(p.flashAlpha, strength);
-  }
-
-  tick(dtSec: number): void {
+  tick(dtSec: number, pieces: PiecesConfig, texts: string[]): void {
     const map = this.map;
     if (!map) return;
-    this.pulse += dtSec;
-    for (const p of this.pieces) {
-      const a = lookAlpha(p.look, this.pulse);
-      p.sprite.visible = a > 0;
-      p.sprite.alpha = a;
-      if (p.flashAlpha > 0) p.flashAlpha = Math.max(0, p.flashAlpha - dtSec * 1.2);
-      p.flash.alpha = p.look === 'todo' ? 0 : p.flashAlpha * 0.6;
-    }
-    const focus = this.progress ? itemRect(map, this.progress.item.id) : null;
+    this.builder.tick(dtSec, pieces, texts);
+    const focusId = this.builder.displayItemId ?? this.progress?.item.id;
+    const focus = focusId ? itemRect(map, focusId) : null;
     const cam = mapCamera(map, focus, this.view);
     // Lần đầu mở overlay thì đặt camera đúng chỗ ngay, không lia từ đầu bản đồ.
     this.camY = this.hasCam ? lerpCamera(this.camY, cam.y, dtSec, 1.5) : cam.y;

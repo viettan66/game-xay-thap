@@ -51,7 +51,7 @@ async function boot(): Promise<void> {
 
   // Lớp từ sau ra trước: công trường (hình khối tạm) → giao diện → debug.
   const site = new SiteView(uiRects({ top: 180, bottom: 600, right: 150 }).site);
-  const mapView = new MapView(mapViewBand({ top: 180, bottom: 600, right: 150 }));
+  const mapView = new MapView(mapViewBand({ top: 180, bottom: 600, right: 150 }), app.renderer);
   const uiLayer = new Container();
   const safeDebug = new SafeAreaDebug();
   const dot = new ConnectionDot(STAGE_W - 170, 200);
@@ -125,13 +125,12 @@ async function boot(): Promise<void> {
 
   const onMessage = (m: ServerMessage) => {
     if (m.type === 'state') apply(m.state);
-    else if (m.type === 'progress') {
+    else if (m.type === 'contribution') mapView.contribution(m);
+    else if (m.type === 'progress' && !mapView.ready) {
+      // Hình khối tạm (chưa có bản đồ): chớp sáng ngay. Trên bản đồ thì chớp khi mảnh cuối của giai đoạn đã đặt xong.
       for (const t of m.transitions) {
         const strength = t.type === 'item_complete' ? 0.9 : t.type === 'stage_complete' ? 0.45 : 0;
-        if (strength > 0 && 'itemId' in t) {
-          site.flash(t.itemId, strength);
-          mapView.flash(t.itemId, strength);
-        }
+        if (strength > 0 && 'itemId' in t) site.flash(t.itemId, strength);
       }
     }
   };
@@ -147,7 +146,7 @@ async function boot(): Promise<void> {
   app.ticker.add((t) => {
     if (!state) return;
     const dt = Math.min(0.1, t.deltaMS / 1000);
-    if (mapView.ready) mapView.tick(dt);
+    if (mapView.ready) mapView.tick(dt, state.pieces, state.texts.pieceBurst);
     else site.tick(dt);
     // Tạm cho R2 (R4 làm bố cục mới): banner hoặc bảng che hạng mục đang xây thì mờ đi để vẫn thấy công trình.
     const focus = mapView.ready ? mapView.focusOnScreen() : null;

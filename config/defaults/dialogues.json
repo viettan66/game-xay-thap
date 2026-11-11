@@ -1,0 +1,25 @@
+{
+  "_ghi_chu": "Kho thoại (SPEC mục 9C). Mỗi nhóm có danh sách câu không giới hạn. Các nhóm thoại trụ trì làm ở giai đoạn 4.",
+  "groups": {
+    "piece_burst": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {
+          "text": "{name} vừa xây {n} {material}",
+          "tiers": [],
+          "weight": 1,
+          "enabled": true,
+          "verified": true
+        },
+        {
+          "text": "+{n} {material} từ {name}",
+          "tiers": [],
+          "weight": 1,
+          "enabled": true,
+          "verified": true
+        }
+      ]
+    }
+  }
+}

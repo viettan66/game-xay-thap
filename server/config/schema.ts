@@ -2,7 +2,8 @@
 // Các giai đoạn sau sẽ bổ sung khóa mới; giá trị mặc định nằm trong config/defaults/.
 
 import { z } from 'zod';
-import { ITEM_SIZES, projectProblems, VISUAL_KINDS, type ProjectFile } from '../../shared/project.js';
+import { GROUND_LOOKS, ITEM_SIZES, PIECE_LOOKS, projectProblems, type ProjectFile } from '../../shared/project.js';
+import { PART_KEYS } from '../../shared/parts.js';
 
 z.config(z.locales.vi());
 
@@ -51,6 +52,13 @@ export const configSchema = z.strictObject({
     towerCenterX: int(0).max(1080),
     towerBaseY: int(0).max(1920),
     boardRotateSec: z.number().min(3).max(300),
+  }),
+  // Xây từng mảnh (mục 7): cỡ mảnh theo vùng, tốc độ theo chế độ độ đông, tên vật liệu trong nhãn piece_burst.
+  pieces: z.strictObject({
+    size: z.strictObject(Object.fromEntries(PART_KEYS.map((k) => [k, z.tuple([int(0).max(200), int(1).max(200)])])) as Record<(typeof PART_KEYS)[number], z.ZodTuple<[z.ZodNumber, z.ZodNumber]>>),
+    maxPerSec: z.strictObject({ vang: z.number().min(1).max(120), vua: z.number().min(1).max(120), dong: z.number().min(1).max(120), ratdong: z.number().min(1).max(120) }),
+    materials: z.strictObject(Object.fromEntries([...PART_KEYS, 'coc', 'dao', 'dong'].map((k) => [k, z.string().min(1)])) as Record<string, z.ZodString>),
+    burstSec: z.number().min(0.5).max(20),
   }),
   titles: z.array(z.strictObject({ minPoints: int(0), label: z.string().min(1) })).min(1),
   labels: z.strictObject({
@@ -108,6 +116,31 @@ export const eventsFileSchema = z
 
 export type EventsFile = z.infer<typeof eventsFileSchema>;
 
+// ---- config/dialogues.json: kho thoại (mục 9C) ----
+
+const TIERS = ['vang', 'vua', 'dong', 'ratdong'] as const;
+export const dialoguesFileSchema = z.strictObject({
+  _ghi_chu: z.string().optional(),
+  groups: z.record(
+    z.string().regex(/^[a-z0-9_]+$/, 'Tên nhóm chỉ gồm chữ thường không dấu, số và dấu _'),
+    z.strictObject({
+      mode: z.enum(['shuffle', 'sequential', 'random']),
+      cooldownSec: z.number().min(0),
+      lines: z.array(
+        z.strictObject({
+          text: z.string().min(1),
+          tiers: z.array(z.enum(TIERS)),
+          weight: z.number().positive(),
+          enabled: z.boolean(),
+          verified: z.boolean(),
+        }),
+      ),
+    }),
+  ),
+});
+
+export type DialoguesFile = z.infer<typeof dialoguesFileSchema>;
+
 // ---- config/project.json: danh sách hạng mục, mẫu giai đoạn, giá (mục 5) ----
 
 const slug = (what: string) => z.string().regex(/^[a-z0-9_]+$/, `${what} chỉ gồm chữ thường không dấu, số và dấu _`);
@@ -116,7 +149,14 @@ const stageDefSchema = z.strictObject({
   name: z.string().min(1),
   weight: z.number().positive().optional(),
   ritual: z.string().min(1).optional(),
-  visual: z.strictObject({ kind: z.enum(VISUAL_KINDS) }).optional(),
+  // Xây từng mảnh (mục 5, 7): vùng nào, hiện ra sao, dải chiều cao nào. Kết hợp sai được projectProblems báo.
+  build: z
+    .strictObject({
+      part: z.union([z.enum(PART_KEYS), z.literal('matdat'), z.array(z.enum(PART_KEYS)).min(1)]),
+      look: z.enum([...PIECE_LOOKS, ...GROUND_LOOKS]),
+      band: z.tuple([z.number(), z.number()]).optional(),
+    })
+    .optional(),
 });
 
 const itemDefSchema = z.strictObject({

@@ -102,6 +102,25 @@ describe('kiểm tra project.json', () => {
   });
 });
 
+describe('cách xây từng mảnh của giai đoạn (build, mục 5)', () => {
+  const withBuild = (build: unknown): ProjectFile => ({
+    ...SMALL,
+    items: [{ ...SMALL.items[0]!, template: undefined, stages: [{ name: 'A', build: build as never }] }],
+  });
+
+  it('báo lỗi khi kết hợp sai', () => {
+    expect(projectProblems(withBuild({ part: 'matdat', look: 'full' }))[0]).toMatch(/giai đoạn mặt đất \(matdat\) cần look là coc \/ dao \/ dong/);
+    expect(projectProblems(withBuild({ part: 'mai', look: 'dao' }))[0]).toMatch(/cần look là full hoặc wood/);
+    expect(projectProblems(withBuild({ part: 'mai', look: 'full', band: [60, 40] }))[0]).toMatch(/band/);
+    expect(projectProblems(withBuild({ part: ['cot', 'khung'], look: 'full', band: [0, 50] }))).toEqual([]);
+  });
+
+  it('không khai báo build thì xây mọi phần còn lại bằng màu thật', () => {
+    const p = resolveProject({ ...SMALL, items: [{ ...SMALL.items[0]!, template: undefined, stages: [{ name: 'A' }] }] });
+    expect(p.items[0]!.stages[0]!.build).toEqual({ parts: ['nen', 'cot', 'khung', 'mai', 'tuong', 'trangtri', 'nuoc'], look: 'full', band: [0, 100] });
+  });
+});
+
 describe('cộng điểm (mục 5, 14.4)', () => {
   it('bắt đầu ở hạng mục đầu tiên, giai đoạn đầu tiên', () => {
     expect(start).toEqual({ itemId: 'cong', stageIndex: 0, stagePoints: 0, stageCost: 100, completed: false });
@@ -110,7 +129,7 @@ describe('cộng điểm (mục 5, 14.4)', () => {
   it('cộng trong một giai đoạn', () => {
     const r = applyPoints(start, 40, small);
     expect(r.state).toMatchObject({ itemId: 'cong', stageIndex: 0, stagePoints: 40 });
-    expect(r.allocations).toEqual([{ itemId: 'cong', stageIndex: 0, points: 40 }]);
+    expect(r.allocations).toEqual([{ itemId: 'cong', stageIndex: 0, points: 40, from: 0, cost: 100 }]);
     expect(r.transitions).toEqual([]);
   });
 
@@ -119,10 +138,10 @@ describe('cộng điểm (mục 5, 14.4)', () => {
     // Cổng: 40 vào A, 100 vào B, 100 vào C → xong; Gác: 60 vào X (giá 150)
     expect(r.state).toEqual({ itemId: 'gac', stageIndex: 0, stagePoints: 60, stageCost: 150, completed: false });
     expect(r.allocations).toEqual([
-      { itemId: 'cong', stageIndex: 0, points: 40 },
-      { itemId: 'cong', stageIndex: 1, points: 100 },
-      { itemId: 'cong', stageIndex: 2, points: 100 },
-      { itemId: 'gac', stageIndex: 0, points: 60 },
+      { itemId: 'cong', stageIndex: 0, points: 40, from: 60, cost: 100 },
+      { itemId: 'cong', stageIndex: 1, points: 100, from: 0, cost: 100 },
+      { itemId: 'cong', stageIndex: 2, points: 100, from: 0, cost: 100 },
+      { itemId: 'gac', stageIndex: 0, points: 60, from: 0, cost: 150 },
     ]);
     expect(r.transitions).toEqual([
       { type: 'stage_complete', itemId: 'cong', stageIndex: 0, ritual: null },
@@ -190,7 +209,7 @@ describe('đổi giá giai đoạn đang xây (14.10)', () => {
     const r = repriceCurrentStage(at60, 40, small);
     expect(r.state).toMatchObject({ itemId: 'cong', stageIndex: 1, stagePoints: 20, stageCost: 100 });
     expect(r.transitions[0]).toEqual({ type: 'stage_complete', itemId: 'cong', stageIndex: 0, ritual: null });
-    expect(r.allocations).toEqual([{ itemId: 'cong', stageIndex: 1, points: 20 }]);
+    expect(r.allocations).toEqual([{ itemId: 'cong', stageIndex: 1, points: 20, from: 0, cost: 100 }]);
   });
 
   it('công trình đã xong thì không đổi gì', () => {

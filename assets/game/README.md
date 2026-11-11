@@ -8,7 +8,10 @@ Bản đồ quần thể chùa (giai đoạn R2), tạo bằng `npm run assets:u
   cùng hệ tọa độ, chỉ để so khớp trên trang /tools/assets.
 - `buildings/<mã>/final.png`: từng công trình cắt từ ảnh chùa hoàn chỉnh. Sau này thêm `key_<n>.png`, `stage_<k>.png` (R3).
 - `fg/<mã>.png`: cây, cành đứng trước công trình, vẽ đè lên trên.
+- `buildings/<mã>/parts/<vùng>.png` + `parts.json`: vùng xây từng mảnh (máy đề xuất khi chạy assets:map, chỉnh tay trên /tools/parts).
 - Khung cắt nằm ở `assets/map-cuts.json`, chỉnh trên trang http://127.0.0.1:3000/tools/assets.
+- `props/<loại>_<mức>.png`: đống vật liệu (gạch, gỗ, ngói, đá – lớn/vừa/nhỏ; cát, giá cưa, ròng rọc, thang tre, quang gánh, xe cút kít),
+  tạo bằng `npm run assets:nobg props` rồi `npm run assets:props`.
 
 Phần của bản tháp cũ (giai đoạn 3; trụ trì, giao diện, bia vẫn dùng), tạo bằng `npm run assets:nobg` rồi `npm run assets:build`:
 - `abbot/`, `ui/`, `items/`, `stele/`, `chars/`, `tower/`, `bg/`. `bg/variants/`: các bản nền tháp A / B / B2 (chờ dọn sau R4).

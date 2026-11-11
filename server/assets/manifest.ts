@@ -6,6 +6,7 @@ import path from 'node:path';
 import { z } from 'zod';
 import type { BackgroundVariant, Manifest } from '../../shared/manifest.js';
 import { formatZodError } from '../config/schema.js';
+import { PART_KEYS } from '../../shared/parts.js';
 
 const point = z.strictObject({ x: z.number(), y: z.number() });
 const entry = z.strictObject({
@@ -43,6 +44,10 @@ const mapSchema = z.strictObject({
       baseY: z.number(),
       fg: z.strictObject({ file: mapFile('png'), ...rect }).nullable(),
       tierLinesY: z.array(z.number()).optional(),
+      parts: z
+        .strictObject({ keys: z.array(z.enum(PART_KEYS)), ...rect, source: z.enum(['auto', 'edited']) })
+        .nullable()
+        .optional(),
     }),
   ),
 });

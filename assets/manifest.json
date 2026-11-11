@@ -298,6 +298,168 @@
         "y": 64
       }
     },
+    "props/cat": {
+      "file": "props/cat.png",
+      "w": 267,
+      "h": 145,
+      "anchor": {
+        "x": 134,
+        "y": 145
+      }
+    },
+    "props/da_lon": {
+      "file": "props/da_lon.png",
+      "w": 376,
+      "h": 194,
+      "anchor": {
+        "x": 188,
+        "y": 194
+      }
+    },
+    "props/da_nho": {
+      "file": "props/da_nho.png",
+      "w": 153,
+      "h": 89,
+      "anchor": {
+        "x": 77,
+        "y": 89
+      }
+    },
+    "props/da_vua": {
+      "file": "props/da_vua.png",
+      "w": 238,
+      "h": 134,
+      "anchor": {
+        "x": 119,
+        "y": 134
+      }
+    },
+    "props/gach_lon": {
+      "file": "props/gach_lon.png",
+      "w": 348,
+      "h": 186,
+      "anchor": {
+        "x": 174,
+        "y": 186
+      }
+    },
+    "props/gach_nho": {
+      "file": "props/gach_nho.png",
+      "w": 154,
+      "h": 92,
+      "anchor": {
+        "x": 77,
+        "y": 92
+      }
+    },
+    "props/gach_vua": {
+      "file": "props/gach_vua.png",
+      "w": 243,
+      "h": 137,
+      "anchor": {
+        "x": 122,
+        "y": 137
+      }
+    },
+    "props/gia_cua": {
+      "file": "props/gia_cua.png",
+      "w": 215,
+      "h": 194,
+      "anchor": {
+        "x": 108,
+        "y": 194
+      }
+    },
+    "props/go_lon": {
+      "file": "props/go_lon.png",
+      "w": 378,
+      "h": 195,
+      "anchor": {
+        "x": 189,
+        "y": 195
+      }
+    },
+    "props/go_nho": {
+      "file": "props/go_nho.png",
+      "w": 178,
+      "h": 100,
+      "anchor": {
+        "x": 89,
+        "y": 100
+      }
+    },
+    "props/go_vua": {
+      "file": "props/go_vua.png",
+      "w": 265,
+      "h": 143,
+      "anchor": {
+        "x": 133,
+        "y": 143
+      }
+    },
+    "props/ngoi_lon": {
+      "file": "props/ngoi_lon.png",
+      "w": 343,
+      "h": 189,
+      "anchor": {
+        "x": 172,
+        "y": 189
+      }
+    },
+    "props/ngoi_nho": {
+      "file": "props/ngoi_nho.png",
+      "w": 177,
+      "h": 96,
+      "anchor": {
+        "x": 89,
+        "y": 96
+      }
+    },
+    "props/ngoi_vua": {
+      "file": "props/ngoi_vua.png",
+      "w": 253,
+      "h": 136,
+      "anchor": {
+        "x": 127,
+        "y": 136
+      }
+    },
+    "props/quang_ganh": {
+      "file": "props/quang_ganh.png",
+      "w": 250,
+      "h": 150,
+      "anchor": {
+        "x": 125,
+        "y": 150
+      }
+    },
+    "props/rong_roc": {
+      "file": "props/rong_roc.png",
+      "w": 209,
+      "h": 253,
+      "anchor": {
+        "x": 105,
+        "y": 253
+      }
+    },
+    "props/thang_tre": {
+      "file": "props/thang_tre.png",
+      "w": 126,
+      "h": 239,
+      "anchor": {
+        "x": 63,
+        "y": 239
+      }
+    },
+    "props/xe_cut_kit": {
+      "file": "props/xe_cut_kit.png",
+      "w": 250,
+      "h": 196,
+      "anchor": {
+        "x": 125,
+        "y": 196
+      }
+    },
     "stele/stele": {
       "file": "stele/stele.png",
       "w": 822,
@@ -652,7 +814,23 @@
           366,
           311,
           257
-        ]
+        ],
+        "parts": {
+          "keys": [
+            "nen",
+            "cot",
+            "khung",
+            "mai",
+            "tuong",
+            "trangtri",
+            "nuoc"
+          ],
+          "x": 448,
+          "y": 257,
+          "w": 247,
+          "h": 489,
+          "source": "auto"
+        }
       },
       {
         "id": "nha_to",
@@ -666,7 +844,23 @@
         "w": 308,
         "h": 179,
         "baseY": 758,
-        "fg": null
+        "fg": null,
+        "parts": {
+          "keys": [
+            "nen",
+            "cot",
+            "khung",
+            "mai",
+            "tuong",
+            "trangtri",
+            "nuoc"
+          ],
+          "x": 912,
+          "y": 580,
+          "w": 308,
+          "h": 179,
+          "source": "auto"
+        }
       },
       {
         "id": "chinh_dien",
@@ -680,7 +874,22 @@
         "w": 761,
         "h": 530,
         "baseY": 1293,
-        "fg": null
+        "fg": null,
+        "parts": {
+          "keys": [
+            "nen",
+            "cot",
+            "khung",
+            "mai",
+            "tuong",
+            "trangtri"
+          ],
+          "x": 470,
+          "y": 763,
+          "w": 761,
+          "h": 530,
+          "source": "auto"
+        }
       },
       {
         "id": "hanh_lang_tay",
@@ -694,7 +903,22 @@
         "w": 343,
         "h": 478,
         "baseY": 1359,
-        "fg": null
+        "fg": null,
+        "parts": {
+          "keys": [
+            "nen",
+            "cot",
+            "khung",
+            "mai",
+            "tuong",
+            "trangtri"
+          ],
+          "x": 69,
+          "y": 881,
+          "w": 343,
+          "h": 478,
+          "source": "auto"
+        }
       },
       {
         "id": "hanh_lang_dong",
@@ -708,7 +932,22 @@
         "w": 348,
         "h": 497,
         "baseY": 1377,
-        "fg": null
+        "fg": null,
+        "parts": {
+          "keys": [
+            "nen",
+            "cot",
+            "khung",
+            "mai",
+            "tuong",
+            "trangtri"
+          ],
+          "x": 1281,
+          "y": 881,
+          "w": 348,
+          "h": 497,
+          "source": "auto"
+        }
       },
       {
         "id": "gac_chuong",
@@ -722,7 +961,22 @@
         "w": 297,
         "h": 433,
         "baseY": 1781,
-        "fg": null
+        "fg": null,
+        "parts": {
+          "keys": [
+            "nen",
+            "cot",
+            "khung",
+            "mai",
+            "tuong",
+            "trangtri"
+          ],
+          "x": 174,
+          "y": 1349,
+          "w": 297,
+          "h": 433,
+          "source": "auto"
+        }
       },
       {
         "id": "gac_trong",
@@ -736,7 +990,22 @@
         "w": 296,
         "h": 433,
         "baseY": 1781,
-        "fg": null
+        "fg": null,
+        "parts": {
+          "keys": [
+            "nen",
+            "cot",
+            "khung",
+            "mai",
+            "tuong",
+            "trangtri"
+          ],
+          "x": 1234,
+          "y": 1349,
+          "w": 296,
+          "h": 433,
+          "source": "auto"
+        }
       },
       {
         "id": "su_tu_da",
@@ -750,7 +1019,22 @@
         "w": 682,
         "h": 191,
         "baseY": 1750,
-        "fg": null
+        "fg": null,
+        "parts": {
+          "keys": [
+            "nen",
+            "cot",
+            "khung",
+            "mai",
+            "tuong",
+            "trangtri"
+          ],
+          "x": 514,
+          "y": 1560,
+          "w": 682,
+          "h": 191,
+          "source": "auto"
+        }
       },
       {
         "id": "be_bo_de",
@@ -770,6 +1054,21 @@
           "y": 1577,
           "w": 45,
           "h": 38
+        },
+        "parts": {
+          "keys": [
+            "nen",
+            "cot",
+            "khung",
+            "mai",
+            "tuong",
+            "trangtri"
+          ],
+          "x": 716,
+          "y": 1542,
+          "w": 280,
+          "h": 152,
+          "source": "auto"
         }
       },
       {
@@ -784,7 +1083,22 @@
         "w": 820,
         "h": 533,
         "baseY": 2233,
-        "fg": null
+        "fg": null,
+        "parts": {
+          "keys": [
+            "nen",
+            "cot",
+            "khung",
+            "mai",
+            "tuong",
+            "trangtri"
+          ],
+          "x": 451,
+          "y": 1700,
+          "w": 820,
+          "h": 533,
+          "source": "auto"
+        }
       },
       {
         "id": "cau_da",
@@ -793,12 +1107,27 @@
         ],
         "layer": "object",
         "file": "buildings/cau_da/final.png",
-        "x": 521,
-        "y": 2220,
-        "w": 508,
-        "h": 250,
-        "baseY": 2468,
-        "fg": null
+        "x": 503,
+        "y": 2177,
+        "w": 713,
+        "h": 295,
+        "baseY": 2472,
+        "fg": null,
+        "parts": {
+          "keys": [
+            "nen",
+            "cot",
+            "khung",
+            "mai",
+            "tuong",
+            "trangtri"
+          ],
+          "x": 503,
+          "y": 2177,
+          "w": 713,
+          "h": 295,
+          "source": "auto"
+        }
       },
       {
         "id": "ho_sen",
@@ -812,7 +1141,20 @@
         "w": 1728,
         "h": 295,
         "baseY": 2483,
-        "fg": null
+        "fg": null,
+        "parts": {
+          "keys": [
+            "nen",
+            "mai",
+            "trangtri",
+            "nuoc"
+          ],
+          "x": 0,
+          "y": 2188,
+          "w": 1728,
+          "h": 295,
+          "source": "auto"
+        }
       },
       {
         "id": "tuong_bao",
@@ -826,7 +1168,19 @@
         "w": 1728,
         "h": 1434,
         "baseY": 2152,
-        "fg": null
+        "fg": null,
+        "parts": {
+          "keys": [
+            "nen",
+            "mai",
+            "tuong"
+          ],
+          "x": 0,
+          "y": 719,
+          "w": 1728,
+          "h": 1434,
+          "source": "auto"
+        }
       },
       {
         "id": "san_gach",
@@ -840,7 +1194,18 @@
         "w": 1596,
         "h": 1035,
         "baseY": 1976,
-        "fg": null
+        "fg": null,
+        "parts": {
+          "keys": [
+            "nen",
+            "mai"
+          ],
+          "x": 66,
+          "y": 945,
+          "w": 1596,
+          "h": 1035,
+          "source": "auto"
+        }
       },
       {
         "id": "san_nen",
@@ -854,7 +1219,18 @@
         "w": 1728,
         "h": 1957,
         "baseY": 2507,
-        "fg": null
+        "fg": null,
+        "parts": {
+          "keys": [
+            "nen",
+            "mai"
+          ],
+          "x": 0,
+          "y": 550,
+          "w": 1728,
+          "h": 1957,
+          "source": "auto"
+        }
       }
     ]
   }

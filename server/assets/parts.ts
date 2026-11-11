@@ -7,11 +7,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
-import type { MapBuilding } from '../../shared/map.js';
+import type { MapBuilding, MapParts } from '../../shared/map.js';
 import { PART_KEYS, partIndex, partKeyOf, type PartKey } from '../../shared/parts.js';
 import { boxBlur, close, components, dilate, fillHoles, open } from './mask.js';
-import { KIND_APRON, KIND_GROUND, KIND_HOLE } from './mapCut.js';
-import { gameAssetsDir } from './manifest.js';
+import { KIND_APRON, KIND_GROUND, KIND_HOLE } from './kinds.js';
+import { gameAssetsDir, loadManifest, saveManifest } from './manifest.js';
 
 const NEN = partIndex('nen');
 const COT = partIndex('cot');
@@ -370,4 +370,28 @@ export async function partsForEditing(root: string, b: MapBuilding): Promise<{ l
 export async function proposeForBuilding(root: string, b: MapBuilding): Promise<Uint8Array> {
   const { rgba, kinds } = await readBuildingPixels(root, b);
   return proposeParts({ id: b.id, layer: b.layer, w: b.w, h: b.h, rgba, kinds });
+}
+
+/** Thông tin vùng ghi vào manifest: các vùng có ảnh mặt nạ và vị trí mặt nạ trên bản đồ. */
+export function manifestParts(root: string, id: string): MapParts | null {
+  const meta = readPartsMeta(root, id);
+  if (!meta) return null;
+  const keys = PART_KEYS.filter((k) => fs.existsSync(path.join(partsDir(root, id), `${k}.png`)));
+  return { keys, x: meta.x, y: meta.y, w: meta.w, h: meta.h, source: meta.source };
+}
+
+/** Khi dựng bản đồ: công trình chưa chia vùng, hoặc vùng do máy đề xuất, thì đề xuất lại theo ảnh mới. */
+export async function ensureParts(root: string, b: MapBuilding): Promise<MapParts | null> {
+  const meta = readPartsMeta(root, b.id);
+  if (!meta || meta.source === 'auto') await saveParts(root, b, await proposeForBuilding(root, b), 'auto');
+  return manifestParts(root, b.id);
+}
+
+/** Sau khi lưu vùng trên /tools/parts: cập nhật phần vùng của công trình trong manifest. */
+export function syncManifestParts(root: string, id: string): void {
+  const m = loadManifest(root);
+  const b = m?.map?.buildings.find((x) => x.id === id);
+  if (!m || !b) return;
+  b.parts = manifestParts(root, id);
+  saveManifest(root, m);
 }

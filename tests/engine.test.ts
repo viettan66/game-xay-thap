@@ -43,7 +43,7 @@ describe('bắt đầu', () => {
     expect(core.engine.status()).toMatchObject({
       projectName: 'Đại Danh Lam Thiên Phúc',
       item: { id: 'san_nen', name: 'San nền công trường', number: 1, count: 23, size: 'nho' },
-      stage: { number: 1, count: 5, name: 'Phát quang, cắm mốc', ritual: 'Lễ khởi công', visual: 'markers' },
+      stage: { number: 1, count: 5, name: 'Phát quang, cắm mốc', ritual: 'Lễ khởi công', build: { parts: [], look: 'coc', band: [0, 100] } },
       stagePoints: 0,
       stageCost: 8000,
       percent: 0,
@@ -56,10 +56,16 @@ describe('bắt đầu', () => {
         project: 'Toàn công trình 0%',
       },
     });
-    expect(core.engine.status().items.slice(0, 2)).toEqual([
+    expect(core.engine.status().items.slice(0, 2)).toMatchObject([
       { id: 'san_nen', name: 'San nền công trường', area: 'toan_khu', status: 'building' },
       { id: 'be_bo_de', name: 'Bệ cây bồ đề', area: 'san_giua', status: 'todo' },
     ]);
+    // Mỗi hạng mục kèm danh sách giai đoạn và cách xây từng mảnh (mục 7).
+    expect(core.engine.status().items[0]!.stages[2]).toEqual({
+      name: 'Đầm nền',
+      cost: 8000,
+      build: { parts: ['nen'], look: 'full', band: [0, 50] },
+    });
   });
 });
 
@@ -332,7 +338,7 @@ describe('sửa danh sách hạng mục khi đã xây (14.10)', () => {
     expect(() => core.saveProject(swap, { source: 'test' })).toThrow(/đổi thứ tự hạng mục đã bắt đầu xây: "be_bo_de"/);
     const drop = edit((p) => p.items.shift());
     expect(() => core.saveProject(drop, { source: 'test' })).toThrow(/xóa hạng mục đã bắt đầu xây: "san_nen"/);
-    const more = edit((p) => p.items[1]!.stages!.push({ name: 'Thêm', visual: { kind: 'finish' } }));
+    const more = edit((p) => p.items[1]!.stages!.push({ name: 'Thêm', build: { part: 'trangtri', look: 'full' } }));
     expect(() => core.saveProject(more, { source: 'test' })).toThrow(ConfigError);
     expect(ids().slice(0, 3)).toEqual(['san_nen', 'be_bo_de', 'san_gach']);
   });

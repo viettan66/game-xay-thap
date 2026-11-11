@@ -77,6 +77,14 @@ describe('WebSocket cho overlay', () => {
     // 40.000 San nền + 40.000 Bệ bồ đề + 20.000 vào Sân gạch (12.000 xong giai đoạn 1, 8.000 vào giai đoạn 2)
     expect(updated.state.progress).toMatchObject({ item: { id: 'san_gach', number: 3 }, stage: { number: 2 }, stagePoints: 8000 });
     expect(updated.state.boards[1]!.rows[0]!.points).toBe(100_000);
+    // Tin "có công" để overlay cho mảnh bay vào đúng giai đoạn, kèm tên người góp (mục 7).
+    const contrib = (await c.waitFor((m) => m.type === 'contribution')) as Extract<ServerMessage, { type: 'contribution' }>;
+    expect(contrib).toMatchObject({ source: 'gift', points: 100_000 });
+    expect(contrib.name.length).toBeGreaterThan(0);
+    expect(contrib.allocations[0]).toMatchObject({ itemId: 'san_nen', stageIndex: 0, from: 0, cost: 8000 });
+    expect(contrib.allocations.reduce((a, x) => a + x.points, 0)).toBe(100_000);
+    expect(first.state.pieces.maxPerSec).toBe(20);
+    expect(first.state.texts.pieceBurst).toContain('{name} vừa xây {n} {material}');
   });
 
   it('mất kết nối rồi kết nối lại thì nhận lại đúng trạng thái hiện tại', async () => {

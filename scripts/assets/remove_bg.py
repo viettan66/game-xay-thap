@@ -36,6 +36,8 @@ SHEETS = {
     "abbot_poses": {"model": "birefnet-general-lite"},
     "chars_workers": {"model": "birefnet-general-lite"},
     "stele": {"model": "birefnet-general-lite"},
+    # R3b: đống vật liệu (gạch, gỗ, ngói, đá – 3 mức; cát, giá cưa, ròng rọc, thang, quang gánh, xe cút kít).
+    "props": {"model": "birefnet-general-lite"},
 }
 ALREADY_TRANSPARENT = ["ui_kit"]
 
@@ -98,13 +100,22 @@ def refine(rgba: np.ndarray, core: np.ndarray) -> np.ndarray:
     return out.round().astype(np.uint8)
 
 
+def raw_file(name: str) -> Path:
+    """Ảnh gốc theo tên trong SPEC: tên cũ dạng <name>.png, hoặc tên tiếng Việt khai báo trong assets/raw-files.json."""
+    direct = RAW / f"{name}.png"
+    if direct.exists():
+        return direct
+    mapping = json.loads((ROOT / "assets" / "raw-files.json").read_text("utf8"))
+    return RAW / mapping[name]
+
+
 def process_sheet(name: str, model: str, session_cache: dict) -> dict:
     from rembg import new_session, remove
 
     if model not in session_cache:
         session_cache[model] = new_session(model)
     session = session_cache[model]
-    src = Image.open(RAW / f"{name}.png").convert("RGB")
+    src = Image.open(raw_file(name)).convert("RGB")
     rgb = np.asarray(src)
     h, w = rgb.shape[:2]
     sheet = np.zeros((h, w, 4), np.uint8)

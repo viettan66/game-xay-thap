@@ -19,7 +19,8 @@ const readCfg = () => JSON.parse(fs.readFileSync(path.join(configDir(), 'config.
 describe('đọc config', () => {
   it('lần chạy đầu tạo config.json và events.json từ bản mặc định', () => {
     const store = new ConfigStore(configDir());
-    expect(store.load()).toEqual(['config.json', 'events.json', 'project.json']);
+    expect(store.load()).toEqual(['config.json', 'events.json', 'project.json', 'dialogues.json']);
+    expect(store.getDialogues().groups.piece_burst!.lines.map((l) => l.text)).toEqual(['{name} vừa xây {n} {material}', '+{n} {material} từ {name}']);
     expect(store.get().points.giftPointsPerCoin).toBe(100);
     expect(store.getProject().items).toHaveLength(23);
     expect(store.getEvents().length).toBeGreaterThan(0);
@@ -153,6 +154,23 @@ describe('project.json', () => {
     p.items[0].id = 'Sân nền';
     writeProject(p);
     expect(loadError()).toMatch(/items\.0\.id: id hạng mục chỉ gồm chữ thường không dấu/);
+  });
+});
+
+describe('kho thoại (mục 9C)', () => {
+  it('nhóm piece_burst giống nhóm gift_*: không chứa từ ngữ tôn giáo', () => {
+    const d = JSON.parse(fs.readFileSync(path.join(configDir(), 'defaults', 'dialogues.json'), 'utf8'));
+    const banned = ['phật', 'a di đà', 'công đức', 'phước', 'tùy hỷ', 'tích phúc', 'hồi hướng', 'cầu an'];
+    for (const line of d.groups.piece_burst.lines) {
+      for (const w of banned) expect(line.text.toLowerCase(), line.text).not.toContain(w);
+      expect(line.text).toMatch(/\{n\}/);
+      expect(line.text).toMatch(/\{material\}/);
+    }
+  });
+
+  it('nhóm thoại sai cấu trúc thì báo lỗi rõ', () => {
+    fs.writeFileSync(path.join(configDir(), 'dialogues.json'), JSON.stringify({ groups: { piece_burst: { mode: 'lan_luot', cooldownSec: 0, lines: [] } } }));
+    expect(() => new ConfigStore(configDir()).load()).toThrow(/dialogues\.json[\s\S]*groups\.piece_burst\.mode/);
   });
 });
 

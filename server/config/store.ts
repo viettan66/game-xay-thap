@@ -8,11 +8,21 @@ import path from 'node:path';
 import type { ZodType } from 'zod';
 import type { GameEventDef } from '../../shared/events.js';
 import type { ProjectFile } from '../../shared/project.js';
-import { configSchema, eventsFileSchema, formatZodError, projectFileSchema, type EventsFile, type GameConfig } from './schema.js';
+import {
+  configSchema,
+  dialoguesFileSchema,
+  eventsFileSchema,
+  formatZodError,
+  projectFileSchema,
+  type DialoguesFile,
+  type EventsFile,
+  type GameConfig,
+} from './schema.js';
 
 export const CONFIG_FILE = 'config.json';
 export const EVENTS_FILE = 'events.json';
 export const PROJECT_FILE = 'project.json';
+export const DIALOGUES_FILE = 'dialogues.json';
 
 export class ConfigError extends Error {
   constructor(
@@ -107,6 +117,7 @@ export class ConfigStore {
   private config: GameConfig | null = null;
   private eventsFile: EventsFile | null = null;
   private project: ProjectFile | null = null;
+  private dialogues: DialoguesFile | null = null;
   private listeners: ConfigListener[] = [];
   /** Các khóa cũ (bản tháp) vừa được dọn khỏi config.json ở lần đọc gần nhất. */
   upgradedKeys: string[] = [];
@@ -120,7 +131,7 @@ export class ConfigStore {
   /** Đọc config. Tạo file từ bản mặc định nếu chưa có. Trả về tên các file vừa tạo. */
   load(): string[] {
     const created: string[] = [];
-    for (const name of [CONFIG_FILE, EVENTS_FILE, PROJECT_FILE]) {
+    for (const name of [CONFIG_FILE, EVENTS_FILE, PROJECT_FILE, DIALOGUES_FILE]) {
       const target = path.join(this.configDir, name);
       if (!fs.existsSync(target)) {
         fs.copyFileSync(path.join(this.defaultsDir, name), target);
@@ -134,6 +145,8 @@ export class ConfigStore {
     if (upgraded.removed.length > 0) writeJsonAtomic(configPath, upgraded.value);
     this.eventsFile = validate(eventsFileSchema, readJson(path.join(this.configDir, EVENTS_FILE)), EVENTS_FILE);
     this.project = this.validateProject(readJson(path.join(this.configDir, PROJECT_FILE)));
+    const dialoguesDefaults = readJson(path.join(this.defaultsDir, DIALOGUES_FILE));
+    this.dialogues = validate(dialoguesFileSchema, deepMerge(dialoguesDefaults, readJson(path.join(this.configDir, DIALOGUES_FILE))), DIALOGUES_FILE);
     return created;
   }
 
@@ -157,6 +170,11 @@ export class ConfigStore {
   getEvents(): GameEventDef[] {
     if (!this.eventsFile) throw new Error('Chưa đọc config (gọi load() trước)');
     return this.eventsFile.events;
+  }
+
+  getDialogues(): DialoguesFile {
+    if (!this.dialogues) throw new Error('Chưa đọc config (gọi load() trước)');
+    return this.dialogues;
   }
 
   getProject(): ProjectFile {

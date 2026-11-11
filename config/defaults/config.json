@@ -35,6 +35,15 @@
     "towerBaseY": 1215,
     "boardRotateSec": 15
   },
+  "pieces": {
+    "size": { "nen": [22, 12], "cot": [0, 14], "khung": [24, 8], "mai": [12, 8], "tuong": [12, 6], "trangtri": [10, 10], "nuoc": [16, 16] },
+    "maxPerSec": { "vang": 20, "vua": 20, "dong": 14, "ratdong": 10 },
+    "materials": {
+      "nen": "khối đá", "cot": "đoạn cột", "khung": "thanh gỗ", "mai": "viên ngói", "tuong": "viên gạch",
+      "trangtri": "mảng trang trí", "nuoc": "mảng nước", "coc": "cọc mốc", "dao": "mảng đất", "dong": "gánh vật liệu"
+    },
+    "burstSec": 3
+  },
   "titles": [
     { "minPoints": 1000, "label": "Thợ phụ" },
     { "minPoints": 10000, "label": "Thợ cả" },

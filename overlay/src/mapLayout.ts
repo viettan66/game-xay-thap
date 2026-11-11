@@ -25,12 +25,3 @@ export function mapCamera(map: Pick<MapManifest, 'width' | 'height'>, focus: Map
   const y = Math.max(minY, Math.min(0, center - fy * scale));
   return { scale, x: 0, y };
 }
-
-export type ItemLook = 'done' | 'building' | 'todo';
-
-/** Độ đậm của công trình theo trạng thái (tạm cho R2; R3 thay bằng hiển thị từng giai đoạn). */
-export function lookAlpha(look: ItemLook, pulse: number): number {
-  if (look === 'done') return 1;
-  if (look === 'building') return 0.38 + 0.12 * Math.sin(pulse * 2.5);
-  return 0;
-}

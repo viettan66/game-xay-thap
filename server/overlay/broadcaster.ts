@@ -32,6 +32,11 @@ export class StateBroadcaster {
     if (transitions.length > 0) this.sendAll({ type: 'progress', transitions });
   }
 
+  /** Báo một lần có công (để overlay cho mảnh bay vào, mục 7), gửi ngay không gộp. */
+  contribution(msg: Extract<ServerMessage, { type: 'contribution' }>): void {
+    this.sendAll(msg);
+  }
+
   flush(): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;

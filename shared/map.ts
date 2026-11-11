@@ -2,6 +2,8 @@
 // Mọi tọa độ ở đây theo HỆ TỌA ĐỘ BẢN ĐỒ (chiều rộng = 1080 × maxZoom, mặc định 1728), trục y hướng xuống.
 // Hàm thuần, có test.
 
+import type { PartKey } from './parts.js';
+
 export interface MapTile {
   /** Đường dẫn trong assets/game, ví dụ "map/bg_0.jpg". */
   file: string;
@@ -20,6 +22,12 @@ export interface MapFg extends MapRect {
   file: string;
 }
 
+/** Vùng xây từng mảnh của công trình (mục 7): mặt nạ buildings/<id>/parts/<vùng>.png, vị trí mặt nạ trên bản đồ. */
+export interface MapParts extends MapRect {
+  keys: PartKey[];
+  source: 'auto' | 'edited';
+}
+
 export interface MapBuilding extends MapRect {
   /** Mã công trình (thường trùng mã hạng mục; bảo tháp dùng chung một ảnh cho 9 tầng). */
   id: string;
@@ -35,6 +43,8 @@ export interface MapBuilding extends MapRect {
   fg: MapFg | null;
   /** Chỉ bảo tháp: mép trên của từng tầng 1..9 (giảm dần). Tầng 1 kéo xuống tới đáy ảnh. */
   tierLinesY?: number[];
+  /** Vùng xây từng mảnh; chưa có thì overlay coi cả công trình là nền. */
+  parts?: MapParts | null;
 }
 
 export interface MapManifest {

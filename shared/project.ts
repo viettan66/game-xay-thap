@@ -6,12 +6,32 @@
 // giai đoạn chưa bắt đầu, trừ khi gọi repriceCurrentStage (admin đã xác nhận).
 // Chỉ số giai đoạn (stageIndex) đếm từ 0; khi hiển thị thì +1.
 
+import { PART_KEYS, type PartKey } from './parts.js';
+
 export const ITEM_SIZES = ['nho', 'vua', 'lon'] as const;
 export type ItemSize = (typeof ITEM_SIZES)[number];
 
-/** Cách hiển thị giai đoạn khi chưa có ảnh riêng (mục 7). */
-export const VISUAL_KINDS = ['markers', 'foundation', 'frame', 'build', 'roof', 'decorate', 'finish'] as const;
-export type VisualKind = (typeof VISUAL_KINDS)[number];
+/** Cách hiện mảnh: màu thật, gỗ thô; và 3 hiệu ứng mặt đất cho giai đoạn `matdat` (mục 5, 7). */
+export const PIECE_LOOKS = ['full', 'wood'] as const;
+export const GROUND_LOOKS = ['coc', 'dao', 'dong'] as const;
+export type PieceLook = (typeof PIECE_LOOKS)[number];
+export type GroundLook = (typeof GROUND_LOOKS)[number];
+export type BuildLook = PieceLook | GroundLook;
+
+/** `build` của giai đoạn trong project.json (mục 5): vùng nào được xây, hiện ra sao, dải chiều cao nào. */
+export interface StageBuildDef {
+  part: PartKey | 'matdat' | PartKey[];
+  look: BuildLook;
+  /** [từ, đến] phần trăm chiều cao của vùng, tính từ dưới lên. Mặc định [0, 100]. */
+  band?: [number, number] | undefined;
+}
+
+/** `build` đã chuẩn hóa: parts rỗng = giai đoạn chỉ tác động mặt đất. */
+export interface StageBuild {
+  parts: PartKey[];
+  look: BuildLook;
+  band: [number, number];
+}
 
 export interface StageDef {
   name: string;
@@ -19,7 +39,7 @@ export interface StageDef {
   weight?: number | undefined;
   /** Tên lễ nếu là giai đoạn đặc biệt, ví dụ "Lễ dựng cột". */
   ritual?: string | undefined;
-  visual?: { kind: VisualKind } | undefined;
+  build?: StageBuildDef | undefined;
 }
 
 export interface ItemDef {
@@ -52,7 +72,7 @@ export interface ResolvedStage {
   name: string;
   weight: number;
   ritual: string | null;
-  visual: VisualKind;
+  build: StageBuild;
   cost: number;
 }
 
@@ -93,6 +113,9 @@ export interface Allocation {
   itemId: string;
   stageIndex: number;
   points: number;
+  /** Số điểm giai đoạn đã có trước phần này, và giá giai đoạn (để overlay tính ra số mảnh, mục 7). */
+  from: number;
+  cost: number;
 }
 
 export interface ApplyResult {
@@ -103,7 +126,23 @@ export interface ApplyResult {
   leftover: number;
 }
 
-const DEFAULT_VISUAL: VisualKind = 'build';
+/** Giai đoạn không khai báo build: xây mọi phần còn lại, màu thật. */
+const DEFAULT_BUILD: StageBuild = { parts: [...PART_KEYS], look: 'full', band: [0, 100] };
+
+/** Chuẩn hóa build; sai thì trả về chuỗi lỗi. */
+export function normalizeBuild(b: StageBuildDef | undefined): StageBuild | string {
+  if (!b) return { ...DEFAULT_BUILD, parts: [...DEFAULT_BUILD.parts] };
+  const band: [number, number] = b.band ?? [0, 100];
+  if (!(band[0] >= 0 && band[1] <= 100 && band[0] < band[1])) return `band [${band.join(', ')}] phải là [từ, đến] trong 0–100, từ < đến`;
+  if (b.part === 'matdat') {
+    if (!(GROUND_LOOKS as readonly string[]).includes(b.look)) return `giai đoạn mặt đất (matdat) cần look là ${GROUND_LOOKS.join(' / ')}`;
+    return { parts: [], look: b.look, band };
+  }
+  if (!(PIECE_LOOKS as readonly string[]).includes(b.look)) return `vùng ${String(b.part)} cần look là full hoặc wood`;
+  const parts = Array.isArray(b.part) ? b.part : [b.part];
+  if (parts.length === 0) return 'part không được là danh sách rỗng';
+  return { parts: [...new Set(parts)], look: b.look, band };
+}
 
 /** Chia giá cho các giai đoạn theo tỉ trọng; làm tròn mốc cộng dồn tới bội số roundTo. Tổng luôn đúng bằng cost. */
 export function splitCost(cost: number, weights: number[], roundTo: number): number[] {
@@ -152,6 +191,10 @@ export function projectProblems(p: ProjectFile): string[] {
     const defs = stageDefsOf(item, p.stageTemplates)!;
     const costs = splitCost(item.cost, defs.map((d) => d.weight ?? 1), p.costRoundTo);
     if (costs.some((c) => c < 1)) out.push(`${label}: giá ${item.cost} quá nhỏ cho ${defs.length} giai đoạn`);
+    defs.forEach((d, k) => {
+      const b = normalizeBuild(d.build);
+      if (typeof b === 'string') out.push(`${label}, giai đoạn ${k + 1} "${d.name}": ${b}`);
+    });
   }
   return out;
 }
@@ -175,7 +218,7 @@ export function resolveProject(p: ProjectFile): ResolvedProject {
         name: d.name,
         weight: weights[i]!,
         ritual: d.ritual ?? null,
-        visual: d.visual?.kind ?? DEFAULT_VISUAL,
+        build: normalizeBuild(d.build) as StageBuild,
         cost: costs[i]!,
       })),
     };
@@ -242,7 +285,7 @@ export function applyPoints(state: ProgressState, points: number, p: ResolvedPro
     if (take > 0) {
       s.stagePoints += take;
       remaining -= take;
-      allocations.push({ itemId: s.itemId, stageIndex: s.stageIndex, points: take });
+      allocations.push({ itemId: s.itemId, stageIndex: s.stageIndex, points: take, from: s.stagePoints - take, cost: s.stageCost });
     }
     if (s.stagePoints >= s.stageCost) advanceStage(s, p, transitions);
   }

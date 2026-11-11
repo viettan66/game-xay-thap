@@ -219,11 +219,13 @@ export class GameEngine {
       name: it.name,
       area: it.area,
       status: s.completed || i < n.itemNumber - 1 ? 'done' : i === n.itemNumber - 1 ? 'building' : 'todo',
+      // Giá giai đoạn đang xây là giá đã chốt (có thể khác config sau khi đổi giá).
+      stages: it.stages.map((st, k) => ({ name: st.name, cost: it.id === s.itemId && k === s.stageIndex ? s.stageCost : st.cost, build: st.build })),
     }));
     return {
       projectName: p.name,
       item: { id: item.id, name: item.name, number: n.itemNumber, count: n.itemCount, size: item.size, area: item.area },
-      stage: { number: s.stageIndex + 1, count: n.stageCount, name: stage.name, ritual: stage.ritual, visual: stage.visual },
+      stage: { number: s.stageIndex + 1, count: n.stageCount, name: stage.name, ritual: stage.ritual, build: stage.build },
       stagePoints: s.stagePoints,
       stageCost: s.stageCost,
       percent: n.percent,
