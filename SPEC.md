@@ -1,13 +1,21 @@
-# ĐẶC TẢ DỰ ÁN: BẢO THÁP THIÊN PHÚC – Game livestream xây tháp 100 tầng
+# ĐẶC TẢ DỰ ÁN: ĐẠI DANH LAM THIÊN PHÚC – Game livestream xây quần thể chùa
 
 > File này là nguồn sự thật duy nhất của dự án. Khi có mâu thuẫn giữa code và file này, hỏi chủ dự án trước khi tự quyết.
 
+> **ĐỔI HƯỚNG (quan trọng):** Dự án ban đầu là "tháp 100 tầng" và đã code tới giữa giai đoạn 4. Nay đổi thành **xây một quần thể chùa** gồm nhiều hạng mục (cổng tam quan, chính điện, gác chuông, bảo tháp 9 tầng…). Logic điểm, lưu trữ, phiên live, admin, kho thoại, âm thanh, lịch, thời tiết GIỮ NGUYÊN. Phần thay đổi: mô hình tiến độ (mục 5), dữ liệu đóng góp (mục 6), đồ họa (mục 7), bố cục và camera (mục 8), nhân vật trên công trường (mục 9), lễ (mục 10). Xem giai đoạn R trong mục 15.
+
 ## 0. Tóm tắt
 
-Overlay game cho livestream dọc 9:16 (1080×1920). Người xem tặng quà, thả tim, bình luận để "góp công đức". Điểm này dùng để xây dần một bảo tháp 100 tầng. Mỗi tầng có 5 giai đoạn thi công với đồ họa riêng. Người xem xuất hiện thành nhân vật mang avatar và tên của họ, đi lại xây tháp. Công đức được lưu vĩnh viễn để live liên tục nhiều tháng đến khi xong tháp.
+Overlay game cho livestream dọc 9:16 (1080×1920). Người xem tặng quà, thả tim, bình luận để "góp công". Điểm này dùng để xây dần một **quần thể chùa** trên một khu đồi: lần lượt từng hạng mục, mỗi hạng mục qua nhiều giai đoạn thi công theo đúng quy trình xây chùa truyền thống, có tiến độ liên tục nhìn thấy được. Người xem xuất hiện thành nhân vật mang avatar và tên của họ, làm việc trên công trường. Công được lưu vĩnh viễn để live liên tục nhiều tháng, nhiều năm.
+
+**Thuật ngữ:**
+- **Công trình:** toàn bộ quần thể chùa.
+- **Hạng mục:** một công trình con, ví dụ "Gác chuông", "Bảo tháp – Tầng 3".
+- **Giai đoạn:** một bước thi công của hạng mục, ví dụ "Dựng cột".
+- **Tiến độ:** phần trăm của giai đoạn đang làm.
 
 **Nguyên tắc nội dung (bắt buộc):**
-- Đây là TRÒ CHƠI MÔ PHỎNG. Luôn hiển thị dải chữ cố định: `Trò chơi mô phỏng xây tháp – không phải quyên góp tôn giáo`.
+- Đây là TRÒ CHƠI MÔ PHỎNG. Luôn hiển thị dải chữ cố định: `Trò chơi mô phỏng xây chùa – không phải quyên góp tôn giáo`.
 - Không có câu chữ nào hứa hẹn phước báu, may mắn, công đức thật. Lời thoại chỉ cảm ơn và ghi danh.
 - Tượng Phật trong nền là tĩnh, không phản ứng với quà. Không dùng chữ "Thích" trong tên trụ trì.
 - Không bao giờ hiển thị comment, người xem hay quà giả khi live thật (chế độ giả lập phải hiện nhãn "CHẾ ĐỘ THỬ").
@@ -16,7 +24,7 @@ Overlay game cho livestream dọc 9:16 (1080×1920). Người xem tặng quà, t
 
 ## 1. Công nghệ
 
-- Node.js 24 LTS (tối thiểu 22.12), TypeScript, npm.
+- Node.js 20+, TypeScript, npm.
 - Backend: Express + `ws` (WebSocket), `better-sqlite3` (WAL mode), `zod` để kiểm tra config.
 - Kết nối live: thư viện `tiktok-live-connector` dùng máy chủ ký của **Euler Stream** (eulerstream.com), kèm API key Euler để tăng giới hạn. Đây là giải pháp KHÔNG chính thức (TikTok không có API LIVE công khai), có thể hỏng khi TikTok cập nhật. Bắt buộc bọc sau adapter để thay thế được, có tự kết nối lại với backoff. Chi tiết ở mục 3.
 - Bí mật (API key) để trong file `.env`, KHÔNG commit. Có `.env.example` mẫu. Không bao giờ ghi key ra log, gửi xuống overlay hay hiển thị trên admin (chỉ hiện "đã cấu hình / chưa cấu hình").
@@ -43,9 +51,9 @@ Cách dùng khi live: mở `http://127.0.0.1:3000/overlay` làm Browser Source t
 /assets/audio/credits.json        nguồn và giấy phép của từng file âm thanh
 /config/audio.json                cấu hình âm thanh (sửa được qua admin)
 /config/events.json               lịch sự kiện dương lịch và âm lịch (mục 14.11)
-/data/<hồ sơ>/   game.db, avatars/, backups/, logs/ — mỗi hồ sơ (production, test) một thư mục (thêm vào .gitignore)
-/config/defaults/       bản mặc định của các file config (có trên git)
-/config/config.json     cấu hình game (sửa được qua admin, tạo từ bản mặc định ở lần chạy đầu, không đưa lên git, được backup cùng DB)
+/data            game.db, avatars/, backups/   (thêm vào .gitignore)
+/config/config.json     cấu hình game (sửa được qua admin)
+/config/project.json    danh sách hạng mục, mẫu giai đoạn, giá (mục 5)
 /config/dialogues.json  kho lời thoại trụ trì (sửa được qua admin, mục 9C)
 /scripts         công cụ phụ (cắt sprite sheet, backup, giả lập)
 ```
@@ -101,123 +109,259 @@ Mặc định (đều sửa được trong config):
 | Trần tim + comment | Tối đa 2.000 công đức/người/ngày từ tim và comment |
 
 - Ngày tính theo múi giờ `Asia/Ho_Chi_Minh`.
-- "Giờ hoàng đạo": hệ số nhân (mặc định ×2), bật tay từ admin hoặc theo lịch trong config, có đồng hồ đếm ngược trên overlay. "Lịch" là các khung giờ chủ dự án tự đặt (ví dụ 20:00–21:00 thứ Sáu), KHÔNG tính theo can chi. Nhãn hiển thị mặc định: **"Giờ vàng"** (tránh nghĩa may mắn).
-- Hệ số nhân (giờ vàng, sự kiện 14.11) áp dụng cho MỌI nguồn: quà, tim, comment.
-- Trần 2.000/ngày tính trên điểm GỐC (trước khi nhân). Ví dụ giờ vàng ×2: người thả tim nhiều nhận tối đa 4.000 công trong ngày.
-- Làm tròn sau khi nhân: làm tròn từng sự kiện, từ 0,5 trở lên làm tròn lên (1 tim × 1,5 = 2 công).
-- Comment là lệnh tra cứu (14.9) vẫn được tính công như comment thường.
+- "Giờ hoàng đạo": hệ số nhân (mặc định ×2), bật tay từ admin hoặc theo lịch trong config, có đồng hồ đếm ngược trên overlay.
 - Mọi phép cộng điểm đi qua MỘT hàm thuần trong `/shared` và có unit test.
 
-## 5. Tiến độ xây tháp
+## 5. Tiến độ xây quần thể chùa (3 cấp)
 
-- **Tầng 0 = nền móng**, 5 giai đoạn: dọn mặt bằng → đào móng → đóng cọc → xây bệ đá → hoàn thiện bệ.
-- **Tầng 1–100**, mỗi tầng 5 giai đoạn: (1) sàn và mái hiên, (2) dựng cột, (3) xây tường, (4) lắp cửa, (5) hoàn thiện.
-- Tỉ lệ giai đoạn mặc định `[20,20,20,20,20]` (% công đức của tầng).
+| Cấp | Đổi bao lâu một lần | Người xem thấy |
+|---|---|---|
+| Hạng mục | Vài tuần đến vài tháng | Công trình mới mọc lên trên bản đồ, lễ khánh thành |
+| Giai đoạn | Vài phiên live | Hình công trình đổi rõ rệt; giai đoạn đặc biệt có lễ |
+| Tiến độ liên tục | Vài phút | Tường cao dần, ngói lợp thêm, vật liệu chất lên rồi vơi đi |
 
-Giá mỗi tầng:
-- `foundationCost` mặc định 10.000.
-- Tầng 1 = `baseFloorCost` (mặc định 20.000).
-- Mỗi nhóm 10 tầng tăng `tierIncreasePct` (mặc định 25%) so với nhóm trước. Giá làm tròn đến hàng trăm (39.062,5 → 39.100). Với mặc định, cả tháp cần khoảng 6,66 triệu công (≈ 66.600 xu nếu chỉ tính quà).
-- Cho phép ghi đè giá từng tầng bằng danh sách cụ thể trong config.
-- Trang admin hiển thị tổng công đức cần cho cả tháp và ước tính số phiên live dựa trên trung bình thực tế.
+**Nguyên tắc nhịp:** phiên live trung bình nào cũng phải có ít nhất một giai đoạn hoàn thành. Trong phiên, cứ khoảng 2% tiến độ của giai đoạn phải có một thay đổi nhìn thấy được trên hình. Admin cảnh báo khi giá một giai đoạn lớn hơn 1,5 lần số công trung bình của một phiên.
 
-Quy tắc chuyển tầng:
-- Điểm dư khi xong một tầng chuyển sang tầng kế tiếp.
-- Sự kiện vẫn được ghi nhận bình thường trong lúc diễn lễ hoàn thành; lễ chỉ là phần hiển thị.
-- Mốc tầng 10, 20, …, 90: lễ lớn (hiệu ứng mạnh hơn, thời gian dài hơn).
-- Tầng 100 xong: đặt chóp tháp, lễ khánh thành, sau đó cuộn danh sách TẤT CẢ người góp công như credit cuối phim.
+**Khai báo trong `config/project.json`** (sửa được qua admin):
+- `name`: tên quần thể, mặc định "Đại Danh Lam Thiên Phúc".
+- `stageTemplates`: các mẫu danh sách giai đoạn.
+- `items`: danh sách hạng mục THEO THỨ TỰ xây. Mỗi hạng mục có:
+  - `id`, `name`, `cost` (tổng công), `template` hoặc danh sách `stages` riêng.
+  - `area`: khu vực trên bản đồ (camera dùng để lấy khung hình).
+  - `size`: `nho` / `vua` / `lon` (ảnh hưởng độ dài lễ).
+- Mỗi giai đoạn có:
+  - `name`.
+  - `weight`: tỉ trọng công trong hạng mục; mặc định chia đều.
+  - `ritual` (tùy chọn): tên lễ nếu là giai đoạn đặc biệt, ví dụ "Lễ dựng cột".
+  - `visual`: cách hiển thị (mục 7).
+
+**Mẫu giai đoạn mặc định:**
+
+`lon` (16 giai đoạn, cho Chính điện & Tiền đường):
+1. Phát quang, cắm mốc (lễ khởi công)
+2. Đào móng
+3. Đổ móng, kè đá
+4. Xây bó nền, bậc thềm
+5. Kê chân tảng
+6. Dựng cột cái, cột quân (lễ dựng cột)
+7. Lắp xà, kèo, vì kèo
+8. Thượng lương (lễ thượng lương)
+9. Lắp hoành, rui, mè
+10. Lợp ngói
+11. Đắp bờ nóc, đầu đao
+12. Xây tường, lắp cửa bức bàn
+13. Lát nền gạch
+14. Chạm khắc, sơn son thếp vàng
+15. Treo hoành phi, câu đối, đèn lồng
+16. Hoàn thiện
+
+`vua` (10 giai đoạn, cho Tam quan, Gác chuông, Gác trống, Hành lang, Nhà tổ):
+1. Phát quang, cắm mốc
+2. Đào và đổ móng
+3. Xây bó nền, bậc thềm
+4. Kê chân tảng
+5. Dựng cột (lễ dựng cột)
+6. Lắp khung xà kèo, thượng lương (lễ thượng lương)
+7. Lợp ngói
+8. Xây tường, lắp cửa
+9. Trang trí, sơn son
+10. Hoàn thiện
+
+`nho` (5 giai đoạn), đặt tên riêng theo hạng mục. Ví dụ Hồ sen: Đào hồ → Kè đá bờ hồ → Dẫn nước → Trồng sen → Hoàn thiện.
+
+`thap_tang` (6 giai đoạn, cho mỗi tầng bảo tháp):
+1. Tập kết gạch
+2. Xây thân tầng
+3. Trổ cửa vòm
+4. Lợp mái hiên
+5. Gắn đèn, chuông gió
+6. Hoàn thành tầng
+
+Tầng 1 thêm 2 giai đoạn đầu: "Đắp nền tháp", "Xây bậc đá". Tầng 9 thêm giai đoạn cuối "Đặt chóp tháp" (lễ).
+
+**Danh sách hạng mục mặc định** (chủ dự án chỉnh thứ tự và giá trong admin):
+
+| # | Hạng mục | Mẫu | Ghi chú |
+|---|---|---|---|
+| 1 | San nền công trường | nho | Lễ khởi công toàn công trình |
+| 2 | Bệ cây bồ đề | nho | Bệ đá bát giác quanh cây cổ thụ có sẵn |
+| 3 | Sân gạch | nho | |
+| 4 | Cổng tam quan | vua | |
+| 5 | Hồ sen | nho | Khu phía trước, camera hạ xuống |
+| 6 | Cầu đá | nho | |
+| 7 | Tường bao | nho | |
+| 8 | Gác chuông | vua | |
+| 9 | Gác trống | vua | |
+| 10 | Đôi sư tử đá | nho | |
+| 11 | Chính điện & Tiền đường | lon | Gộp vì hai công trình chồng nhau trên hình |
+| 12 | Hành lang Tây | vua | |
+| 13 | Hành lang Đông | vua | |
+| 14 | Nhà tổ | vua | |
+| 15–23 | Bảo tháp – Tầng 1 … Tầng 9 | thap_tang | Mỗi tầng một hạng mục |
+
+**Giá:**
+- Đặt theo bội số của `baseUnit` (mặc định 20.000 công): `nho` 2–3 đơn vị, `vua` 6–10, `lon` 40, mỗi tầng tháp 4.
+- Admin hiện tổng công cả công trình, số công còn lại, và ước tính số phiên còn lại theo trung bình thực tế.
+
+**Quy tắc chuyển tiếp:**
+- Điểm dư khi xong một giai đoạn hoặc hạng mục chuyển sang cái kế tiếp.
+- Sự kiện vẫn được ghi nhận bình thường trong lúc diễn lễ; lễ chỉ là phần hiển thị.
+- Xong hạng mục cuối cùng: lễ khánh thành toàn công trình, rồi cuộn danh sách TẤT CẢ người góp công như credit cuối phim (mục 14.12).
+- Danh sách hạng mục có thể được NỐI THÊM sau khi khánh thành để mở rộng chùa; giai đoạn và tiến độ đã có không bị ảnh hưởng.
 
 ## 6. Lưu trữ (phải chạy được cả năm)
 
 SQLite WAL. Các bảng tối thiểu:
 
 - `users(platform_id PK, unique_id, nickname, avatar_url, avatar_file, total_points, gift_points, like_points, comment_points, first_seen, last_seen)`
-- `events(id, ts, session_id, platform_id, type, payload_json, points, floor, stage)`: nhật ký đầy đủ để tra soát khi có người hỏi "tôi tặng mà không thấy tên".
-- `floor_contributions(floor, platform_id, points, PK(floor, platform_id))`
+- `events(id, ts, session_id, platform_id, type, payload_json, points, item_id, stage_index)`: nhật ký đầy đủ để tra soát khi có người hỏi "tôi tặng mà không thấy tên".
+- `item_contributions(item_id, platform_id, points, PK(item_id, platform_id))`
+- `stage_contributions(item_id, stage_index, platform_id, points, PK(...))`: dùng cho bia của các giai đoạn có lễ.
 - `daily_caps(day, platform_id, like_comment_points)`
-- `game_state(id=1, current_floor, current_stage, floor_points, total_points, started_at, completed_at)`
+- `game_state(id=1, current_item_index, current_stage_index, stage_points, total_points, started_at, completed_at)`
 - `sessions(id, started_at, ended_at)`
 
 Yêu cầu:
 - Mỗi sự kiện được ghi trong một transaction, cập nhật user, contributions và state cùng lúc.
-- Tắt máy rồi bật lại thì tiếp tục đúng tầng, đúng giai đoạn, đúng phần trăm.
-- Backup tự động file DB mỗi ngày và mỗi khi kết thúc phiên vào `/data/<hồ sơ>/backups`, giữ tổng cộng 30 bản gần nhất (gồm cả bản hằng ngày và bản cuối phiên).
-- Bảng bổ sung (ngoài danh sách trên): `session_contributions` (điểm theo phiên, cho "Top phiên này"), `floors` (giá tầng chốt lúc bắt đầu xây), `config_changes` (14.10). Bảng `events` lưu thêm mã sự kiện của nền tảng (chống trùng) và hệ số đã áp dụng (14.11).
+- Tắt máy rồi bật lại thì tiếp tục đúng hạng mục, đúng giai đoạn, đúng phần trăm.
+- Hạng mục được nhận diện bằng `id`, không bằng số thứ tự, để đổi thứ tự hay chèn hạng mục mới không làm sai dữ liệu cũ.
+- Backup tự động file DB mỗi ngày và mỗi khi kết thúc phiên vào `/data/backups`, giữ 30 bản gần nhất.
 - Admin có nút xuất JSON toàn bộ và nhập lại (có xác nhận).
 - Avatar: tải về `/data/avatars/<platformId>.jpg` ở lần đầu thấy và làm mới định kỳ (link avatar của nền tảng hết hạn). Lỗi tải thì dùng avatar mặc định.
 
 ## 7. Đồ họa và manifest
 
-Chủ dự án tự tách nền và cắt ảnh. Ảnh đặt trong `/assets/game` với tên như sau:
+**Ảnh gốc** trong `/assets/raw/` (KHÔNG sửa):
 
+| File | Nội dung |
+|---|---|
+| `map_built.png` | Bức tổng thể quần thể chùa hoàn thiện, nhìn chéo từ trên cao (941×1672). Bản đồ gốc quyết định vị trí và góc nhìn của mọi thứ. Tháp trong ảnh có 8 tầng, chỉ dùng để xác định vị trí. |
+| `map_empty.png` | Cùng khung hình, đã xóa hết công trình: đồi đất trống, cây cối, cây bồ đề cổ thụ, núi, trời. |
+| `map_ground_ext.png` | Mặt đất nối dài phía dưới. **Chồng lên đáy hai ảnh trên 308px** (theo kích thước gốc): ghép chồng và làm mờ dần phần chồng, KHÔNG nối thẳng mép. |
+| `abbot_poses.png`, `chars_workers.png`, `ui_kit.png`, `stele.png` | Như trước |
+| `thap_9tang.png` | (Sẽ có sau) Bảo tháp 9 tầng vẽ riêng, độ phân giải cao |
+
+Ảnh nền tháp cũ (`bg_background`, `bg_sky_upper`, `tower_*`) không dùng nữa; chuyển sang `assets/raw/_old/`.
+
+**Tọa độ bản đồ:**
+- Bản đồ ghép = `map_empty` + `map_ground_ext`, cao 1672 + 1672 − 308 = 3036px theo ảnh gốc.
+- Phóng to bằng AI (Real-ESRGAN) lên ít nhất ×2, rồi quy về hệ tọa độ thống nhất có chiều rộng 1080 × hệ số zoom tối đa.
+- Mọi vị trí trong manifest tính theo hệ tọa độ bản đồ đã thống nhất.
+
+**Tách công trình:**
+- Claude Code cắt từng hạng mục từ `map_built.png` (so với `map_empty.png` để tìm phần khác biệt, rồi tinh chỉnh bằng tay trên trang công cụ). Mỗi hạng mục lưu vào `buildings/<itemId>/final.png`, kèm `x, y, w, h` và `baseY` (đường chân công trình, dùng để sắp lớp trước sau) trong manifest.
+- Thứ đứng TRƯỚC công trình (tán cây, cành hoa che một phần mái…) tách thành lớp tiền cảnh `fg/<tên>.png`, vẽ đè lên công trình để cây vẫn ở phía trước.
+- Chính điện và tiền đường gộp chung một ảnh. Tam quan cắt kèm đoạn tường nối liền nếu không tách được sạch.
+- Bảo tháp: khi có `thap_9tang.png` thì đặt đúng vị trí và kích thước chân tháp trong `map_built`. Manifest lưu `tierLinesY` (9 ranh giới tầng). Trước khi có ảnh này: dùng tháp 8 tầng cắt từ bản đồ, chia tạm 9 dải đều.
+
+**Ảnh giai đoạn (tùy chọn, làm dần):**
+- `buildings/<itemId>/key_<n>.png`: ảnh mốc, ví dụ "chỉ còn khung gỗ", "mái chưa trang trí". Cùng kích thước khung và căn khớp với `final.png`.
+- `buildings/<itemId>/stage_<k>.png`: ảnh riêng cho đúng giai đoạn k, ưu tiên cao nhất.
+- Thả file vào thư mục là game tự dùng, không phải sửa code.
+
+**Hiển thị giai đoạn khi chưa có ảnh riêng** (mỗi giai đoạn trong config có `visual.kind`; Claude Code đặt mặc định hợp lý cho từng mẫu):
+
+| `kind` | Hiển thị (code tạo từ `final.png`) |
+|---|---|
+| `markers` | Cọc gỗ, dây căng quanh chân công trình; nét phác thảo mờ của công trình (lấy đường viền từ `final.png`) |
+| `foundation` | Vùng chân công trình đào xuống tối màu, đống đất, đá; nền lộ dần theo % |
+| `frame` | Hình công trình tô màu gỗ thô, bán trong suốt, lộ dần từ dưới lên theo % |
+| `build` | Màu thật lộ dần từ dưới lên theo %, giàn giáo phủ ngoài |
+| `roof` | Phần mái lộ dần từ trên xuống, từng hàng ngói theo %; giàn giáo |
+| `decorate` | Đủ màu, ánh vàng lấp lánh lan dần theo %, giàn giáo tháo dần |
+| `finish` | Hoàn chỉnh, đèn lồng sáng, không giàn giáo |
+
+- Có ảnh mốc thì chuyển tiếp giữa hai ảnh mốc theo cùng kiểu lộ dần, thay vì dùng màu gỗ hay màu thật.
+- **Giàn giáo tre** do code vẽ theo khung bao của công trình (không cần ảnh).
+- **Đống vật liệu** (gạch, gỗ, đá, ngói) dùng ảnh trong UI kit, thêm `props/*.png` nếu có. Đặt tự động quanh công trình đang xây, chất lên khi có quà, vơi dần khi tiến độ tăng.
+- Bảo tháp: mỗi tầng là một hạng mục, chỉ dải của tầng đó thay đổi; các tầng trên còn trống.
+
+**Ảnh trong không gian màn hình (giữ như cũ):**
 ```
-bg/background.png                 nền sạch có bệ móng (1080×1920)
-bg/sky_upper.png                  trời nối phía trên nền
-tower/floor_stage_1.png … floor_stage_5.png
-tower/spire.png
-tower/foundation_stage_1.png … 5 (nếu chưa có thì vẽ tạm bằng đạo cụ đá, gạch)
-chars/worker_m_idle.png, worker_m_walk_1..3.png, worker_m_carry_brick.png, worker_m_carry_baskets.png
-chars/worker_f_* (tương tự), chars/monk_* , chars/carpenter_1..2.png, chars/mason_1..2.png
 abbot/abbot_pray.png, abbot_wave.png, abbot_bow.png, abbot_welcome.png
-ui/banner.png, ui/progress_frame.png, ui/progress_fill.png, ui/step_empty.png, ui/step_current.png, ui/step_done.png
-ui/panel_tall.png, ui/panel_square.png, ui/medal_gold.png, medal_silver.png, medal_bronze.png
-ui/title_1.png … title_5.png, ui/avatar_frame.png
-items/brick.png, logs.png, buffalo_cart.png, elephant.png, bell.png, guardian.png
+ui/... (khung, thanh tiến độ, huy chương, huy hiệu, khung avatar)
+items/brick.png, logs.png, buffalo_cart.png, elephant.png, bell.png, guardian.png   (CHỈ dùng làm icon trong thông báo quà)
 stele/stele.png
 ```
 
-`assets/manifest.json` khai báo cho mỗi ảnh: đường dẫn, **điểm neo** (anchor) và các thông số căn chỉnh. Riêng 5 ảnh tầng phải có:
-- `eaveLineY`: vị trí mép dưới dải ngói (điểm neo chung).
-- `topY`: mép trên phẳng, nơi tầng sau đặt lên.
+**Ảnh trong không gian bản đồ (LÀM MỚI, cùng góc nhìn chéo từ trên cao và cùng phong cách với `map_built`):**
 
-Ảnh giai đoạn 5 có đèn lồng thòng xuống nên cao hơn các ảnh khác. Vì vậy căn theo `eaveLineY`, KHÔNG căn theo mép ảnh.
+Bộ dân phu cũ (`chars_workers.png`, chỉ có hướng ngang) chuyển vào `assets/raw/_old/`. Ảnh mới:
+- `raw/chars_<loại>_walk.png`: mỗi loại nhân vật (dân phu nam, dân phu nữ, tu sĩ, thợ mộc, thợ nề) đi theo 3 hướng: đi xuống (thấy mặt), đi lên (thấy lưng), đi ngang sang phải (sang trái thì code lật ảnh). Mỗi hướng 3 khung, kèm dáng đứng yên.
+- `raw/chars_<loại>_work.png`: dáng làm việc theo loại: khiêng gạch, gánh quang gánh, vác gỗ, cuốc đất, cưa gỗ, đóng búa, xây gạch, kéo dây, chuyền ngói.
+- `raw/vehicles.png`: xe trâu chở vật liệu và voi chở gỗ, mỗi loại 2 hướng: đi lên (thấy lưng) và đi xuống (thấy mặt), mỗi hướng 2–3 khung bước đi.
+- `raw/props.png`: đống gạch, chồng gỗ, chồng ngói, khối đá, đống cát, giá cưa có súc gỗ, giá ròng rọc ba chân, thang tre, quang gánh đặt dưới đất, xe cút kít gỗ; mỗi đống vật liệu có 3 mức: nhiều, vừa, ít.
+- `raw/honor_statues.png`: tượng hộ pháp đá nhỏ trên bệ (đặt ở ô ghi danh), 2–3 kiểu.
 
-- Thiếu ảnh nào thì vẽ hình chữ nhật màu tạm kèm tên file, game không được crash.
-- Viết `scripts/slice-sheet.ts` (dùng `sharp`): cắt một sprite sheet nền trong suốt thành các ảnh riêng, dựa trên khoảng trống trong suốt giữa các hình. Thêm tùy chọn đệm (padding) để mọi khung trong một nhóm có cùng kích thước và chân thẳng hàng.
+Quy ước tên sau khi cắt: `chars/<loại>_<hướng hoặc việc>_<khung>.png`, `vehicles/<loại>_<hướng>_<khung>.png`, `props/<tên>_<mức>.png`, `honor/statue_<kiểu>.png`.
 
-## 8. Bố cục overlay (1080×1920)
+Tỉ lệ: một người cao khoảng 1/8 chiều cao gác chuông trên bản đồ. Tên và avatar trên đầu nhân vật vẽ ở kích thước màn hình, không bị thu nhỏ theo zoom camera.
+
+Trong lúc chưa có ảnh mới: dùng tạm bộ dân phu cũ, đi dọc thì giữ ảnh đi ngang và chỉ nhún lên xuống; đống vật liệu dùng tạm icon trong UI kit.
+
+- Thiếu ảnh nào thì vẽ hình tạm kèm tên file, game không được crash.
+- Giữ `scripts/slice-sheet.ts` cho các sprite sheet.
+- Trang công cụ `/tools/assets` mở rộng thêm: xem bản đồ với từng công trình bật/tắt, kéo chỉnh khung cắt và `baseY`, xem thử mọi giai đoạn của một hạng mục bằng thanh trượt.
+
+## 8. Bố cục overlay (1080×1920) và camera
 
 **Vùng an toàn** (nền tảng tự vẽ giao diện ở đây, overlay KHÔNG đặt thông tin quan trọng):
 - Trên: 180px.
 - Dưới: 600px (khu comment của nền tảng).
 - Phải: 150px.
 
-Ba giá trị này nằm trong config. Có phím tắt `D` để bật khung debug tô màu các vùng này.
+Ba giá trị này nằm trong config. Phím tắt `D` bật khung debug tô màu các vùng này.
 
-Các lớp từ sau ra trước:
-1. **Trời** (2 ảnh nối nhau): parallax 0.25 so với camera. Chỗ nối chồng nhau khoảng 150px, có mặt nạ mờ dần để không lộ vệt.
-2. **Nền**: parallax 0.5.
-3. **Tháp**: các tầng xếp chồng. Tầng n được scale `towerTaper^n` (mặc định 0.995) so với tầng 1, căn giữa theo trục dọc. Tầng đang xây hiển thị đúng ảnh giai đoạn hiện tại, các tầng dưới dùng ảnh giai đoạn 5. Khi đổi giai đoạn: hiệu ứng bụi và chớp sáng nhẹ.
-4. **Nhân vật và đạo cụ.**
-5. **Hiệu ứng**: chữ "+công" bay lên, cánh hoa, hoa đăng, hào quang.
-6. **Giao diện.**
+Các lớp từ sau ra trước (trong không gian bản đồ):
+1. **Bản đồ nền** (`map_empty` + mặt đất nối dài).
+2. **Công trình**, sắp theo `baseY` (chân công trình xa vẽ trước), xen kẽ đúng thứ tự với nhân vật và đạo cụ.
+3. **Lớp tiền cảnh** (`fg/`).
+4. **Hiệu ứng thời tiết** (14.14).
+5. **Hiệu ứng** "+công", cánh hoa, hoa đăng.
 
-**Camera:** bám theo tầng đang xây, giữ tầng đó ở khoảng 45% chiều cao màn hình, chuyển động mượt (lerp). Khi tháp còn thấp, camera đứng yên ở cảnh nền.
+Giao diện và trụ trì vẽ trong không gian màn hình, không đi theo camera.
 
-**Giao diện** (chữ do code vẽ, không dùng chữ trong ảnh):
-- **Banner trên giữa:** `Tầng 27/100`, tên giai đoạn, thanh 5 bước, % của tầng.
-- **Minimap trái:** hình tháp thu nhỏ, đánh dấu tầng hiện tại, vạch mốc mỗi 10 tầng.
-- **Bảng phải, luân phiên 15 giây:** Top phiên này (top 5, tính theo phiên live hiện tại, xem mục 14.3) → Top tổng (top 10) → Bia ghi danh tầng hiện tại (top 5). Mỗi dòng có avatar tròn, tên, điểm, huy chương cho top 3.
-- **Ô sự kiện:** mục tiêu tim của phiên (ví dụ 10.000 tim mở khóa hiệu ứng lễ hội), hoặc đồng hồ giờ hoàng đạo.
-- **Thông báo quà lớn:** bật lên khoảng 4 giây kèm avatar và tên người tặng. Có hàng đợi; quà lớn được ưu tiên, quà nhỏ liên tiếp của cùng một người được gộp lại.
-- **Dải miễn trừ cố định**, đặt ngay trên vùng an toàn phía dưới.
+**Camera** (zoom tối đa `maxZoom` mặc định 1,6; không bao giờ để lộ ngoài mép bản đồ):
+
+| Chế độ | Khi nào | Mô tả |
+|---|---|---|
+| `site` (mặc định) | Luôn luôn | Khung hình bao hạng mục đang xây và khoảng đất xung quanh. Công trình chiếm 45–60% bề ngang, nằm giữa vùng nhìn thấy (giữa 180px trên và 600px dưới). Nhờ phần mặt đất nối dài, khu tam quan và hồ sen cũng được đẩy lên trên vùng comment |
+| `overview` | Định kỳ (mặc định 3 phút ở `vang`, 6 phút ở `vua`, không tự động ở `dong` và `ratdong`) và khi admin bấm | Thu toàn cảnh quần thể trong 8–10 giây; các bảng giao diện mờ xuống 30%, chỉ còn thanh tiến độ |
+| `ceremony` | Khi có lễ | Đẩy chậm vào công trình đang làm lễ |
+| `tour` | Chỉ ở `vang`, mỗi 10 phút | Lia chậm từ trời xuống cổng tam quan, giới thiệu những gì đã xây |
+
+- Chuyển chế độ mượt (lerp hoặc easing), không giật.
+- Quà lớn: rung nhẹ, hoặc lia ngắn tới chỗ vật phẩm xuất hiện rồi quay về.
+
+**Giao diện** (chữ do code vẽ; mọi khung có thanh chỉnh độ trong suốt trong admin):
+- **Thanh tiến độ** (mặc định góc trên phải, nằm trên vùng núi, dưới vùng an toàn trên):
+  - Dòng 1: `Hạng mục 7/23 · Gác chuông`.
+  - Dòng 2: `Giai đoạn 5/10: Dựng cột`, thanh tiến độ liên tục của giai đoạn, phần trăm.
+  - Dòng nhỏ: `Toàn công trình 23%`.
+  - Nếu hạng mục có ≤ 10 giai đoạn: thêm hàng chấm các giai đoạn.
+- **Bảng xếp hạng thu gọn**, nền mờ, luân phiên 15 giây: Top phiên này (top 5, mục 14.3) → Top tổng (top 5) → Bia hạng mục hiện tại (top 5). Có 3 vị trí đặt sẵn (trái giữa, phải giữa, trái trên); tự chọn vị trí KHÔNG che hạng mục đang xây trên màn hình.
+- **Bản đồ thu nhỏ** (tùy chọn, mặc định chỉ hiện ở chế độ `overview`): ảnh thu nhỏ quần thể, công trình đã xong có màu, chưa xây là bóng xám, hạng mục đang xây nhấp nháy.
+- **Ô sự kiện:** mục tiêu tim của phiên, đồng hồ giờ hoàng đạo, sự kiện lịch.
+- **Thông báo quà lớn:** bật lên khoảng 4 giây kèm avatar và tên. Có hàng đợi; quà lớn ưu tiên, quà nhỏ liên tiếp của cùng một người được gộp.
+- **Dải miễn trừ cố định**, nhỏ, nền mờ, đặt ngay trên vùng an toàn phía dưới.
 - **Lọc tên:** danh sách từ cấm trong config. Tên vi phạm hiển thị `Thiện hữu ẩn danh`.
 
 ## 9. Nhân vật
 
 - Khi nào tạo nhân vật cho người xem phụ thuộc chế độ độ đông (mục 9A). Nhân vật có giới tính và kiểu ngẫu nhiên nhưng cố định theo `platformId`, đi từ mép màn hình vào công trường.
 - Trên đầu nhân vật: avatar tròn, tên (cắt bớt nếu dài hơn 14 ký tự), huy hiệu danh hiệu.
-- Hành vi: đi lại giữa đống vật liệu và tầng đang xây, mang gạch hoặc gỗ, làm động tác phù hợp với giai đoạn (dựng cột → khiêng gỗ, xây tường → thợ nề…).
+- Hành vi: đi theo các lối đi trên bản đồ (khai báo trong manifest dưới dạng đường nối các điểm) tới hạng mục đang xây, đi lại giữa đống vật liệu và công trình, làm động tác hợp với giai đoạn: cắm mốc, đào → cuốc xẻng; dựng cột, khung → khiêng gỗ, kéo dây; xây tường, lát nền → thợ nề; lợp ngói → chuyền ngói lên giàn giáo.
+- Vị trí làm việc sinh tự động quanh chân công trình và trên các sàn giàn giáo. Bảo tháp: thợ đứng trên giàn giáo ở độ cao tầng đang xây.
 - Thả tim: nhân vật đó làm nhanh hơn trong vài giây, có chữ "+công" bay lên.
 - Không tương tác quá thời gian quy định của chế độ hiện tại (mục 9A): nhân vật đi ra khỏi màn hình.
 - Tối đa `maxCharacters` (mặc định 40) cùng lúc, tính cả NPC và người góp công cũ. Khi đầy: NPC rời trước, rồi người góp công cũ, rồi người thật tương tác lâu nhất và góp ít nhất.
 
-**Danh hiệu** theo tổng công đức tích lũy (sửa được trong config). Dùng từ công trường cổ trang, không dùng từ nhà Phật vì danh hiệu đạt được chủ yếu nhờ tặng quà (mục 0):
-- Thợ phụ: ≥ 1.000
-- Thợ cả: ≥ 10.000
-- Đốc công: ≥ 100.000
-- Đại đốc công: ≥ 1.000.000
-- Tổng công trình sư: ≥ 10.000.000
+**Danh hiệu** theo tổng công đức tích lũy (sửa được trong config):
+- Thí chủ: ≥ 1.000
+- Cư sĩ: ≥ 10.000
+- Hộ pháp: ≥ 100.000
+- Đại hộ pháp: ≥ 1.000.000
+- Công đức chủ: ≥ 10.000.000
 
 **Hiệu ứng theo giá trị một lần tặng** (đơn vị xu nền tảng, sửa được):
 - < 10: nhân vật khiêng một viên gạch.
@@ -225,13 +369,14 @@ Các lớp từ sau ra trước:
 - 100–499: xe trâu chở đá chạy ngang công trường.
 - 500–999: voi chở gỗ.
 - 1.000–4.999: đúc đại hồng chung; chuông lắc và ngân.
-- ≥ 5.000: tượng nghê đá mang tên người tặng (ảnh `items/guardian.png`), đặt vĩnh viễn cạnh chân tháp. Lưu vào DB, tối đa một số lượng nhất định, xoay vòng hiển thị.
+- ≥ 5.000: tượng hộ pháp nhỏ mang tên người tặng, đặt vĩnh viễn ở các ô ghi danh dọc đường vào chùa (danh sách ô khai báo trong manifest). Lưu vào DB; hết ô thì xoay vòng hiển thị.
+- Xe trâu, voi đi theo đường chính từ mép bản đồ phía dưới vào tới công trình đang xây, đổ vật liệu, rồi quay ra.
 
-**Trụ trì (NPC):** đứng góc trái, phía trên vùng comment. Không có tên riêng, hiển thị "Thầy trụ trì" (config `abbotName`).
+**Trụ trì (NPC):** vẽ trong không gian màn hình (không theo camera), đứng góc trái phía trên vùng comment; tự né sang phải nếu che hạng mục đang xây.
 - Mặc định dáng chắp tay.
 - Quà ≥ 100 xu: dáng vẫy chào và bong bóng thoại cảm ơn.
-- Xong tầng: dáng dang tay.
-- Cảm ơn quà rất lớn (mặc định ≥ 1.000 xu, sửa trong config): dáng cúi chào.
+- Xong giai đoạn có lễ hoặc xong hạng mục: dáng dang tay.
+- Cảm ơn quà rất lớn: dáng cúi chào.
 
 Lời thoại của trụ trì: xem mục 9C.
 
@@ -265,13 +410,13 @@ Game tự đổi cách vận hành theo 4 chế độ: `vang`, `vua`, `dong`, `r
 | Ưu tiên giữ khi đầy chỗ | — | Tương tác gần nhất | Người tặng quà | Người tặng nhiều nhất trong 10 phút gần đây |
 | Đám đông vô danh | Không | Không | Không | Có: nhóm sprite nhỏ không tên ở hậu cảnh kèm bộ đếm "N người đang góp sức" (N = số người tương tác 5 phút) |
 | Trụ trì chào người mới | Từng người, theo tên | Lần đầu trong phiên, gộp nhóm, tối đa 1 câu/10 giây | Không chào khi vào; cảm ơn người tặng quà lần đầu | Không |
-| Thoại tự do (kể chuyện, kiến thức, hướng dẫn) | Mỗi 60–90 giây | Mỗi 2–3 phút | Mỗi 5 phút, chủ yếu báo tiến độ | Chỉ khi tới mốc % của tầng |
+| Thoại tự do (kể chuyện, kiến thức, hướng dẫn) | Mỗi 60–90 giây | Mỗi 2–3 phút | Mỗi 5 phút, chủ yếu báo tiến độ | Chỉ khi tới mốc % của giai đoạn |
 | Thông báo quà dạng lớn | Mọi quà, trụ trì cúi chào | Mọi quà, gộp quà nhỏ liên tiếp | Quà ≥ 100 xu; quà nhỏ chỉ hiện "+công" kèm tên | Quà thuộc top 10% giá trị trong 5 phút gần nhất, tối thiểu 500 xu |
 | Mục tiêu tim của phiên | 500 | 5.000 | 10.000 | 50.000, nhiều nấc |
 | Dân phu NPC | 6–8 | 3–4 | 0 | 0 |
 | Người góp công cũ | 5–10 | 2–3 | 0 | 0 |
 | Hiệu ứng | Đầy đủ, chậm rãi | Đầy đủ | Rút gọn, gộp | Tối giản, ưu tiên 60fps |
-| Camera | Thỉnh thoảng lia toàn tháp (mỗi 3 phút) | Bám tầng đang xây | Bám tầng đang xây | Bám tầng, rung nhẹ khi có quà lớn |
+| Camera | `site`; `overview` mỗi 3 phút; `tour` mỗi 10 phút | `site`; `overview` mỗi 6 phút | `site` | `site`, rung nhẹ khi có quà lớn |
 
 Mục tiêu tim: khi bắt đầu phiên, lấy theo chế độ lúc đó. Nếu chế độ tăng trong phiên và mục tiêu đã đạt, mở nấc mục tiêu tiếp theo của chế độ mới. Mục tiêu đặt tay từ admin luôn được ưu tiên.
 
@@ -283,7 +428,7 @@ Mục tiêu tim: khi bắt đầu phiên, lấy theo chế độ lúc đó. Nế
 
 **Người góp công cũ:**
 - Người xem THẬT có tổng đóng góp từ phiên trước, chọn ngẫu nhiên có trọng số theo điểm, ưu tiên người không có mặt trong phiên hiện tại.
-- Hiển thị khác biệt rõ: khung tên màu bạc mờ, avatar hơi trong suốt, dòng phụ "đã góp tầng {floor}" (tầng họ góp nhiều nhất).
+- Hiển thị khác biệt rõ: khung tên màu bạc mờ, avatar hơi trong suốt, dòng phụ "đã góp {item}" (hạng mục họ góp nhiều nhất).
 - Không tạo sự kiện, không cộng điểm, không được chào như người mới vào.
 - Ở lại 5–10 phút rồi đổi người khác.
 - Nếu chính người đó vào phòng và tương tác: nhân vật chuyển sang trạng thái người xem thật, kèm lời chào riêng (mục 9C, nhóm `returning`).
@@ -298,10 +443,10 @@ Mục tiêu tim: khi bắt đầu phiên, lấy theo chế độ lúc đó. Nế
 KHÔNG có câu nói nào viết cứng trong code. Mọi câu chữ mà người xem đọc được đều nằm trong `config/dialogues.json` dưới dạng nhóm, mỗi nhóm chứa **danh sách câu không giới hạn số lượng**. Phạm vi gồm:
 - Thoại trụ trì (các nhóm liệt kê bên dưới).
 - Mẫu thông báo quà, ví dụ `toast_gift`: "{name} vừa góp {gift}".
-- Chữ trong lễ hoàn thành, ví dụ `ceremony_title`: "Bia ghi danh – Tầng {floor}", và `ceremony_others`: "…và {n} thiện hữu khác".
+- Chữ trong lễ hoàn thành, ví dụ `ceremony_title`: "Bia công đức – {item}", và `ceremony_others`: "…và {n} thiện hữu khác".
 - Chữ mục tiêu tim, ví dụ `goal_text`: "Đủ {target} tim mở khóa {reward}".
 - Bộ đếm đám đông `crowd_counter`, nhãn nghề của NPC `npc_labels`, dòng phụ của người góp công cũ `returning_subtitle`.
-- Credit cuối tháp và dải miễn trừ.
+- Credit cuối công trình và dải miễn trừ.
 
 Nhãn cố định (tên bảng, tên danh hiệu, tên giai đoạn, tên đơn vị) vẫn nằm trong `config.json` như mục 4.
 
@@ -337,7 +482,7 @@ Quy tắc chọn:
 - `cooldownSec`: khoảng nghỉ tối thiểu giữa hai lần nói cùng nhóm.
 - Nhóm không còn câu hợp lệ: bỏ qua, ghi cảnh báo vào log, không crash.
 
-Biến trong câu: `{name}`, `{names}` (gộp nhiều tên), `{n}`, `{gift}`, `{floor}`, `{percent}`, `{count}`, `{target}`, `{reward}`. Biến không hợp lệ phải bị báo lỗi ngay khi lưu trên admin.
+Biến trong câu: `{name}`, `{names}` (gộp nhiều tên), `{n}`, `{gift}`, `{item}` (tên hạng mục), `{stage}` (tên giai đoạn), `{ritual}` (tên lễ), `{itemIndex}`, `{itemTotal}`, `{percent}`, `{count}`, `{target}`, `{reward}`. Biến không hợp lệ phải bị báo lỗi ngay khi lưu trên admin.
 
 Mỗi người chỉ được chào bằng tên tối đa 1 lần/phiên.
 - Bong bóng thoại hiện 4–6 giây tùy độ dài. Có hàng đợi; thoại cảm ơn quà ưu tiên hơn thoại tự do. Thoại tự do bị bỏ nếu hàng đợi đang dài.
@@ -354,7 +499,7 @@ Mỗi người chỉ được chào bằng tên tối đa 1 lần/phiên.
 
 | Được dùng | Dùng hạn chế | Cấm |
 |---|---|---|
-| "thiện hữu", "quý vị", "các con", "thầy" (trụ trì tự xưng), "hoan hỷ", từ ngữ công trường cổ trang | "A Di Đà Phật": chỉ trong nhóm `session_start`, `session_end`, `floor_complete`, `milestone` và các nhóm thoại sự kiện `event_*` (mục 14.11). "Tùy hỷ": chỉ khi xong tầng hoặc mốc. "Thí chủ": dùng được vì là game cổ trang | "công đức vô lượng", "phước báu", "tích phúc", "tiêu tai giải nạn", "cầu an", "hồi hướng", "gieo duyên lành", mọi lời hứa may mắn hay bình an; "bần tăng", "bần đạo" |
+| "thiện hữu", "quý vị", "các con", "thầy" (trụ trì tự xưng), "hoan hỷ", từ ngữ công trường cổ trang | "A Di Đà Phật": chỉ trong nhóm `session_start`, `session_end`, `stage_ritual`, `item_complete` và các nhóm thoại sự kiện `event_*` (mục 14.11). "Tùy hỷ": chỉ khi xong tầng hoặc mốc. "Thí chủ": dùng được vì là game cổ trang | "công đức vô lượng", "phước báu", "tích phúc", "tiêu tai giải nạn", "cầu an", "hồi hướng", "gieo duyên lành", mọi lời hứa may mắn hay bình an; "bần tăng", "bần đạo" |
 
 Quy tắc cứng: các nhóm `gift_*` KHÔNG chứa bất kỳ từ ngữ tôn giáo nào ("A Di Đà Phật", "Phật", "tùy hỷ", "công đức"…). Viết unit test quét kho thoại mặc định theo danh sách từ cấm và từ hạn chế.
 
@@ -363,7 +508,7 @@ Quy tắc cứng: các nhóm `gift_*` KHÔNG chứa bất kỳ từ ngữ tôn g
 Các câu bên dưới chỉ là mẫu khởi tạo. Khi tạo `dialogues.json` lần đầu, Claude Code viết thêm để mỗi nhóm có 5–10 câu (nhóm `idle_story` khoảng 15 câu), đúng giọng thầy trụ trì hiền từ, câu ngắn (dưới khoảng 20 chữ), tuân thủ bảng nguyên tắc ngôn ngữ. Tất cả câu do Claude Code viết thêm đặt `verified: false` để chủ dự án duyệt. Mọi nhóm mặc định dùng `mode: "shuffle"`.
 
 `session_start`:
-- "A Di Đà Phật. Chào các thiện hữu, hôm nay công trường tiếp tục dựng tầng {floor}."
+- "A Di Đà Phật. Chào các thiện hữu, hôm nay công trường tiếp tục {item}: {stage}."
 - "Trời hôm nay đẹp, thợ đã vào việc. Mời quý vị cùng góp một tay."
 
 `greet_single` (chỉ `vang`, `vua`):
@@ -375,7 +520,7 @@ Các câu bên dưới chỉ là mẫu khởi tạo. Khi tạo `dialogues.json` 
 
 `returning` (người góp công cũ quay lại):
 - "{name} đã trở lại! Công trường nhớ con lắm."
-- "Mừng {name} quay về, tầng {floor} đang chờ con."
+- "Mừng {name} quay về, {item} đang chờ con."
 
 `gift_small`:
 - "Cảm ơn {name} đã góp {gift}!"
@@ -388,28 +533,29 @@ Các câu bên dưới chỉ là mẫu khởi tạo. Khi tạo `dialogues.json` 
 - "Cảm tạ {name}! Đoàn voi chở gỗ quý đã về công trường."
 
 `gift_huge`:
-- "Đại hồng chung mang tên {name} sẽ treo trên tháp. Thầy thay mặt công trường cảm tạ."
+- "Đại hồng chung mang tên {name} sẽ treo ở gác chuông. Thầy thay mặt công trường cảm tạ."
 
 `gift_thanks_group` (`dong`, `ratdong`):
 - "Cảm ơn {n} thiện hữu vừa góp sức!"
 
-`progress` (`dong`, `ratdong`, khi tầng đạt 50%, 80%, 95%):
-- "Tầng {floor} đã xong {percent}%, gắng thêm chút nữa!"
-- "Thợ đang lợp ngói rồi, sắp hoàn thành tầng!"
+`progress` (`dong`, `ratdong`, khi giai đoạn đạt 50%, 80%, 95%):
+- "{item}: {stage} đã xong {percent}%, gắng thêm chút nữa!"
+- "Giai đoạn {stage} sắp xong rồi, các con cố lên!"
 
-`floor_complete`:
-- "Tầng {floor} đã hoàn thành. Thầy hoan hỷ cảm ơn {count} thiện hữu đã góp công!"
+`item_complete`:
+- "{item} đã hoàn thành. Thầy hoan hỷ cảm ơn {count} thiện hữu đã góp công!"
 
-`milestone` (tầng 10, 20, …):
-- "A Di Đà Phật. Tầng {floor} hoàn thành, đại hồng chung sẽ được treo lên. Tùy hỷ cùng tất cả quý vị."
+`stage_ritual` (giai đoạn có lễ):
+- "A Di Đà Phật. Hôm nay công trường làm {ritual} cho {item}. Tùy hỷ cùng tất cả quý vị."
+- "Ngày xưa, lễ thượng lương là ngày quan trọng nhất khi dựng một ngôi nhà gỗ."
 
 `idle_story` (thoại tự do, chủ yếu `vang`, `vua`):
-- "Ngày xưa, người thợ dựng tháp phải đục từng viên đá bằng tay, mất nhiều tháng mới xong một tầng."
+- "Ngày xưa, người thợ dựng chùa phải đục từng viên đá bằng tay, mất nhiều tháng mới xong một gian."
 - "Mái chùa cong lên ở bốn góc gọi là đầu đao, vừa đẹp vừa giúp nước mưa thoát nhanh."
 - "Tháp Phổ Minh ở Nam Định được dựng từ thời Trần, đến nay đã hơn bảy trăm năm."
 
 `idle_howto`:
-- "Ai mới vào: tặng quà, thả tim hay bình luận đều được tính công, tên sẽ được khắc lên bia khi xong tầng."
+- "Ai mới vào: tặng quà, thả tim hay bình luận đều được tính công, tên sẽ được khắc lên bia khi xong hạng mục."
 - "Đây là trò chơi mô phỏng, mỗi viên gạch quý vị góp sẽ hiện thành công sức trên công trường."
 
 `session_end`:
@@ -423,16 +569,22 @@ Các câu bên dưới chỉ là mẫu khởi tạo. Khi tạo `dialogues.json` 
 - Câu do chủ dự án tự thêm qua admin mặc định là đã duyệt.
 - Khi live thật mà một nhóm cần dùng chưa có câu nào được duyệt, admin hiện cảnh báo trước khi bắt đầu phiên.
 
-## 10. Lễ hoàn thành tầng
+## 10. Các loại lễ
 
-Diễn khoảng 10 giây (khoảng 20 giây ở các mốc chục tầng):
-1. Camera dừng ở tầng vừa xong, giàn giáo biến mất, đèn lồng sáng.
-2. Bia đá (`stele.png`) trồi lên trước tháp, kèm bụi đá và bóng đổ dưới chân.
-3. Trên bia: `Bia ghi danh – Tầng X`, top 10 người góp nhiều nhất của tầng đó, dòng cuối `…và N thiện hữu khác`. Top 3 màu vàng đồng kèm huy chương; hạng 4–10 màu nâu đỏ sẫm, có hiệu ứng khắc chìm. Cỡ chữ không nhỏ hơn 32px.
-4. Hoa đăng bay lên, cánh hoa rơi, trụ trì dang tay.
-5. Bia thu lại, camera lia lên tầng mới.
+| Loại | Khi nào | Thời lượng | Nội dung |
+|---|---|---|---|
+| `stage_minor` | Xong một giai đoạn thường | 2–3 giây | Bụi, ánh sáng lóe nhẹ, âm `stage_complete`, tên giai đoạn mới hiện ngắn |
+| `stage_ritual` | Xong giai đoạn có `ritual` (khởi công, dựng cột, thượng lương, đặt chóp tháp…) | Khoảng 10 giây | Camera `ceremony`, trụ trì dang tay, bia ghi top 10 người góp trong giai đoạn đó |
+| `item_complete` | Xong hạng mục | `nho` 8 giây, `vua` 15 giây, `lon` và tầng 9 bảo tháp 25 giây | Giàn giáo tháo, đèn lồng sáng, bia ghi top 10 người góp của hạng mục; hạng mục `lon` thêm múa lân, pháo hoa, hoa đăng |
+| `project_complete` | Xong hạng mục cuối | 60 giây trở lên | Camera `tour` toàn quần thể, lễ khánh thành, credit (14.12) |
 
-Admin có trang xem lại bia của mọi tầng đã xong. Overlay có lệnh (từ admin) để chiếu lại bia của một tầng bất kỳ.
+**Bia** (`stele.png`):
+- Trồi lên trước công trình, kèm bụi đá và bóng đổ dưới chân.
+- Tiêu đề lấy từ kho thoại `ceremony_title`, có biến `{item}`, `{stage}`.
+- Top 10 người góp nhiều nhất, dòng cuối `…và N thiện hữu khác`. Top 3 màu vàng đồng kèm huy chương; hạng 4–10 màu nâu đỏ sẫm, khắc chìm. Cỡ chữ không nhỏ hơn 32px.
+- Kết thúc: bia thu lại, camera chuyển sang hạng mục hoặc giai đoạn kế tiếp.
+
+Admin có trang xem lại bia của mọi giai đoạn có lễ và mọi hạng mục đã xong. Overlay có lệnh (từ admin) để chiếu lại một bia bất kỳ.
 
 ## 10A. Âm thanh
 
@@ -463,10 +615,10 @@ Mỗi playlist là một thư mục con trong `/assets/audio/music/`. `audio.jso
 | Phòng vừa | `normal/` | |
 | Phòng đông, rất đông | `lively/` | Nhịp nhanh, có trống |
 | Giờ hoàng đạo | `golden_hour/` | |
-| Lễ hoàn thành tầng | `ceremony/` | Đoạn ngắn 10–20 giây, phát đè lên nhạc đang chạy |
-| Mốc chục tầng | `milestone/` | |
+| Lễ giai đoạn đặc biệt, xong hạng mục | `ceremony/` | Đoạn ngắn 10–20 giây, phát đè lên nhạc đang chạy |
+| Khánh thành hạng mục lớn | `milestone/` | |
 | Lễ hội mở khóa (mục tiêu tim) | `festival/` | |
-| Khánh thành tầng 100 + credit | `finale/` | |
+| Khánh thành toàn công trình + credit | `finale/` | |
 
 - Chuyển playlist hoặc chuyển bài: crossfade 2–3 giây.
 - Thứ tự phát dùng chế độ `shuffle` / `sequential` / `random`, đặt riêng cho từng playlist; vị trí lưu vào DB.
@@ -481,7 +633,7 @@ Mỗi dòng là một thư mục trong `/assets/audio/sfx/`.
 
 | Nhóm | Khi phát |
 |---|---|
-| `dig_shovel` | Đào móng (tầng 0) |
+| `dig_shovel` | Đào móng, đào hồ |
 | `stone_chisel` | Đục, đập đá: nền móng, đá kê chân cột |
 | `wood_saw` | Cưa xẻ gỗ |
 | `wood_hammer` | Đóng gỗ, dựng cột (giai đoạn 2) |
@@ -490,7 +642,7 @@ Mỗi dòng là một thư mục trong `/assets/audio/sfx/`.
 | `pulley_rope` | Ròng rọc, kéo dây khi dựng cột hoặc kéo vật liệu lên cao |
 | `tile_place` | Lợp ngói (giai đoạn 4–5) |
 | `carry_drop` | Đặt vật liệu xuống đống |
-| `scaffold_remove` | Tháo giàn giáo khi xong tầng |
+| `scaffold_remove` | Tháo giàn giáo khi xong hạng mục |
 | `footsteps` | Nhân vật mới đi vào (chỉ ở chế độ `vang`, `vua`) |
 
 **Quà và tương tác:**
@@ -502,7 +654,7 @@ Mỗi dòng là một thư mục trong `/assets/audio/sfx/`.
 | `gift_buffalo` | Xe trâu: bánh xe lăn, tiếng trâu |
 | `gift_elephant` | Voi: tiếng voi, bước chân nặng |
 | `gift_huge` | Đúc chuông: tiếng kim loại, chuông đồng ngân ngắn |
-| `gift_guardian` | Đặt tượng nghê đá: tiếng đá nặng, trống |
+| `gift_guardian` | Đặt tượng hộ pháp: tiếng đá nặng, trống |
 | `like_pop` | Tim: tiếng nhỏ, nhẹ, giới hạn chặt (xem bên dưới) |
 | `comment_tick` | Comment được tính công: rất nhẹ, mặc định TẮT |
 | `rank_up` | Người xem lên danh hiệu mới |
@@ -515,15 +667,15 @@ Mỗi dòng là một thư mục trong `/assets/audio/sfx/`.
 | `toast_in` | Thông báo quà lớn hiện ra |
 | `abbot_speak` | Bong bóng thoại trụ trì hiện ra (tiếng chuông gió nhẹ) |
 | `stage_complete` | Xong một giai đoạn |
-| `floor_complete` | Xong tầng |
+| `item_complete` | Xong hạng mục |
 | `stele_rise` | Bia đá trồi lên |
-| `milestone_bell` | Mốc chục tầng: chuông chùa ngân |
+| `milestone_bell` | Lễ giai đoạn đặc biệt và khánh thành hạng mục lớn: chuông chùa ngân |
 | `lion_dance` | Múa lân khi đạt mục tiêu tim: trống lân, chiêng, chập chả |
 | `lantern_release` | Thả hoa đăng |
 | `golden_hour_start`, `golden_hour_end` | Bắt đầu, kết thúc giờ hoàng đạo (tiếng cồng) |
 | `goal_reached` | Đạt mục tiêu tim |
 | `session_start`, `session_end` | Mở, kết phiên |
-| `tower_complete` | Hoàn thành tầng 100 |
+| `project_complete` | Khánh thành toàn công trình |
 
 ### Âm thanh môi trường
 
@@ -564,12 +716,10 @@ Chạy lặp liên tục, mỗi nhóm một thư mục trong `/assets/audio/ambi
 - Bật giờ hoàng đạo thủ công.
 - Đặt mục tiêu tim của phiên.
 - Bắt đầu và kết thúc phiên live.
-- Thống kê: tổng công đức, tầng hiện tại, trung bình công đức mỗi phiên, ước tính số phiên còn lại.
-- Tra cứu người xem theo tên: lịch sử sự kiện, điểm theo từng tầng.
+- Thống kê: tổng công đức, hạng mục và giai đoạn hiện tại, trung bình công đức mỗi phiên, ước tính số phiên còn lại.
+- Tra cứu người xem theo tên: lịch sử sự kiện, điểm theo từng hạng mục.
 - Backup ngay, tải file backup, xuất và nhập JSON.
 - Điều chỉnh tay (cộng hoặc trừ điểm cho một người). Phải nhập lý do và được ghi vào bảng events với type `manual`.
-  - Cộng tay có ô "tính vào tháp" (mặc định bật, dùng khi bù quà bị sót): bật thì điểm cũng đẩy tiến độ tháp như quà thường.
-  - Trừ tay chỉ trừ điểm trên bảng xếp hạng, KHÔNG làm tháp lùi.
 
 ## 12. Hiệu năng và ổn định
 
@@ -588,7 +738,7 @@ Chạy lặp liên tục, mỗi nhóm một thư mục trong `/assets/audio/ambi
 - README viết cho người không biết lập trình: cài Node, chạy lần đầu, thêm ảnh, thêm âm thanh, cấu hình OBS.
 
 **14.2. Hồ sơ dữ liệu.**
-- Hai hồ sơ tách biệt hoàn toàn: `production` (dữ liệu thật) và `test`, mỗi hồ sơ có DB, avatar, backup và log riêng trong `data/production/` và `data/test/`. Config (`/config`) dùng chung cho cả hai. Chọn hồ sơ khi khởi động bằng hai file nhấp đúp: `start.bat` (thật) và `start-test.bat` (thử); admin hiện rõ đang ở hồ sơ nào.
+- Hai hồ sơ tách biệt hoàn toàn: `production` (dữ liệu thật) và `test`, mỗi hồ sơ có DB, avatar và backup riêng. Chọn hồ sơ khi khởi động; admin hiện rõ đang ở hồ sơ nào.
 - **Chế độ diễn tập:** dùng hồ sơ `test` kết nối vào live của một kênh bất kỳ để thử với dữ liệu thật mà không làm bẩn dữ liệu chính. Overlay hiện nhãn "DIỄN TẬP".
 - Simulator chỉ được chạy ở hồ sơ `test`.
 
@@ -597,10 +747,9 @@ Chạy lặp liên tục, mỗi nhóm một thư mục trong `/assets/audio/ambi
 - Phiên kết thúc thì trụ trì nói nhóm `session_end`, rồi backup.
 - "Top phiên này" tính theo phiên. Trần điểm tim và comment vẫn tính theo ngày (mục 4).
 
-**14.4. Vượt nhiều giai đoạn hoặc nhiều tầng một lúc** (quà rất lớn).
-- Logic cộng điểm và chia điểm cho từng tầng xử lý đúng ngay lập tức; người tặng được ghi vào `floor_contributions` của TỪNG tầng theo phần điểm rơi vào tầng đó.
-- Phần hiển thị phát lần lượt: mỗi giai đoạn khoảng 1 giây. Nếu đang có nhiều hơn 1 lễ trong hàng đợi, lễ hoàn thành rút gọn còn khoảng 4 giây. Lễ mốc chục tầng luôn diễn đầy đủ.
-- Tầng 0 (nền móng) cũng có lễ ngắn "Khởi công".
+**14.4. Vượt nhiều giai đoạn hoặc nhiều hạng mục một lúc** (quà rất lớn).
+- Logic cộng điểm xử lý đúng ngay lập tức. Người tặng được ghi vào `item_contributions` và `stage_contributions` của TỪNG giai đoạn và hạng mục, theo phần điểm rơi vào đó.
+- Phần hiển thị phát lần lượt: mỗi giai đoạn thường khoảng 1 giây. Nếu hàng đợi có nhiều hơn 1 lễ, lễ `stage_ritual` và `item_complete` loại `nho` rút gọn còn khoảng 4 giây. Lễ hạng mục `vua`, `lon` luôn diễn đầy đủ.
 
 **14.5. Hòa điểm.** Trên mọi bảng và bia, người bằng điểm thì ai đạt mức điểm đó trước được xếp trên.
 
@@ -615,20 +764,18 @@ Chạy lặp liên tục, mỗi nhóm một thư mục trong `/assets/audio/ambi
 - Tên rỗng sau khi lọc hiện `Thiện hữu ẩn danh`.
 
 **14.8. Quản lý người xem** (trên admin).
-- **Ẩn danh theo yêu cầu:** người xem nhờ ẩn tên thì admin bật ẩn danh vĩnh viễn cho người đó. Áp dụng cả trên bia của các tầng cũ và trong credit. Điểm vẫn giữ.
+- **Ẩn danh theo yêu cầu:** người xem nhờ ẩn tên thì admin bật ẩn danh vĩnh viễn cho người đó. Áp dụng cả trên bia cũ và trong credit. Điểm vẫn giữ.
 - **Danh sách chặn hiển thị** (người phá rối): không sinh nhân vật, không hiện tên hay avatar ở bất kỳ đâu, trụ trì không nhắc tên. Sự kiện và điểm vẫn ghi để minh bạch.
 
 **14.9. Lệnh bình luận tra cứu.**
-- Người xem bình luận một từ khóa (mặc định `hạng` hoặc `công`, sửa trong config) thì overlay hiện thẻ nhỏ khoảng 5 giây: hạng tổng, tổng điểm, tầng góp nhiều nhất.
+- Người xem bình luận một từ khóa (mặc định `hạng` hoặc `công`, sửa trong config) thì overlay hiện thẻ nhỏ khoảng 5 giây: hạng tổng, tổng điểm, hạng mục góp nhiều nhất.
 - Mỗi người tối đa 1 lần/60 giây. Bật/tắt được.
 - Giúp người xem tự kiểm tra điểm của mình và giảm thắc mắc "tôi tặng mà không thấy tên".
 
 **14.10. Nhật ký thay đổi cấu hình.**
-- Mọi thay đổi config (tỉ lệ quy đổi, giá tầng, ngưỡng…) được ghi lại: thời gian, giá trị cũ, giá trị mới.
+- Mọi thay đổi config (tỉ lệ quy đổi, giá hạng mục, thứ tự hạng mục, ngưỡng…) được ghi lại: thời gian, giá trị cũ, giá trị mới.
 - Đổi tỉ lệ quy đổi KHÔNG tính lại điểm đã có.
-- Đổi giá tầng chỉ áp dụng cho tầng chưa bắt đầu. Riêng tầng đang xây: admin hỏi xác nhận, và phần trăm tiến độ được tính lại theo giá mới:
-  - Giá mới thấp hơn số điểm đã góp: tầng xong ngay, điểm dư chuyển sang tầng sau.
-  - Giá mới cao hơn làm phần trăm tụt: giai đoạn được phép lùi theo đúng điểm.
+- Đổi giá chỉ áp dụng cho giai đoạn chưa bắt đầu. Riêng giai đoạn đang xây: admin hỏi xác nhận, và phần trăm tiến độ được tính lại theo giá mới. Không được đổi thứ tự hay xóa hạng mục đã bắt đầu.
 
 **14.11. Lịch sự kiện (có âm lịch).**
 
@@ -652,7 +799,7 @@ Sự kiện mặc định (chủ dự án chỉnh lại hệ số):
 | Phật Đản | 15/4 âm | ×3 | Hoa sen, đèn lồng, cờ |
 | Vu Lan | 15/7 âm | ×2 | Hoa hồng, đèn lồng |
 | Tết Trung Thu | 15/8 âm | ×2 | Trăng, đèn ông sao, múa lân |
-| Tết Nguyên Đán | Ngày cuối tháng Chạp (29 hoặc 30) – mùng 3 tháng Giêng âm | ×2 | Hoa đào, câu đối, pháo hoa |
+| Tết Nguyên Đán | 30 tháng Chạp – mùng 3 tháng Giêng âm | ×2 | Hoa đào, câu đối, pháo hoa |
 | Cuối tuần | Thứ 7, Chủ nhật, 20:00–22:00 | ×1,5 | — |
 
 Quy tắc:
@@ -666,14 +813,12 @@ Quy tắc:
 
 Đồ họa sự kiện thêm (tùy chọn, thiếu thì bỏ qua trang trí đó): `bg/moon.png`, `fx/lantern_string.png`, `fx/lotus_lantern.png`, `fx/firework_*.png`, `fx/peach_blossom.png`, `fx/star_lantern.png`.
 
-**14.12. Sau khi xong tháp.**
-- Overlay chuyển sang cảnh khánh thành lặp: tháp hoàn chỉnh, credit cuộn chậm.
+**14.12. Sau khi xong toàn công trình.**
+- Overlay chuyển sang cảnh khánh thành lặp: camera `tour` chậm qua quần thể, credit cuộn chậm.
 - Sự kiện vẫn được ghi, với nhãn "sau khánh thành".
-- Admin có nút "Bắt đầu công trình mới": lưu trữ toàn bộ dữ liệu tháp cũ, giữ nguyên danh sách người góp công. Nội dung công trình mới chủ dự án quyết định sau.
+- Admin có hai lựa chọn: **Mở rộng chùa** (nối thêm hạng mục mới vào danh sách, cần ảnh bản đồ mở rộng) hoặc **Bắt đầu công trình mới** (lưu trữ toàn bộ dữ liệu cũ, giữ nguyên danh sách người góp công).
 
-**14.13. Kích thước tháp trên màn hình.**
-- Config `floor1WidthPx` (mặc định 520px trên khung 1080), chiều cao suy ra theo tỉ lệ ảnh.
-- Admin có thanh trượt chỉnh trực tiếp và xem ngay trên overlay.
+**14.13. Kích thước hiển thị.** Thay cho thông số tầng tháp cũ: `maxZoom`, tỉ lệ công trình trong khung hình ở chế độ `site`, vị trí và độ trong suốt các bảng giao diện. Admin có thanh trượt chỉnh trực tiếp và xem ngay trên overlay.
 
 **14.14. Thời tiết và ngày đêm (theo Hà Nội, tự động).**
 
@@ -700,18 +845,18 @@ Quy tắc:
 - Cường độ gió (`lặng`, `nhẹ`, `mạnh`) là thông số riêng, kết hợp được với mọi trạng thái.
 
 **Hiển thị** (code vẽ, hầu như không cần ảnh mới):
-- **Pha trong ngày:** lớp màu phủ lên trời và nền (sáng vàng, ngày trong, hoàng hôn cam tím, đêm xanh thẫm). Ban đêm: đèn lồng và cửa sổ các tầng sáng lên, có quầng sáng.
+- **Pha trong ngày:** lớp màu phủ lên trời và nền (sáng vàng, ngày trong, hoàng hôn cam tím, đêm xanh thẫm). Ban đêm: đèn lồng và cửa sổ các công trình đã xong sáng lên, có quầng sáng.
 - **Sao:** hạt lấp lánh khi đêm quang mây.
 - **Trăng** (`bg/moon.png`, hoặc code tự vẽ nếu thiếu ảnh): mọc và lặn theo giờ, hình dạng theo pha.
 - **Mây:** lớp mây trôi, dày mỏng theo độ che phủ, tốc độ theo gió.
 - **Mưa:** hạt mưa xiên theo gió, bắn tóe dưới đất; nền tối và bão hòa màu giảm nhẹ.
-- **Sương mù:** dải mờ ở chân núi và quanh chân tháp.
+- **Sương mù:** dải mờ ở chân núi và len giữa các công trình.
 - **Gió:** cánh hoa đào bay nhanh và xa hơn, cờ phần phật, cành cây rung.
 - **Dông, bão:** chớp lóe sáng toàn màn hình (ngắn, không nhấp nháy liên tục), rung camera rất nhẹ, mưa dày. Màn hình KHÔNG nhấp nháy quá 3 lần/giây, để an toàn cho người nhạy cảm ánh sáng.
 - **Nhân vật khi mưa:** đội nón lá và áo tơi. Dùng ảnh phụ `chars/overlay_nonla.png` gắn lên đầu; thiếu ảnh thì bỏ qua.
 
 **Giới hạn:**
-- Các bảng giao diện, bia và chữ KHÔNG bị lớp màu thời tiết phủ lên, luôn rõ ràng. Có `maxDarkness` (mặc định 45%) để đêm và bão không làm tối tháp quá mức.
+- Các bảng giao diện, bia và chữ KHÔNG bị lớp màu thời tiết phủ lên, luôn rõ ràng. Có `maxDarkness` (mặc định 45%) để đêm và bão không làm tối công trình quá mức.
 - Thời tiết chỉ là hình ảnh và âm thanh, KHÔNG ảnh hưởng điểm hay tốc độ xây.
 - Chuyển trạng thái thời tiết dần dần trong 30–60 giây.
 - Số hạt mưa, sao, cánh hoa giảm theo chế độ độ đông (mục 9A) để giữ 60fps.
@@ -735,34 +880,22 @@ Quy tắc:
 
 ## 15. Lộ trình làm (từng giai đoạn, xong một giai đoạn thì dừng lại cho chủ dự án kiểm tra)
 
-1. **Khung dự án:** cấu trúc thư mục, config + zod, DB + migration, hồ sơ `production`/`test` (14.2), hàm tính điểm, máy trạng thái tiến độ tháp, phiên live (14.3), nhật ký thay đổi config (14.10), `start.bat`/`start-test.bat` (14.1, không làm `start.sh`). Unit test cho: tính điểm, trần ngày, cooldown comment, chuyển giai đoạn, chuyển tầng, điểm dư, vượt nhiều tầng một lúc với ghi nhận đúng cho từng tầng (14.4), hòa điểm (14.5), đổi giá tầng giữa chừng, chuyển đổi âm lịch và hệ số sự kiện kèm trần nhân (14.11).
-2. **Simulator + WebSocket + overlay tối giản:** tháp vẽ bằng hình khối tạm, banner tiến độ, bảng xếp hạng chạy theo dữ liệu thật từ DB.
-3. **Đưa đồ họa thật vào:** manifest, script cắt sprite, xếp chồng tầng theo `eaveLineY`, taper, camera, parallax trời, khung debug vùng an toàn.
-4. **Nhân vật, trụ trì, hiệu ứng quà, hàng đợi thông báo.** Gồm: chế độ độ đông (9A) có unit test cho ngưỡng và độ trễ, dân phu NPC và người góp công cũ (9B), kho thoại và bộ chọn thoại (9C) có unit test quét từ cấm. Thử đủ 4 kịch bản simulator.
-5. **Lễ hoàn thành tầng, bia ghi danh, mốc chục tầng, kết thúc tầng 100 và credit.**
-5b. **Âm thanh (mục 10A):** quét thư mục, nhạc nền theo playlist và crossfade, hiệu ứng gắn với hoạt ảnh và sự kiện, ducking, giới hạn chống ồn theo chế độ. Có unit test cho bộ chọn biến thể và giới hạn tần suất. Tạo sẵn đủ cây thư mục rỗng kèm file `README.txt` trong mỗi thư mục mô tả loại âm thanh cần đặt vào. KHÔNG tự tải âm thanh từ internet.
-5c. **Ngày đêm và thời tiết (mục 14.14):** ngày đêm và pha trăng offline trước, rồi đến adapter thời tiết, hiệu ứng mưa, gió, sương, dông, bão, giới hạn hiển thị và dự phòng khi lỗi. Unit test cho phép chuyển mã thời tiết thành trạng thái game và cho cách tính pha trong ngày.
-6. **Kết nối TikTok thật:** `TikTokConnectorAdapter` với API key Euler Stream từ `.env`, kết nối lại, chống trùng, xử lý combo quà, tải avatar, hiển thị trạng thái và lỗi trên admin. Thử với một kênh đang live bất kỳ trước khi dùng cho kênh chính. Các adapter `euler-ws` và `tikfinity` chỉ làm khi chủ dự án yêu cầu.
-7. **Trang admin, backup, xuất/nhập**, cùng quản lý người xem (14.8), lệnh bình luận tra cứu (14.9), lịch sự kiện (14.11), cảnh sau khánh thành (14.12), chỉnh kích thước tháp (14.13). Tên quà hiển thị (14.6) và tên đặc biệt (14.7) làm ngay ở giai đoạn 4.
+**Hiện trạng:** giai đoạn 1, 2, 3 đã xong theo hướng tháp cũ; giai đoạn 4 đang làm dở.
+
+**R. Chuyển hướng sang quần thể chùa** (làm NGAY, trước mọi việc khác):
+- **R1. Mô hình dữ liệu:** thay tầng bằng hạng mục và giai đoạn (mục 5, 6), `project.json` với mẫu giai đoạn và danh sách mặc định, migration DB. Nếu chưa có dữ liệu `production` thật thì được phép xóa và tạo lại DB; nếu đã có thì viết migration chuyển đổi. Cập nhật mọi unit test (vượt nhiều giai đoạn hoặc hạng mục, bia giai đoạn, đổi thứ tự hạng mục, nối thêm hạng mục). Cập nhật kho thoại và tên nhóm âm thanh theo thuật ngữ mới. Simulator và overlay tối giản (hình khối tạm) chạy được với mô hình mới.
+- **R2. Đồ họa bản đồ:** ghép bản đồ (chồng 308px), phóng to bằng AI, cắt công trình từ `map_built`, lớp tiền cảnh, manifest, trang `/tools/assets` mở rộng (mục 7). Dừng lại cho chủ dự án kiểm tra viền cắt và vị trí.
+- **R3. Hiển thị giai đoạn:** các `visual.kind`, giàn giáo vẽ bằng code, đống vật liệu, ảnh mốc tùy chọn. Trang thử cho phép kéo qua mọi giai đoạn của mọi hạng mục.
+- **R4. Camera và bố cục giao diện mới** (mục 8). Kiểm tra với ảnh chụp màn hình live thật.
+
+Sau đó tiếp tục:
+
+4. **Nhân vật, trụ trì, hiệu ứng quà, hàng đợi thông báo** trên bản đồ mới. Gồm: lối đi và vị trí làm việc, chế độ độ đông (9A), dân phu NPC và người góp công cũ (9B), kho thoại và bộ chọn thoại (9C), tên quà hiển thị (14.6), tên đặc biệt (14.7). Phần đã làm của giai đoạn 4 cũ được giữ lại và chuyển sang bản đồ mới.
+5. **Các loại lễ và bia (mục 10)**, lễ khánh thành toàn công trình và credit.
+5b. **Âm thanh (mục 10A):** quét thư mục, nhạc nền theo playlist và crossfade, hiệu ứng gắn với hoạt ảnh và sự kiện, ducking, giới hạn chống ồn theo chế độ. Có unit test cho bộ chọn biến thể và giới hạn tần suất. Tạo sẵn đủ cây thư mục rỗng kèm `README.txt` trong mỗi thư mục mô tả loại âm thanh cần đặt vào. KHÔNG tự tải âm thanh từ internet.
+5c. **Ngày đêm và thời tiết (mục 14.14):** ngày đêm và pha trăng offline trước, rồi adapter thời tiết, hiệu ứng mưa, gió, sương, dông, bão, giới hạn hiển thị và dự phòng khi lỗi. Unit test cho phép chuyển mã thời tiết và cách tính pha trong ngày.
+6. **Kết nối TikTok thật:** `TikTokConnectorAdapter` với API key Euler Stream từ `.env`, kết nối lại, chống trùng, xử lý combo quà, tải avatar, hiển thị trạng thái và lỗi trên admin. Thử với một kênh đang live bất kỳ (hồ sơ `test`) trước khi dùng cho kênh chính. Adapter `euler-ws` và `tikfinity` chỉ làm khi chủ dự án yêu cầu.
+7. **Trang admin, backup, xuất/nhập**, quản lý người xem (14.8), lệnh bình luận tra cứu (14.9), lịch sự kiện (14.11), sau khánh thành và mở rộng (14.12), chỉnh hiển thị (14.13), trình sửa danh sách hạng mục và giai đoạn.
 8. **Kiểm thử chịu tải:** simulator chạy 8 giờ, đo fps và bộ nhớ, sửa lỗi.
 
-Sau mỗi giai đoạn: chạy test, cập nhật `README.md` (cách cài, cách chạy, cách thêm ảnh), tóm tắt cho chủ dự án những gì đã làm và cần kiểm tra gì.
-
-## 16. Nhật ký quyết định
-
-**2026-11-10 (trước giai đoạn 1)**, chủ dự án đồng ý các đề xuất sau (đã sửa vào các mục tương ứng ở trên):
-1. Node.js 24 LTS (mục 1).
-2. Hệ số nhân áp dụng cho mọi nguồn; trần tim + comment tính trên điểm gốc (mục 4).
-3. Làm tròn từng sự kiện, từ 0,5 trở lên làm tròn lên (mục 4).
-4. Giá tầng làm tròn đến hàng trăm (mục 5).
-5. Giữ nguyên cân đối điểm như SPEC; quà rất lớn vẫn được vượt nhiều tầng (14.4). Giá chỉnh trong config khi cần.
-6. "Giờ hoàng đạo" là khung giờ tự đặt; nhãn mặc định "Giờ vàng" (mục 4).
-7. Danh hiệu dùng từ công trường; "tượng hộ pháp" → "tượng nghê đá"; "Bia công đức" → "Bia ghi danh" (mục 8, 9, 9C, 10, 10A). Vẫn đổi được trong config.
-8. Dữ liệu tách theo hồ sơ `data/production/`, `data/test/`; config dùng chung; `start.bat` và `start-test.bat` (14.2).
-9. Không làm `start.sh` (14.1, 15).
-10. Đổi giá tầng đang xây: tính lại đúng theo điểm, xong ngay nếu đủ, cho phép lùi giai đoạn (14.10).
-11. Tết tính từ ngày cuối tháng Chạp (14.11).
-12. Cộng điểm tay có ô "tính vào tháp"; trừ tay không làm tháp lùi (mục 11).
-13. Trụ trì hiển thị "Thầy trụ trì", không tên riêng (mục 9).
-14. Không có mục 13 (đánh số nhảy, không sót nội dung).
-- Mặc định khác: config mặc định trong `config/defaults/`; giữ tổng 30 bản backup; comment lệnh tra cứu vẫn tính công; ngưỡng "quà rất lớn" ≥ 1.000 xu.
+Sau mỗi giai đoạn: chạy test, cập nhật `README.md`, commit git, tóm tắt cho chủ dự án những gì đã làm và cần kiểm tra gì.
