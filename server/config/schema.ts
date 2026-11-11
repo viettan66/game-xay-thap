@@ -4,6 +4,7 @@
 import { z } from 'zod';
 import { GROUND_LOOKS, ITEM_SIZES, PIECE_LOOKS, projectProblems, type ProjectFile } from '../../shared/project.js';
 import { PART_KEYS } from '../../shared/parts.js';
+import { DIALOGUE_VARS, varsOf } from '../dialogue/rules.js';
 
 z.config(z.locales.vi());
 
@@ -71,6 +72,51 @@ export const configSchema = z.strictObject({
     ceremonySec: z.number().min(1).max(60),
     ceremonyZoom: z.number().min(1).max(2),
     shakeMinCoins: int(1),
+  }),
+  // Chế độ độ đông (mục 9A): ngưỡng trên của vang, vua, dong theo người xem và người tương tác trong cửa sổ trượt.
+  crowd: z
+    .strictObject({
+      viewers: z.tuple([int(0), int(0), int(0)]),
+      interactors: z.tuple([int(0), int(0), int(0)]),
+      windowSec: z.number().min(10).max(3600),
+      hysteresisSec: z.number().min(0).max(3600),
+      burstEvents: int(1),
+      burstWindowSec: z.number().min(1).max(600),
+    })
+    .refine((c) => c.viewers[0] < c.viewers[1] && c.viewers[1] < c.viewers[2] && c.interactors[0] < c.interactors[1] && c.interactors[1] < c.interactors[2], {
+      message: 'Ngưỡng độ đông phải tăng dần: vắng < vừa < đông',
+    }),
+  // Mức quà theo số xu một lần tặng (mục 9, 14.6): tên vật phẩm hiện trong {gift}, nhóm thoại cảm ơn.
+  gifts: z.strictObject({
+    tiers: z
+      .array(
+        z.strictObject({
+          minCoins: int(0),
+          name: z.string().min(1),
+          dialogue: z.string().regex(/^gift_[a-z0-9_]+$/, 'Nhóm thoại cảm ơn quà phải bắt đầu bằng gift_'),
+        }),
+      )
+      .min(1)
+      .refine((t) => t[0]!.minCoins === 0 && t.every((x, i) => i === 0 || x.minCoins > t[i - 1]!.minCoins), {
+        message: 'Mức quà phải bắt đầu từ 0 xu và tăng dần',
+      }),
+    /** Tên tiếng Việt của quà gốc theo giftId (tùy chọn): có thì {gift} nhắc thêm tên quà. */
+    displayNames: z.record(z.string(), z.string().min(1)),
+  }),
+  // Trụ trì (mục 9, 9A, 9C): nhịp thoại tự do theo chế độ, ngưỡng vẫy chào / cúi chào, gộp chào và cảm ơn.
+  abbot: z.strictObject({
+    idleSec: z.strictObject({
+      vang: z.tuple([z.number().min(0), z.number().min(0)]),
+      vua: z.tuple([z.number().min(0), z.number().min(0)]),
+      dong: z.tuple([z.number().min(0), z.number().min(0)]),
+      ratdong: z.tuple([z.number().min(0), z.number().min(0)]),
+    }),
+    waveMinCoins: int(1),
+    bowMinCoins: int(1),
+    greetGroupSec: z.number().min(1).max(600),
+    thanksGroupSec: z.number().min(1).max(600),
+    maxQueue: int(1).max(50),
+    progressMarks: z.array(z.number().min(1).max(99)),
   }),
   // Lọc tên (mục 8): tên chứa từ cấm hiện labels.anonymousName.
   nameFilter: z.strictObject({
@@ -148,7 +194,8 @@ export type EventsFile = z.infer<typeof eventsFileSchema>;
 // ---- config/dialogues.json: kho thoại (mục 9C) ----
 
 const TIERS = ['vang', 'vua', 'dong', 'ratdong'] as const;
-export const dialoguesFileSchema = z.strictObject({
+export const dialoguesFileSchema = z
+  .strictObject({
   _ghi_chu: z.string().optional(),
   groups: z.record(
     z.string().regex(/^[a-z0-9_]+$/, 'Tên nhóm chỉ gồm chữ thường không dấu, số và dấu _'),
@@ -166,7 +213,19 @@ export const dialoguesFileSchema = z.strictObject({
       ),
     }),
   ),
-});
+  })
+  .superRefine((f, ctx) => {
+    // Biến không hợp lệ trong câu (ví dụ {ten}) thì báo lỗi ngay, không để chữ "{ten}" hiện lên live (mục 9C).
+    for (const [g, group] of Object.entries(f.groups)) {
+      group.lines.forEach((l, i) => {
+        for (const v of varsOf(l.text)) {
+          if (!(DIALOGUE_VARS as readonly string[]).includes(v)) {
+            ctx.addIssue({ code: 'custom', path: ['groups', g, 'lines', i, 'text'], message: `Biến {${v}} không hợp lệ. Dùng được: ${DIALOGUE_VARS.map((x) => `{${x}}`).join(' ')}` });
+          }
+        }
+      });
+    }
+  });
 
 export type DialoguesFile = z.infer<typeof dialoguesFileSchema>;
 

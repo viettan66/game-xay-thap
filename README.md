@@ -10,8 +10,9 @@ mỗi hạng mục qua nhiều giai đoạn thi công.
 > ("xây từng mảnh": mỗi lần có công, từng viên gạch, viên ngói, thanh gỗ bay vào đúng chỗ), **R3c** (trang thử xây
 > `/tools/build`: chọn hạng mục, giai đoạn, nút tim và quà, đo FPS) và **R4** (camera phóng to, toàn cảnh, lia giới thiệu;
 > giao diện mới: thanh tiến độ góc trên phải, bảng xếp hạng thu gọn tự tránh công trình, ô sự kiện, bản đồ thu nhỏ, lọc tên).
-> Sắp tới: giai đoạn 4 (nhân vật, trụ trì, chế độ độ đông, thông báo quà).
-> Chưa có nhân vật và trụ trì (giai đoạn 4), chưa kết nối TikTok (giai đoạn 6).
+> Giai đoạn 4 làm từng phần: đã xong **4a** (chế độ độ đông của phòng, kho thoại, trụ trì nói chuyện trên overlay, tên quà theo mức).
+> Sắp tới: 4b (thông báo quà lớn, mục tiêu tim, trang Kho thoại), 4c (ảnh nhân vật, lối đi), 4d (nhân vật người xem,
+> hiệu ứng quà), 4e (dân phu, người góp công cũ). Chưa kết nối TikTok (giai đoạn 6).
 
 ---
 
@@ -86,12 +87,12 @@ Trên overlay hiện có:
   - **Công trường** (thường ngày): phóng vào hạng mục đang xây, công trình chiếm khoảng một nửa bề ngang
     (công trình nhỏ thì phóng tới mức tối đa ×1,6 là dừng), nằm giữa phần màn hình không bị nền tảng che.
   - **Toàn cảnh**: thu nhỏ hết cỡ, lia chậm từ đỉnh quần thể xuống hồ sen trong 9 giây. Các bảng mờ xuống 30%,
-    chỉ còn thanh tiến độ; hiện **bản đồ thu nhỏ** góc dưới trái (đã xong có màu, chưa xây là bóng xám, đang xây nhấp nháy).
+    chỉ còn thanh tiến độ; hiện **bản đồ thu nhỏ** góc dưới phải (đã xong có màu, chưa xây là bóng xám, đang xây nhấp nháy).
     Tự chạy mỗi 6 phút (phòng vắng: 3 phút; phòng đông: không tự chạy), hoặc bấm nút **Toàn cảnh** trên trang trạng thái.
   - **Lia giới thiệu**: từ trời lia chậm xuống cổng tam quan trong 20 giây. Phòng vắng tự chạy mỗi 10 phút; bấm nút **Lia giới thiệu** để xem thử.
   - **Đẩy vào**: xong một hạng mục thì camera đẩy chậm vào công trình đó khoảng 5 giây (lễ đầy đủ làm ở giai đoạn 5).
   - **Rung nhẹ** khi có quà từ 1.000 xu.
-  - Chế độ độ đông của phòng (vắng, vừa, đông, rất đông) làm ở giai đoạn 4; từ giờ tới đó game luôn coi là phòng **vừa**.
+  - Nhịp tự động theo **chế độ độ đông** của phòng (xem dưới).
 - Chưa dựng bản đồ (thiếu ảnh) thì overlay tự quay về vẽ tạm bằng hình khối có tên, không bị dừng.
 - **Thanh tiến độ** góc trên phải, ngay dưới vùng an toàn trên:
   - dòng 1 `Hạng mục 4/23 · Cổng tam quan` (tên dài thì chữ tự nhỏ lại);
@@ -101,7 +102,22 @@ Trên overlay hiện có:
   Bảng chưa có ai thì bỏ qua. Bảng có 3 chỗ đặt sẵn (trái giữa, phải giữa, trái trên) và **tự dời sang chỗ không che
   hạng mục đang xây** (mờ đi, dời, hiện lại). Muốn cố định một chỗ: chỉnh trên trang trạng thái.
 - **Ô sự kiện** dưới thanh tiến độ, chỉ hiện khi có: `Giờ vàng ×2 · còn 12:34` (đồng hồ đếm ngược), sự kiện lịch
-  (ví dụ `Ngày Rằm ×2`), tổng hệ số khi có từ hai thứ trở lên. (Mục tiêu tim của phiên làm ở giai đoạn 4.)
+  (ví dụ `Ngày Rằm ×2`), tổng hệ số khi có từ hai thứ trở lên. (Mục tiêu tim của phiên làm ở giai đoạn 4b.)
+- **Chế độ độ đông** (SPEC mục 9A): **vắng**, **vừa**, **đông**, **rất đông**, tính từ số người xem và số người tương tác
+  (bình luận, tim, quà) trong 5 phút, lấy mức cao hơn. Đổi chế độ khi ổn định 2 phút; có đợt dồn dập (hơn 100 sự kiện trong
+  10 giây) thì lên mức ngay. Trang trạng thái hiện chế độ và có nút ép tay. Chế độ đổi: tốc độ đặt mảnh, nhịp camera, cách trụ trì nói.
+- **Trụ trì** đứng góc trái phía trên vùng comment, **tự né sang phải** nếu che công trình đang xây. Dáng: chắp tay, vẫy chào
+  (quà từ 100 xu), cúi chào (quà từ 1.000 xu; phòng vắng cúi chào mọi quà), dang tay (lễ, xong hạng mục, mở phiên).
+  Bong bóng thoại hiện 4–6 giây, nói lần lượt từng câu (lễ > cảm ơn quà > chào > chuyện phiếm).
+  - **Chào:** phòng vắng chào từng người khi vào; phòng vừa chào lần tương tác đầu, gộp nhóm mỗi 10 giây; phòng đông, rất đông
+    không chào. Mỗi người chỉ được chào bằng tên một lần mỗi phiên.
+  - **Cảm ơn quà** với tên vật phẩm theo mức: dưới 10 xu "một viên gạch", 10–99 "một bó gỗ", 100–499 "một xe trâu chở đá",
+    500–999 "một đoàn voi chở gỗ", 1.000–4.999 "một quả đại hồng chung", từ 5.000 "một tượng võ tướng đá".
+    Phòng vừa gộp quà liên tiếp của cùng một người. Phòng đông chỉ cảm ơn riêng quà từ 100 xu và quà đầu tiên của mỗi người;
+    phòng rất đông chỉ cảm ơn riêng quà từ 1.000 xu; các quà còn lại được cảm ơn chung mỗi 30 giây ("Cảm ơn 12 thiện hữu…").
+  - **Mở phiên, đóng phiên, lễ của giai đoạn, xong hạng mục:** có câu riêng. Phòng đông báo tiến độ khi giai đoạn qua 50%, 80%, 95%.
+  - **Lúc rảnh:** kể chuyện, hướng dẫn cách góp công (phòng vắng mỗi 1–1,5 phút, phòng vừa 2–3 phút, phòng đông 5 phút; rất đông không nói).
+  - Câu **chưa duyệt** chỉ được nói ở chế độ giả lập và có **viền cam**; live thật (kể cả diễn tập) chỉ nói câu đã duyệt.
 - Nhãn **CHẾ ĐỘ THỬ** khi dùng giả lập, **DIỄN TẬP** khi hồ sơ thử dùng live thật. Live thật ở `start.bat` thì không có nhãn.
 - Dải miễn trừ cố định, nhỏ, nền mờ `Trò chơi mô phỏng xây chùa – không phải quyên góp tôn giáo` ngay trên vùng comment của nền tảng.
 - **Lọc tên:** tên người xem được chuẩn hóa (chữ kiểu 𝓜𝓲𝓷𝓱 → Minh, bỏ ký tự vô hình). Tên chứa từ cấm (danh sách
@@ -325,7 +341,21 @@ Mở cửa sổ lệnh **tại thư mục dự án**: mở thư mục `game-xay-
    nút tim/chia sẻ, khung comment, tên kênh của TikTok che không. Bị che thì báo em, hoặc sửa `overlay.safeArea` trong `config.json`.
 7. Giờ vàng: tạm thời chỉ bật được bằng lịch trong `config.json` (`goldenHour.schedule`); khi bật, ô sự kiện hiện `Giờ vàng ×2 · còn …` đếm ngược.
 
-**h) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
+**h) Giai đoạn 4a: độ đông và trụ trì**
+1. Nhấp đúp `start-test.bat`, bấm **Mở overlay ↗**. Đặt overlay và trang trạng thái cạnh nhau.
+2. Trên trang trạng thái bấm **Bắt đầu phiên**: trụ trì dang tay, chào mở phiên.
+3. Khung **Độ đông của phòng**: bấm **Vắng**. Bấm **Người vào phòng**: trụ trì chào người đó bằng tên (mỗi người một lần).
+   Bấm **Quà nhỏ (1 xu)**: trụ trì cúi chào, "Cảm ơn … đã góp một viên gạch!".
+4. Bấm **Vừa**. Bấm **1.000 tim**, **Comment** vài lần: sau khoảng 10 giây trụ trì chào gộp "Chào A, B và C…".
+   Bấm **Quà vừa (100 xu)**: trụ trì vẫy tay, nhắc "một xe trâu chở đá". Bấm **Quà lớn (1.000 xu)**: cúi chào, "đại hồng chung".
+5. Bấm **Rất đông**, bấm **Quà nhỏ** nhiều lần: trụ trì không cảm ơn từng người; khoảng 30 giây sau cảm ơn chung "Cảm ơn … thiện hữu".
+6. Để yên vài phút ở **Vắng**: trụ trì kể chuyện, hướng dẫn cách góp công.
+7. Câu có **viền cam** là câu em viết thêm, chưa duyệt (chỉ hiện ở giả lập). Đọc trong `config\dialogues.json`, đúng thì đổi `"verified": true`.
+8. Bấm **Tự động**: chế độ tự tính theo người xem và người tương tác (đổi sau 2 phút ổn định). Chọn kịch bản
+   **Phòng rất đông**, bấm **▶ Chạy**: sau vài giây chế độ lên **Rất đông** (đợt dồn dập), mảnh bay chậm lại (10 mảnh/giây).
+9. Xây tới công trình to (ví dụ Chính điện): trụ trì tự sang bên phải nếu đứng bên trái che công trình.
+
+**i) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
 Lệnh này xóa dữ liệu thử và chạy một chuỗi sự kiện mẫu. Màn hình in từng giai đoạn, từng hạng mục vừa xong, kèm các bảng xếp hạng.
 
 ---
@@ -339,11 +369,25 @@ Các file sau được tạo tự động ở lần chạy đầu, từ bản m�
 | `config\config.json` | Điểm quy đổi, trần ngày, giờ vàng, nhãn chữ trên overlay, danh hiệu, bố cục overlay… |
 | `config\project.json` | **Danh sách hạng mục** theo thứ tự xây, giá, các mẫu giai đoạn (mục 5 của SPEC) |
 | `config\events.json` | Lịch sự kiện dương lịch, âm lịch (Mùng 1, Rằm, Tết…) |
-| `config\dialogues.json` | Kho thoại (mục 9C). Hiện có nhóm `piece_burst`: nhãn nhỏ khi một đợt mảnh bay vào. Thêm câu tùy ý, giữ `{name}`, `{n}`, `{material}`; câu `verified: false` không hiện khi live thật |
+| `config\dialogues.json` | Kho thoại (mục 9C): thoại trụ trì (`session_start`, `greet_single`, `gift_small`… 15 nhóm) và nhãn `piece_burst`. Xem dưới |
 
 - Mở bằng Notepad để sửa, lưu lại rồi tắt và bật lại game. Từ giai đoạn 7, sửa trực tiếp trên trang admin.
 - Ghi sai thì game không chạy và báo rõ chỗ sai, ví dụ: `items: Hạng mục "tam_quan": không có mẫu giai đoạn "vuaa"`.
 - Muốn về mặc định: xóa file trong `config\` (KHÔNG xóa thư mục `defaults`), rồi chạy lại game.
+
+### `config\dialogues.json`: kho thoại
+Mỗi nhóm (`session_start`, `greet_single`, `greet_group`, `returning`, `gift_small`, `gift_medium`, `gift_large`, `gift_huge`,
+`gift_thanks_group`, `progress`, `item_complete`, `stage_ritual`, `idle_story`, `idle_howto`, `session_end`, `piece_burst`) có:
+- `mode`: `shuffle` (xáo trộn, hết một vòng mới lặp lại), `sequential` (lần lượt), `random` (ngẫu nhiên theo `weight`);
+- `cooldownSec`: nghỉ ít nhất bao nhiêu giây giữa hai lần nói cùng nhóm;
+- `lines`: danh sách câu, mỗi câu `{ "text", "tiers", "weight", "enabled", "verified" }`.
+  `tiers` rỗng = mọi chế độ, hoặc ghi `["vang", "vua"]`… `enabled: false` = tạm tắt câu. Thêm bao nhiêu câu cũng được.
+- Biến dùng được: `{name}` `{names}` `{n}` `{gift}` `{material}` `{item}` `{stage}` `{ritual}` `{itemIndex}` `{itemTotal}`
+  `{percent}` `{count}` `{target}` `{reward}`. Ghi sai biến (ví dụ `{ten}`) thì game báo lỗi khi mở.
+- **Duyệt câu:** câu do em viết thêm có `"verified": false`. Live thật chỉ nói câu `"verified": true`. Mình đọc từng câu
+  (nhất là nhóm `idle_story` có kiến thức lịch sử), thấy đúng thì đổi thành `true`. (Trang Kho thoại để duyệt bằng nút bấm làm ở 4b.)
+- Nguyên tắc: không hứa phước báu, may mắn, bình an; nhóm `gift_…` không có từ ngữ tôn giáo; "A Di Đà Phật" chỉ ở mở phiên,
+  đóng phiên, lễ, xong hạng mục. Test tự động (`npm test`) quét kho thoại mặc định theo các nguyên tắc này.
 
 ### `config\project.json`: hạng mục và giai đoạn
 Mỗi hạng mục trong `items` có:
@@ -396,7 +440,7 @@ Mục `pieces` (xây từng mảnh):
 | Khóa | Mặc định | Ý nghĩa |
 |---|---|---|
 | `size` | nền 22×12, cột cao 14, khung dài 24, ngói 12×8, gạch 12×6, trang trí 10×10, nước 16×16 | Cỡ mảnh theo vùng (điểm ảnh bản đồ). Mảnh to hơn thì ít mảnh hơn |
-| `maxPerSec` | vắng 20, vừa 20, đông 14, rất đông 10 | Số mảnh bay tối đa mỗi giây (chế độ độ đông làm ở giai đoạn 4, hiện dùng mức "vừa") |
+| `maxPerSec` | vắng 20, vừa 20, đông 14, rất đông 10 | Số mảnh bay tối đa mỗi giây theo chế độ độ đông |
 | `materials` | "khối đá", "đoạn cột", "thanh gỗ", "viên ngói", "viên gạch"… | Tên vật liệu trong nhãn `{material}` |
 | `burstSec` | 3 | Vùng vừa xây sáng viền và nhãn hiện trong bao nhiêu giây |
 
@@ -429,6 +473,19 @@ Mục `overlay` (bố cục): `boardPosition` (`auto`, `leftMiddle`, `rightMiddl
 
 Ô sự kiện: chữ ở `labels.events` (`goldenHour` mặc định `{name} ×{multiplier} · còn {time}`, `event`, `total`).
 Lọc tên: `nameFilter.bannedWords`, ví dụ `"bannedWords": ["từ cấm 1", "từ cấm 2"]`; tên vi phạm hiện `labels.anonymousName`.
+
+Mục `crowd` (chế độ độ đông, SPEC 9A): `viewers` = ngưỡng trên của vắng, vừa, đông theo số người xem (mặc định `[5, 50, 300]`,
+lớn hơn là rất đông); `interactors` = như vậy theo số người tương tác trong `windowSec` giây (mặc định `[3, 30, 150]`, 300 giây);
+`hysteresisSec` (120) = phải ổn định bao lâu mới đổi; `burstEvents`, `burstWindowSec` (100 sự kiện / 10 giây) = đợt dồn dập thì lên mức ngay.
+
+Mục `gifts` (tên quà theo mức, SPEC 14.6): `tiers` = danh sách `{ "minCoins", "name", "dialogue" }` (từ bao nhiêu xu, tên vật phẩm
+hiện ở `{gift}`, nhóm thoại cảm ơn). `displayNames` (tùy chọn) = tên tiếng Việt theo mã quà gốc, ví dụ `{ "5655": "Hoa hồng" }`:
+có thì câu cảm ơn nhắc thêm, ví dụ "một viên gạch (Hoa hồng)".
+
+Mục `abbot` (trụ trì): `idleSec` = khoảng nghỉ giữa hai lần nói chuyện phiếm theo chế độ, `[ít nhất, nhiều nhất]` giây
+(`[0, 0]` = không nói); `waveMinCoins` (100), `bowMinCoins` (1000) = quà từ bao nhiêu xu thì vẫy chào, cúi chào;
+`greetGroupSec` (10) = gộp lời chào; `thanksGroupSec` (30) = gộp lời cảm ơn chung; `maxQueue` (6) = hàng đợi câu nói tối đa;
+`progressMarks` (`[50, 80, 95]`) = mốc % báo tiến độ ở phòng đông.
 
 File `config.json` cũ của bản tháp (có mục `tower`, tên tầng, các khóa `floor1WidthPx`, `towerTaper`, `towerCenterX`, `towerBaseY`
 trong mục `overlay`…) được game **tự dọn** ở lần chạy đầu, phần mình đã chỉnh khác được giữ nguyên.

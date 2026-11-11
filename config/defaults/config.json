@@ -45,6 +45,34 @@
     "ceremonyZoom": 1.15,
     "shakeMinCoins": 1000
   },
+  "crowd": {
+    "viewers": [5, 50, 300],
+    "interactors": [3, 30, 150],
+    "windowSec": 300,
+    "hysteresisSec": 120,
+    "burstEvents": 100,
+    "burstWindowSec": 10
+  },
+  "gifts": {
+    "tiers": [
+      { "minCoins": 0, "name": "một viên gạch", "dialogue": "gift_small" },
+      { "minCoins": 10, "name": "một bó gỗ", "dialogue": "gift_small" },
+      { "minCoins": 100, "name": "một xe trâu chở đá", "dialogue": "gift_medium" },
+      { "minCoins": 500, "name": "một đoàn voi chở gỗ", "dialogue": "gift_large" },
+      { "minCoins": 1000, "name": "một quả đại hồng chung", "dialogue": "gift_huge" },
+      { "minCoins": 5000, "name": "một tượng võ tướng đá", "dialogue": "gift_huge" }
+    ],
+    "displayNames": {}
+  },
+  "abbot": {
+    "idleSec": { "vang": [60, 90], "vua": [120, 180], "dong": [300, 300], "ratdong": [0, 0] },
+    "waveMinCoins": 100,
+    "bowMinCoins": 1000,
+    "greetGroupSec": 10,
+    "thanksGroupSec": 30,
+    "maxQueue": 6,
+    "progressMarks": [50, 80, 95]
+  },
   "nameFilter": {
     "bannedWords": []
   },

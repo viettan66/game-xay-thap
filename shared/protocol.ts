@@ -103,6 +103,9 @@ export interface CameraConfig {
   shakeMinCoins: number;
 }
 
+/** Dáng trụ trì (mục 9): chắp tay, vẫy chào, cúi chào, dang tay. */
+export type AbbotPose = 'pray' | 'wave' | 'bow' | 'welcome';
+
 export type BoardPosition = 'auto' | 'leftMiddle' | 'rightMiddle' | 'leftTop';
 
 /** Bố cục giao diện (mục 8, 14.13). */
@@ -164,5 +167,7 @@ export type ServerMessage =
       coins: number;
       allocations: Allocation[];
     }
+  /** Trụ trì nói một câu (text null: chỉ đổi dáng). verified false: câu chưa duyệt (chỉ có ở giả lập, viền cam). */
+  | { type: 'say'; text: string | null; pose: AbbotPose; durationMs: number; verified: boolean }
   /** Admin bấm "Toàn cảnh" / "Lia giới thiệu" (mục 8). */
   | { type: 'camera'; mode: Exclude<CameraMode, 'site'> };

@@ -10,12 +10,13 @@
 import { Application, Container } from 'pixi.js';
 import type { OverlayState, ServerMessage } from '../../shared/protocol.js';
 import { destroyArt, EMPTY_ART, loadArt, type Art } from './art.js';
-import { chooseBoardSlot, hudRects, type BoardSlot, type HudRects } from './hudLayout.js';
+import { chooseAbbotSide, chooseBoardSlot, hudRects, type BoardSlot, type HudRects } from './hudLayout.js';
 import { STAGE_H, STAGE_W } from './layout.js';
 import { connectServer } from './net.js';
 import { MapView } from './scene/map.js';
 import { SiteView } from './scene/site.js';
 import { loadFonts } from './theme.js';
+import { AbbotView } from './ui/abbot.js';
 import { Badge, ConnectionDot, Disclaimer } from './ui/chrome.js';
 import { SafeAreaDebug } from './ui/debug.js';
 import { CompactBoard, EventBox, ProgressPanel } from './ui/hud.js';
@@ -56,10 +57,12 @@ async function boot(): Promise<void> {
   const mapView = new MapView(initial.view, app.renderer);
   const uiLayer = new Container();
   const minimap = new Minimap();
+  // Trụ trì (mục 9): không gian màn hình, trên giao diện, dưới bản đồ thu nhỏ.
+  const abbot = new AbbotView(initial.abbot);
   const safeDebug = new SafeAreaDebug();
   const shots = new ScreenshotCompare(app.canvas);
   const dot = new ConnectionDot(STAGE_W - 170, 200);
-  app.stage.addChild(site.container, mapView.container, uiLayer, minimap.container, safeDebug.container, dot.container);
+  app.stage.addChild(site.container, mapView.container, uiLayer, abbot.container, minimap.container, safeDebug.container, dot.container);
   const showMap = () => {
     mapView.container.visible = mapView.ready;
     site.container.visible = !mapView.ready;
@@ -91,6 +94,7 @@ async function boot(): Promise<void> {
     next.board.setArt(art);
     next.root.addChild(next.disclaimer.container, next.board.container, next.events.container, next.progress.container, next.badge.container);
     uiLayer.addChild(next.root);
+    abbot.setSpots(r.abbot);
     hud = next;
     loadMinimap();
     return next;
@@ -106,6 +110,7 @@ async function boot(): Promise<void> {
     const old = art;
     art = a;
     hud?.board.setArt(a);
+    abbot.setArt(a);
     mapView.setArt(a);
     showMap();
     loadMinimap();
@@ -144,6 +149,7 @@ async function boot(): Promise<void> {
       // Quà lớn: camera rung nhẹ (mục 8).
       if (state && m.coins >= state.camera.shakeMinCoins) mapView.shake();
     } else if (m.type === 'camera') mapView.requestCamera(m.mode);
+    else if (m.type === 'say') abbot.say(m);
     else if (m.type === 'progress' && !mapView.ready) {
       // Hình khối tạm (chưa có bản đồ): chớp sáng ngay. Trên bản đồ thì chớp khi mảnh cuối của giai đoạn đã đặt xong.
       for (const t of m.transitions) {
@@ -193,7 +199,10 @@ async function boot(): Promise<void> {
           }
         }
         if (minimap.want > 0 || minimap.container.visible) minimap.update(mapView.displayStatus());
+        // Trụ trì né sang phải nếu che hạng mục đang xây.
+        abbot.setSide(chooseAbbotSide(hud.rects.abbot, mapView.ready ? mapView.focusOnScreen() : null, overview));
       }
+      abbot.tick(dt);
       hud.progress.tick(dt);
       hud.board.tick(dt);
       hud.events.tick(dt);

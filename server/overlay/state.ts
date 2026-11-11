@@ -11,9 +11,9 @@ import { fillTemplate } from '../../shared/project.js';
 // Bảng xếp hạng thu gọn (mục 8): top 5 mỗi bảng.
 export const BOARD_LIMITS = { session: 5, total: 5, item: 5 } as const;
 
-/** Chế độ độ đông (mục 9A): giai đoạn 4 mới tự tính theo số người xem và người tương tác; tạm dùng "vua". */
-export function currentCrowd(_core: GameCore): CrowdTier {
-  return 'vua';
+/** Chế độ độ đông đang áp dụng (mục 9A). */
+export function currentCrowd(core: GameCore): CrowdTier {
+  return core.crowd.tier;
 }
 
 /** Tên hiện trên overlay: đã lọc từ cấm, rỗng thì tên ẩn danh (mục 8, 14.7). */
@@ -22,7 +22,7 @@ export function overlayName(core: GameCore, raw: string | null | undefined): str
   return displayName(raw, cfg.nameFilter.bannedWords, cfg.labels.anonymousName);
 }
 
-/** Câu đang bật của một nhóm thoại. Live thật (không có nhãn thử) thì chỉ dùng câu đã duyệt (mục 9C). */
+/** Câu đang bật của một nhóm thoại. Live thật (kể cả diễn tập) thì chỉ dùng câu đã duyệt (mục 9C). */
 export function dialogueLines(core: GameCore, group: string, liveOnly: boolean): string[] {
   const g = core.configStore.getDialogues().groups[group];
   return (g?.lines ?? []).filter((l) => l.enabled && (!liveOnly || l.verified)).map((l) => l.text);
@@ -111,7 +111,8 @@ export function buildOverlayState(core: GameCore, badge: string | null): Overlay
       materials: cfg.pieces.materials,
       burstSec: cfg.pieces.burstSec,
     },
-    texts: { pieceBurst: dialogueLines(core, 'piece_burst', badge === null) },
+    // Live thật (kể cả diễn tập) chỉ dùng câu đã duyệt; giả lập (nhãn CHẾ ĐỘ THỬ) dùng tất cả.
+    texts: { pieceBurst: dialogueLines(core, 'piece_burst', badge !== cfg.labels.testBadge) },
     assetsVersion: assetsVersion(core.rootDir),
   };
 }

@@ -141,4 +141,25 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    version: 2,
+    name: 'Kho thoại và trụ trì (giai đoạn 4a)',
+    sql: `
+      -- Vị trí đang dùng của nhóm thoại kiểu shuffle / sequential (mục 9C): khởi động lại vẫn nói tiếp.
+      CREATE TABLE dialogue_state (
+        group_key  TEXT PRIMARY KEY,
+        order_json TEXT NOT NULL,
+        position   INTEGER NOT NULL,
+        lines_hash TEXT NOT NULL,
+        last_index INTEGER
+      );
+
+      -- Người đã được trụ trì chào bằng tên trong phiên (mỗi người tối đa 1 lần/phiên, mục 9C).
+      CREATE TABLE session_greeted (
+        session_id  INTEGER NOT NULL,
+        platform_id TEXT NOT NULL,
+        PRIMARY KEY (session_id, platform_id)
+      );
+    `,
+  },
 ];

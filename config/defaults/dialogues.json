@@ -1,24 +1,194 @@
 {
-  "_ghi_chu": "Kho thoại (SPEC mục 9C). Mỗi nhóm có danh sách câu không giới hạn. Các nhóm thoại trụ trì làm ở giai đoạn 4.",
+  "_ghi_chu": "Kho thoại (SPEC mục 9C). Mỗi nhóm có danh sách câu không giới hạn. Câu mẫu của SPEC đã duyệt (verified: true); câu viết thêm chờ chủ dự án duyệt (verified: false): live thật chỉ nói câu đã duyệt, giả lập dùng tất cả.",
   "groups": {
+    "session_start": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "A Di Đà Phật. Chào các thiện hữu, hôm nay công trường tiếp tục {item}: {stage}.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Trời hôm nay đẹp, thợ đã vào việc. Mời quý vị cùng góp một tay.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Chào quý vị, công trường mở cửa rồi. Hôm nay mình làm tiếp {item}.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Thợ đã đủ mặt, gạch đá đã sẵn sàng. Mời các thiện hữu vào xem.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "A Di Đà Phật. Một ngày mới trên công trường, cảm ơn quý vị đã ghé.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Hôm nay {item} đang ở bước {stage}. Mời các con cùng xem thợ làm.", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "greet_single": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "Chào {name}, mời vào xem công trường.", "tiers": ["vang", "vua"], "weight": 1, "enabled": true, "verified": true},
+        {"text": "{name} đến rồi! Thầy đang thiếu người khiêng gạch đây.", "tiers": ["vang"], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Mừng {name} ghé công trường, cứ tự nhiên xem thợ làm nhé.", "tiers": ["vang", "vua"], "weight": 1, "enabled": true, "verified": false},
+        {"text": "{name} vào đúng lúc, thợ đang làm {stage} đấy.", "tiers": ["vang", "vua"], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Chào {name}! Ngồi chơi một lát rồi phụ thầy một tay nhé.", "tiers": ["vang", "vua"], "weight": 1, "enabled": true, "verified": false},
+        {"text": "A, {name} tới rồi. Công trường thêm người là thêm vui.", "tiers": ["vang", "vua"], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Chào {name}, hôm nay mình xây {item}, con xem có đẹp không.", "tiers": ["vang", "vua"], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "greet_group": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "Chào {names} và {n} thiện hữu vừa ghé.", "tiers": ["vua"], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Chào {names}, mời các con vào xem công trường.", "tiers": ["vua"], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Mừng {names} vừa tới, công trường đông vui hẳn lên.", "tiers": ["vua"], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Chào {names} cùng {n} bạn mới, thợ đang làm {stage} đấy.", "tiers": ["vua"], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Thầy chào {names}, cứ thong thả xem thợ làm nhé.", "tiers": ["vua"], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "returning": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "{name} đã trở lại! Công trường nhớ con lắm.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Mừng {name} quay về, {item} đang chờ con.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "{name} lại ghé rồi, lần trước con góp sức nhiều lắm đấy.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Chào {name}, lâu lắm mới gặp lại con.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "{name} về rồi kìa, thợ ở đây vẫn nhắc tên con.", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "gift_small": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "Cảm ơn {name} đã góp {gift}!", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Thêm gạch từ {name}, cảm ơn con!", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "{name} vừa góp {gift}, thợ có thêm việc rồi.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Cảm ơn {name}, {gift} đã tới công trường.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Có {gift} của {name} rồi, thợ làm tiếp thôi.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "{name} góp {gift}, cảm ơn con nhiều.", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "gift_medium": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "Xe trâu của {name} vừa chở đá tới, cảm ơn con!", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Cảm ơn {name}, {gift} vừa về tới công trường.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "{name} gửi {gift}, thợ đang ra khuân vào đây.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Nhờ {name} mà hôm nay có thêm {gift}, cảm ơn con!", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Xe đá của {name} tới rồi, các thợ ra đón nào.", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "gift_large": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "Cảm tạ {name}! Đoàn voi chở gỗ quý đã về công trường.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "{name} vừa góp {gift}, cả công trường cảm ơn con!", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Gỗ quý của {name} đã tới, thợ mộc mừng lắm đấy.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Cảm ơn {name}! {gift} vừa về, công trường rộn ràng hẳn lên.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Nhờ {gift} của {name}, việc dựng khung nhanh hơn nhiều rồi.", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "gift_huge": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "Đại hồng chung mang tên {name} sẽ treo ở gác chuông. Thầy thay mặt công trường cảm tạ.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Cảm tạ {name}! {gift} là món quà rất lớn cho công trường.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "{name} vừa góp {gift}, thầy và các thợ xin cảm ơn con.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Cả công trường cảm ơn {name} vì {gift}.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Thợ sẽ nhớ mãi {gift} của {name}. Cảm ơn con!", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "gift_thanks_group": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "Cảm ơn {n} thiện hữu vừa góp sức!", "tiers": ["dong", "ratdong"], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Vừa có {n} người góp quà, thầy cảm ơn tất cả!", "tiers": ["dong", "ratdong"], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Cảm ơn {n} bạn vừa gửi quà cho công trường!", "tiers": ["dong", "ratdong"], "weight": 1, "enabled": true, "verified": false},
+        {"text": "{n} người vừa góp sức, thợ làm không kịp nghỉ.", "tiers": ["dong", "ratdong"], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Cảm ơn mọi người, {n} phần quà vừa tới công trường!", "tiers": ["dong", "ratdong"], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "progress": {
+      "mode": "shuffle",
+      "cooldownSec": 30,
+      "lines": [
+        {"text": "{item}: {stage} đã xong {percent}%, gắng thêm chút nữa!", "tiers": ["dong", "ratdong"], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Giai đoạn {stage} sắp xong rồi, các con cố lên!", "tiers": ["dong", "ratdong"], "weight": 1, "enabled": true, "verified": true},
+        {"text": "{stage} đã được {percent}%, thợ đang làm hăng lắm.", "tiers": ["dong", "ratdong"], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Còn một chút nữa là xong {stage} của {item}.", "tiers": ["dong", "ratdong"], "weight": 1, "enabled": true, "verified": false},
+        {"text": "{item} đang lên từng ngày, {stage} được {percent}% rồi.", "tiers": ["dong", "ratdong"], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Cảm ơn quý vị, {stage} đã đi được {percent}% chặng đường.", "tiers": ["dong", "ratdong"], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "item_complete": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "{item} đã hoàn thành. Thầy hoan hỷ cảm ơn {count} thiện hữu đã góp công!", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "A Di Đà Phật. {item} đã dựng xong, cảm ơn {count} thiện hữu.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Xong {item} rồi! Tùy hỷ cùng tất cả quý vị đã góp sức.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "{item} đã đứng vững trên đồi. Cảm ơn các con nhiều lắm.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Tên của {count} thiện hữu sẽ được ghi lên bia của {item}.", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "stage_ritual": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "A Di Đà Phật. Hôm nay công trường làm {ritual} cho {item}. Tùy hỷ cùng tất cả quý vị.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Ngày xưa, lễ thượng lương là ngày quan trọng nhất khi dựng một ngôi nhà gỗ.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Hôm nay làm {ritual}, mời quý vị cùng chứng kiến.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "{ritual} của {item} bắt đầu rồi, các thợ nghỉ tay một lát.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Tùy hỷ, {item} vừa qua thêm một mốc quan trọng.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Xong {stage}, công trường làm {ritual} theo nếp xưa.", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "idle_story": {
+      "mode": "shuffle",
+      "cooldownSec": 30,
+      "lines": [
+        {"text": "Ngày xưa, người thợ dựng chùa phải đục từng viên đá bằng tay, mất nhiều tháng mới xong một gian.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Mái chùa cong lên ở bốn góc gọi là đầu đao, vừa đẹp vừa giúp nước mưa thoát nhanh.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Tháp Phổ Minh ở Nam Định được dựng từ thời Trần, đến nay đã hơn bảy trăm năm.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Chùa Một Cột ở Hà Nội được dựng từ thời vua Lý Thái Tông, năm 1049.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Cổng tam quan có ba lối đi, lối giữa thường rộng và cao hơn hai lối bên.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Gác chuông thường đặt phía trước chùa, tiếng chuông xưa báo giờ cho cả làng.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Chùa Bút Tháp ở Bắc Ninh nổi tiếng với cây cầu đá và nhiều tượng gỗ cổ.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Kèo gỗ trong nhà xưa được ghép bằng mộng, gần như không dùng đinh sắt.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Ngói mũi hài có đầu nhọn như mũi giày, hay thấy trên mái nhà cổ Bắc Bộ.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Lễ thượng lương là lúc đặt cây xà cao nhất lên nóc, khung nhà coi như dựng xong.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Chùa Thiên Mụ ở Huế có tháp Phước Duyên bảy tầng, dựng năm 1844.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Ao sen trước chùa vừa làm cảnh đẹp, vừa giữ nước và làm mát cả sân.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Chùa Tây Phương ở Hà Nội nổi tiếng với các pho tượng La Hán bằng gỗ mít.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Cột gỗ xưa thường kê trên chân tảng đá để chân cột không bị ẩm mục.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Chùa Keo ở Thái Bình có gác chuông gỗ ba tầng mái rất nổi tiếng.", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "idle_howto": {
+      "mode": "shuffle",
+      "cooldownSec": 30,
+      "lines": [
+        {"text": "Ai mới vào: tặng quà, thả tim hay bình luận đều được tính công, tên sẽ được khắc lên bia khi xong hạng mục.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Đây là trò chơi mô phỏng, mỗi viên gạch quý vị góp sẽ hiện thành công sức trên công trường.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Thả tim cũng là góp công đấy, đủ công là có thêm một viên gạch.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Bảng góp công ở bên cạnh, ai góp nhiều sẽ có tên ở trên cùng.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Mỗi hạng mục xong, tên những người góp nhiều nhất được ghi lên bia.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Bình luận đôi câu cũng được tính công, mời quý vị trò chuyện cùng thầy.", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "session_end": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "Hôm nay công trường nghỉ sớm. Cảm ơn quý vị đã ghé, hẹn gặp lại ngày mai.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Tạm biệt các thiện hữu. A Di Đà Phật.", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Thợ đã thu dọn đồ nghề rồi. Hẹn quý vị phiên sau.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Cảm ơn các con hôm nay, công trường mai lại mở cửa.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Trời tối rồi, công trường nghỉ thôi. Chúc quý vị ngủ ngon.", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
     "piece_burst": {
       "mode": "shuffle",
       "cooldownSec": 0,
       "lines": [
-        {
-          "text": "{name} vừa xây {n} {material}",
-          "tiers": [],
-          "weight": 1,
-          "enabled": true,
-          "verified": true
-        },
-        {
-          "text": "+{n} {material} từ {name}",
-          "tiers": [],
-          "weight": 1,
-          "enabled": true,
-          "verified": true
-        }
+        {"text": "{name} vừa xây {n} {material}", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "+{n} {material} từ {name}", "tiers": [], "weight": 1, "enabled": true, "verified": true}
       ]
     }
   }

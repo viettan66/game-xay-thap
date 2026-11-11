@@ -2,9 +2,13 @@
 // main.ts gọi hàm này; test cũng gọi để chạy server thật trên cổng ngẫu nhiên.
 
 import type { AddressInfo } from 'node:net';
+import { AbbotDirector } from './abbot/director.js';
+import { dbGreetStore } from './abbot/greeted.js';
 import { createApp } from './app.js';
 import { defaultMapTools, type MapTools } from './assets/mapTools.js';
 import { GameCore } from './core.js';
+import { DialogueSelector } from './dialogue/selector.js';
+import { itemContributorCount } from './game/queries.js';
 import { LiveService } from './live/service.js';
 import type { Logger } from './logger.js';
 import { StateBroadcaster } from './overlay/broadcaster.js';
@@ -30,6 +34,7 @@ export interface ServerOptions {
 export interface RunningServer {
   core: GameCore;
   live: LiveService;
+  abbot: AbbotDirector;
   broadcaster: StateBroadcaster;
   port: number;
   url: string;
@@ -65,9 +70,29 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
   const isAllowedOrigin = makeOriginCheck(() => port);
 
   let socket: ReturnType<typeof attachOverlaySocket> | undefined;
+  // Trụ trì (mục 9, 9C): chọn câu trong kho thoại, gửi tin "say" xuống overlay.
+  const selector = new DialogueSelector(core.db, () => core.configStore.getDialogues().groups, o.logger);
+  const abbot = new AbbotDirector({
+    selector,
+    config: () => core.config,
+    tier: () => core.crowd.tier,
+    // Live thật (kể cả diễn tập ở hồ sơ thử) chỉ nói câu đã duyệt; giả lập dùng tất cả.
+    verifiedOnly: () => live.mode() !== 'simulator',
+    progress: () => core.engine.status(),
+    name: (raw) => overlayName(core, raw),
+    sessionId: () => core.sessions.currentId(),
+    greeted: dbGreetStore(core.db),
+    itemContributors: (itemId) => itemContributorCount(core.db, itemId),
+    send: (msg) => socket?.broadcast(msg),
+    now: core.now,
+  });
+  core.bus.on('sessionStart', () => abbot.onSessionStart());
+  core.bus.on('sessionEnd', () => abbot.onSessionEnd());
+  core.bus.on('crowd', () => broadcaster.markDirty());
   const live: LiveService = new LiveService(core, {
     logger: o.logger,
     onProcessed: (r, ev) => {
+      abbot.onEvent(ev, r);
       broadcaster.markDirty();
       if (r.status === 'counted' && r.score && ev.type !== 'viewers' && r.score.source !== 'none') {
         broadcaster.contribution({
@@ -121,11 +146,21 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
       o.logger.error('Lỗi khi chạy tác vụ định kỳ', e);
     }
   }, 30_000);
+  // Nhịp nhanh: độ đông (độ trễ 120 giây cần đếm giây) và hàng đợi thoại trụ trì.
+  const fast = setInterval(() => {
+    try {
+      core.updateCrowd();
+      abbot.tick();
+    } catch (e) {
+      o.logger.error('Lỗi khi chạy nhịp trụ trì', e);
+    }
+  }, 500);
 
   let closed = false;
   return {
     core,
     live,
+    abbot,
     broadcaster,
     port,
     url: `http://127.0.0.1:${port}`,
@@ -133,6 +168,7 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
       if (closed) return;
       closed = true;
       clearInterval(timer);
+      clearInterval(fast);
       live.stop();
       broadcaster.close();
       await socket?.close();

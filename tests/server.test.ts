@@ -173,6 +173,7 @@ describe('camera và giao diện mới (R4)', () => {
   it('trạng thái gửi overlay có camera, bố cục, ô sự kiện; bảng tổng chỉ top 5', async () => {
     await start();
     for (let i = 0; i < 8; i++) await post('/api/sim/fire', { kind: 'gift_small' });
+    await post('/api/crowd', { tier: 'vua' });
     const s = buildOverlayState(srv.core, null);
     expect(s.crowd).toBe('vua');
     expect(s.camera).toMatchObject({ maxZoom: 1.6, siteWidth: 0.52, overviewEverySec: 360, tourEverySec: 0, shakeMinCoins: 1000 });
@@ -223,6 +224,41 @@ describe('camera và giao diện mới (R4)', () => {
     expect((await post('/api/display', { opacity: { khung: 1 } })).status).toBe(400);
     expect(srv.core.config.camera.maxZoom).toBe(1.4);
     expect(((await (await fetch(`${srv.url}/api/display`)).json()) as { boardPosition: string }).boardPosition).toBe('leftTop');
+  });
+});
+
+describe('độ đông và trụ trì (4a)', () => {
+  it('ép chế độ độ đông: camera, tốc độ đặt mảnh theo chế độ; trả về tự động', async () => {
+    await start();
+    const r = await post('/api/crowd', { tier: 'dong' });
+    expect(r.status).toBe(200);
+    expect(((await r.json()) as { crowd: { tier: string; forced: string } }).crowd).toMatchObject({ tier: 'dong', forced: 'dong' });
+    let s = buildOverlayState(srv.core, null);
+    expect(s.crowd).toBe('dong');
+    expect(s.pieces.maxPerSec).toBe(14);
+    expect(s.camera.overviewEverySec).toBe(0);
+    await post('/api/crowd', { tier: 'vang' });
+    s = buildOverlayState(srv.core, null);
+    expect(s.camera).toMatchObject({ overviewEverySec: 180, tourEverySec: 600 });
+    await post('/api/crowd', { tier: 'auto' });
+    expect(srv.core.crowd.forced).toBeNull();
+    expect((await post('/api/crowd', { tier: 'qua_dong' })).status).toBe(400);
+  });
+
+  it('mở phiên: trụ trì chào mở phiên; tặng quà: trụ trì cảm ơn (giả lập dùng cả câu chưa duyệt)', async () => {
+    await start();
+    const c = connect(`http://127.0.0.1:${srv.port}`);
+    await c.waitFor((m) => m.type === 'state');
+    await post('/api/session/start');
+    const hello = (await c.waitFor((m) => m.type === 'say')) as Extract<ServerMessage, { type: 'say' }>;
+    expect(hello.pose).toBe('welcome');
+    expect(hello.text!.length).toBeGreaterThan(5);
+    expect(hello.durationMs).toBeGreaterThanOrEqual(4000);
+    // Câu tiếp theo phải đợi câu trước nói xong (đồng hồ giả: cho thời gian trôi).
+    clock.advance(hello.durationMs + 1000);
+    await post('/api/sim/fire', { kind: 'gift_large' });
+    const thanks = (await c.waitFor((m) => m.type === 'say' && m !== hello)) as Extract<ServerMessage, { type: 'say' }>;
+    expect(thanks.pose).toBe('bow');
   });
 });
 

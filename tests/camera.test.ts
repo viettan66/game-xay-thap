@@ -16,7 +16,7 @@ import {
   type CameraInput,
   type MapCamera,
 } from '../overlay/src/camera.js';
-import { BOARD_SLOTS, chooseBoardSlot, formatCountdown, hudRects } from '../overlay/src/hudLayout.js';
+import { BOARD_SLOTS, chooseAbbotSide, chooseBoardSlot, formatCountdown, hudRects } from '../overlay/src/hudLayout.js';
 import { rectInside, rectsOverlap } from '../overlay/src/layout.js';
 import type { CameraConfig } from '../shared/protocol.js';
 
@@ -252,6 +252,21 @@ describe('bố cục giao diện mới', () => {
     expect(chooseBoardSlot(r.boards, huge, 'auto', null)).toBe('leftTop');
     // Cài cố định thì không tự đổi.
     expect(chooseBoardSlot(r.boards, left, 'leftMiddle', null)).toBe('leftMiddle');
+  });
+
+  it('trụ trì đứng góc trái phía trên vùng comment, không đè bảng, dải miễn trừ; né sang phải khi che công trình', () => {
+    for (const side of ['left', 'right'] as const) {
+      const a = r.abbot[side];
+      expect(rectInside(a, r.content), side).toBe(true);
+      expect(rectsOverlap(a, r.disclaimer), side).toBe(false);
+      for (const s of BOARD_SLOTS) expect(rectsOverlap(a, r.boards[s]), `${side} – ${s}`).toBe(false);
+    }
+    expect(r.abbot.left.x).toBeLessThan(100);
+    expect(r.abbot.left.y + r.abbot.left.h).toBeGreaterThan(r.disclaimer.y - 20);
+    expect(chooseAbbotSide(r.abbot, null, false)).toBe('left');
+    expect(chooseAbbotSide(r.abbot, { x: 0, y: 1000, w: 300, h: 200 }, false)).toBe('right');
+    expect(chooseAbbotSide(r.abbot, { x: 0, y: 1000, w: 300, h: 200 }, true)).toBe('left'); // toàn cảnh: bản đồ thu nhỏ ở bên phải
+    expect(chooseAbbotSide(r.abbot, { x: 0, y: 900, w: 930, h: 400 }, false)).toBe('left'); // che cả hai bên thì đứng yên bên trái
   });
 
   it('đồng hồ đếm ngược', () => {

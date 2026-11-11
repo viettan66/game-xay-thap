@@ -90,6 +90,17 @@
     <div class="row"><span>Nguồn</span><b id="source"></b></div>
     <div class="row"><span>Trạng thái</span><span id="livestate"></span></div>
     <div class="row"><span>Người xem</span><span id="viewers"></span></div>
+    <h2 style="margin-top:18px">Độ đông của phòng</h2>
+    <div class="row"><span>Chế độ</span><b id="crowd-tier"></b></div>
+    <div class="row"><span>Người tương tác 5 phút</span><span id="crowd-inter"></span></div>
+    <div class="buttons" id="crowd-box">
+      <button data-crowd="auto">Tự động</button>
+      <button data-crowd="vang">Vắng</button>
+      <button data-crowd="vua">Vừa</button>
+      <button data-crowd="dong">Đông</button>
+      <button data-crowd="ratdong">Rất đông</button>
+    </div>
+    <p class="note" style="margin:6px 0 0">Chế độ đổi cách trụ trì chào, cảm ơn, nói chuyện; tốc độ đặt mảnh; nhịp camera. Tự động: theo số người xem và người tương tác, đổi sau 2 phút ổn định.</p>
     <div id="mode-box" class="buttons" hidden>
       <button id="mode-sim" data-mode="simulator">Giả lập</button>
       <button id="mode-live" data-mode="live">Live thật (diễn tập)</button>
@@ -205,6 +216,12 @@
     $('livestate').textContent = live.text;
     $('livestate').className = live.status.state === 'connected' ? 'state-ok' : live.status.state === 'error' ? 'state-bad' : '';
     $('viewers').textContent = live.viewers == null ? '–' : fmt(live.viewers);
+    if (s.crowd) {
+      const TIER = { vang: 'Vắng', vua: 'Vừa', dong: 'Đông', ratdong: 'Rất đông' };
+      $('crowd-tier').textContent = s.crowd.forced ? `${TIER[s.crowd.tier]} (ép tay; tự tính: ${TIER[s.crowd.raw]})` : `${TIER[s.crowd.tier]} (tự động${s.crowd.raw !== s.crowd.tier ? `, đang chuyển sang ${TIER[s.crowd.raw]}` : ''})`;
+      $('crowd-inter').textContent = fmt(s.crowd.interactors);
+      for (const b of document.querySelectorAll('[data-crowd]')) b.classList.toggle('on', b.dataset.crowd === (s.crowd.forced || 'auto'));
+    }
     $('mode-box').hidden = s.profile !== 'test';
     $('mode-sim').classList.toggle('on', live.mode === 'simulator');
     $('mode-live').classList.toggle('on', live.mode === 'live');
@@ -259,6 +276,7 @@
     if (b.dataset.post) post(b.dataset.post);
     if (b.dataset.fire) post('/api/sim/fire', { kind: b.dataset.fire });
     if (b.dataset.mode) post('/api/live/mode', { mode: b.dataset.mode });
+    if (b.dataset.crowd) post('/api/crowd', { tier: b.dataset.crowd });
     if (b.id === 'sim-start') post('/api/sim/start', simSettings());
     if (b.id === 'sim-stop') post('/api/sim/stop');
   });

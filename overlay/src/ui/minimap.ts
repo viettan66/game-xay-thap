@@ -65,7 +65,7 @@ export class Minimap {
     this.container.visible = false;
   }
 
-  /** Dựng ảnh thu nhỏ của vùng `region` (tọa độ bản đồ), vừa trong hộp `box` (giữ tỉ lệ, neo góc dưới trái). */
+  /** Dựng ảnh thu nhỏ của vùng `region` (tọa độ bản đồ), vừa trong hộp `box` (giữ tỉ lệ, neo góc dưới phải). */
   async load(map: MapManifest, version: string, region: MapRect, box: Rect): Promise<void> {
     const key = `${version}:${box.x},${box.y},${box.w},${box.h}`;
     if (key === this.key) return;
@@ -74,7 +74,7 @@ export class Minimap {
     const k = Math.min(box.w / region.w, box.h / region.h);
     const w = Math.round(region.w * k);
     const h = Math.round(region.h * k);
-    this.container.position.set(box.x, box.y + box.h - h);
+    this.container.position.set(box.x + box.w - w, box.y + box.h - h);
     this.maskG.clear().roundRect(0, 0, w, h, 10).fill(0xffffff);
     this.frame.clear().roundRect(0, 0, w, h, 10).stroke({ width: 2.5, color: C.gold, alpha: 0.9 });
     this.content.position.set(-region.x * k, -region.y * k);

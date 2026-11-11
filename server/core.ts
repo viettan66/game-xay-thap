@@ -1,6 +1,7 @@
 // Ghép các phần của server: hồ sơ, config, DB, lõi game, phiên live, backup.
 // Dùng chung cho server thật (main.ts), script demo và test.
 
+import { EventEmitter } from 'node:events';
 import path from 'node:path';
 import { resolveProject, type ApplyResult, type ProjectFile, type ResolvedProject } from '../shared/project.js';
 import type { LiveEvent } from '../shared/types.js';
@@ -9,6 +10,9 @@ import type { GameConfig } from './config/schema.js';
 import { ConfigError, ConfigStore, PROJECT_FILE, type ConfigChange } from './config/store.js';
 import { openDatabase, type DB } from './db/database.js';
 import { retireLegacyTowerDb } from './db/legacy.js';
+import { getSetting, setSetting } from './db/settings.js';
+import { CROWD_TIERS, CrowdTracker } from './game/crowd.js';
+import type { CrowdTier } from '../shared/protocol.js';
 import { GameEngine, type ProcessResult, type RepricePreview } from './game/engine.js';
 import { silentLogger, type Logger } from './logger.js';
 import { ensureProfileDirs, profilePaths, type ProfileName, type ProfilePaths } from './profile.js';
@@ -42,6 +46,10 @@ export class GameCore {
   readonly sessions: SessionManager;
   readonly createdConfigFiles: string[];
   readonly now: () => number;
+  /** Chế độ độ đông của phòng (mục 9A). */
+  readonly crowd: CrowdTracker;
+  /** Sự kiện cho các phần khác (trụ trì…): 'sessionStart', 'sessionEnd' (SessionRow), 'crowd' (CrowdTier). */
+  readonly bus = new EventEmitter();
   private readonly log: Logger;
   private pendingBackups: Promise<unknown>[] = [];
   private resolved: { file: ProjectFile; project: ResolvedProject } | null = null;
@@ -70,9 +78,13 @@ export class GameCore {
     this.sessions = new SessionManager(this.db, {
       now: this.now,
       autoEndOfflineMin: () => this.config.session.autoEndOfflineMin,
-      onStart: (s) => this.log.info(`Bắt đầu phiên live #${s.id} (${s.start_reason})`),
+      onStart: (s) => {
+        this.log.info(`Bắt đầu phiên live #${s.id} (${s.start_reason})`);
+        this.bus.emit('sessionStart', s);
+      },
       onEnd: (s) => {
         this.log.info(`Kết thúc phiên live #${s.id} (${s.end_reason})`);
+        this.bus.emit('sessionEnd', s);
         this.backup('session-end');
       },
     });
@@ -84,6 +96,9 @@ export class GameCore {
       sessionId: () => this.sessions.currentId(),
       now: this.now,
     });
+    this.crowd = new CrowdTracker(() => this.config.crowd);
+    const forced = getSetting<string | null>(this.db, 'crowd_forced', null);
+    this.crowd.forced = CROWD_TIERS.includes(forced as CrowdTier) ? (forced as CrowdTier) : null;
     try {
       this.engine.init();
       this.sessions.recoverOnBoot();
@@ -114,7 +129,29 @@ export class GameCore {
   }
 
   processEvent(ev: LiveEvent): ProcessResult {
-    return this.engine.processEvent(ev);
+    const r = this.engine.processEvent(ev);
+    if (r.status !== 'duplicate') {
+      this.crowd.observe(ev, this.now());
+      this.updateCrowd();
+    }
+    return r;
+  }
+
+  /** Cập nhật chế độ độ đông (sau sự kiện và định kỳ); đổi thì ghi log và báo cho các phần khác. */
+  updateCrowd(): void {
+    if (this.crowd.update(this.now())) {
+      this.log.info(`Chế độ độ đông: ${this.crowd.tier}`);
+      this.bus.emit('crowd', this.crowd.tier);
+    }
+  }
+
+  /** Admin ép chế độ độ đông (null = tự động). Lưu vào DB của hồ sơ. */
+  setCrowdForced(tier: CrowdTier | null): void {
+    const before = this.crowd.tier;
+    this.crowd.forced = tier;
+    setSetting(this.db, 'crowd_forced', tier);
+    this.log.info(tier ? `Ép chế độ độ đông: ${tier}` : 'Chế độ độ đông: tự động');
+    if (this.crowd.tier !== before) this.bus.emit('crowd', this.crowd.tier);
   }
 
   /** Lưu config.json mới (kiểm tra bằng zod, ghi nhật ký, áp dụng ngay). */
@@ -200,6 +237,7 @@ export class GameCore {
   /** Gọi định kỳ: tự kết thúc phiên khi tắt live quá lâu, backup hằng ngày. */
   tick(): void {
     this.sessions.tick();
+    this.updateCrowd();
     if (isDailyBackupDue(this.now(), this.config.backup.dailyTime, listBackups(this.paths.backupsDir))) {
       void this.backup('daily');
     }

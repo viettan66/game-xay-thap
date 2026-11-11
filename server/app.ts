@@ -46,6 +46,7 @@ export function buildStatus({ core, live }: Pick<AppDeps, 'core' | 'live'>) {
     pointUnit: cfg.labels.pointUnitLabel,
     live: live.status(),
     sim: live.simState(),
+    crowd: core.crowd.info(core.now()),
     scenarios: SCENARIO_KEYS.map((k) => ({ key: k, label: SCENARIOS[k].label })),
   };
 }
@@ -144,6 +145,15 @@ export function createApp(deps: AppDeps): express.Express {
     live.simFire(kind);
     ok(res);
   });
+  // ---- Chế độ độ đông (mục 9A): ép tay hoặc tự động ----
+  app.post('/api/crowd', (req, res) => {
+    const tier = body(req).tier;
+    if (tier === 'auto') core.setCrowdForced(null);
+    else if (tier === 'vang' || tier === 'vua' || tier === 'dong' || tier === 'ratdong') core.setCrowdForced(tier);
+    else throw new BadRequest('Chế độ không hợp lệ');
+    ok(res);
+  });
+
   // ---- Camera và chỉnh hiển thị (mục 8, 14.13) ----
   app.post('/api/camera', (req, res) => {
     const mode = body(req).mode;

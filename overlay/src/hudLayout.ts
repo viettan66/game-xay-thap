@@ -3,7 +3,9 @@
 // - Thanh tiến độ: góc trên phải, ngay dưới vùng an toàn trên (nằm trên vùng núi).
 // - Ô sự kiện: ngay dưới thanh tiến độ.
 // - Bảng xếp hạng thu gọn: 3 chỗ đặt sẵn (trái giữa, phải giữa, trái trên), tự chọn chỗ không che hạng mục đang xây.
-// - Bản đồ thu nhỏ: góc dưới trái, trên dải miễn trừ. Dải miễn trừ: sát trên vùng an toàn dưới.
+// - Trụ trì (mục 9): góc trái phía trên vùng comment; tự né sang phải nếu che hạng mục đang xây.
+// - Bản đồ thu nhỏ: góc dưới phải (chỉ hiện khi thu toàn cảnh; lúc đó trụ trì đứng bên trái).
+// - Dải miễn trừ: sát trên vùng an toàn dưới.
 
 import type { BoardPosition, SafeArea } from '../../shared/protocol.js';
 import type { CamView } from './camera.js';
@@ -17,6 +19,10 @@ export const EVENT_LINE_H = 38;
 export const EVENT_MAX_LINES = 4;
 export const BOARD_SIZE = { w: 300, titleH: 46, rowH: 44, rows: 5, pad: 10 };
 export const DISCLAIMER_H = 36;
+/** Trụ trì cao bao nhiêu điểm ảnh màn hình (ảnh gốc 586×693). */
+export const ABBOT_SIZE = { w: 212, h: 250 };
+
+export type AbbotSide = 'left' | 'right';
 const M = 12;
 
 export interface HudRects {
@@ -29,8 +35,10 @@ export interface HudRects {
   /** Ô sự kiện: chiều cao tối đa; khung thật co theo số dòng. */
   events: Rect;
   boards: Record<BoardSlot, Rect>;
-  /** Hộp tối đa của bản đồ thu nhỏ (giữ tỉ lệ, neo góc dưới trái). */
+  /** Hộp tối đa của bản đồ thu nhỏ (giữ tỉ lệ, neo góc dưới phải). */
   minimap: Rect;
+  /** Chỗ đứng của trụ trì: bên trái (mặc định) và bên phải (khi né công trình). */
+  abbot: Record<AbbotSide, Rect>;
   disclaimer: Rect;
   /** Vùng vẽ công trường tạm bằng hình khối (khi chưa có bản đồ). */
   site: Rect;
@@ -58,10 +66,15 @@ export function hudRects(safe: SafeArea): HudRects {
     rightMiddle: { x: right - M - BOARD_SIZE.w, y: Math.max(midY, events.y + events.h + M), w: BOARD_SIZE.w, h: bh },
   };
   const mmH = Math.min(320, disclaimer.y - M - (boards.leftMiddle.y + bh + M));
-  const minimap = { x: left + M, y: disclaimer.y - M - Math.max(120, mmH), w: 220, h: Math.max(120, mmH) };
+  const minimap = { x: right - M - 220, y: disclaimer.y - M - Math.max(120, mmH), w: 220, h: Math.max(120, mmH) };
+  const abbotY = disclaimer.y - 8 - ABBOT_SIZE.h;
+  const abbot: Record<AbbotSide, Rect> = {
+    left: { x: left + M, y: abbotY, ...ABBOT_SIZE },
+    right: { x: right - M - ABBOT_SIZE.w, y: abbotY, ...ABBOT_SIZE },
+  };
   const siteTop = progress.y + progress.h + M;
   const site = { x: left + 16, y: siteTop, w: right - 32, h: disclaimer.y - M - siteTop };
-  return { content, view: { left, right, top, bottom }, badge, progress, events, boards, minimap, disclaimer, site };
+  return { content, view: { left, right, top, bottom }, badge, progress, events, boards, minimap, abbot, disclaimer, site };
 }
 
 function overlapArea(a: Rect, b: Rect): number {
@@ -84,6 +97,18 @@ export function chooseBoardSlot(slots: Record<BoardSlot, Rect>, focus: Rect | nu
   const free = BOARD_SLOTS.find((s) => cover(s) === 0);
   if (free) return free;
   return [...BOARD_SLOTS].sort((a, b) => cover(a) - cover(b))[0]!;
+}
+
+/**
+ * Trụ trì đứng bên nào: mặc định bên trái; che hạng mục đang xây thì sang phải (nếu bên phải không che).
+ * Lúc thu toàn cảnh, bản đồ thu nhỏ ở bên phải nên trụ trì đứng bên trái.
+ */
+export function chooseAbbotSide(spots: Record<AbbotSide, Rect>, focus: Rect | null, overview: boolean): AbbotSide {
+  if (overview || !focus) return 'left';
+  const pad = { x: focus.x - 10, y: focus.y - 10, w: focus.w + 20, h: focus.h + 20 };
+  const left = overlapArea(spots.left, pad);
+  if (left === 0) return 'left';
+  return overlapArea(spots.right, pad) < left ? 'right' : 'left';
 }
 
 /** Đồng hồ đếm ngược "m:ss" hoặc "h:mm:ss". */
