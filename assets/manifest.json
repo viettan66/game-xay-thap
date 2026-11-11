@@ -593,5 +593,269 @@
   },
   "tower": {
     "spireScale": 1
+  },
+  "map": {
+    "width": 1728,
+    "height": 5575,
+    "scale": 1.836344,
+    "rawWidth": 941,
+    "rawHeight": 1672,
+    "overlap": 308,
+    "source": "esrgan",
+    "tiles": [
+      {
+        "file": "map/bg_0.jpg",
+        "y": 0,
+        "h": 2048
+      },
+      {
+        "file": "map/bg_1.jpg",
+        "y": 2048,
+        "h": 2048
+      },
+      {
+        "file": "map/bg_2.jpg",
+        "y": 4096,
+        "h": 1479
+      }
+    ],
+    "reference": "map/reference_built.jpg",
+    "buildings": [
+      {
+        "id": "bao_thap",
+        "items": [
+          "thap_tang_1",
+          "thap_tang_2",
+          "thap_tang_3",
+          "thap_tang_4",
+          "thap_tang_5",
+          "thap_tang_6",
+          "thap_tang_7",
+          "thap_tang_8",
+          "thap_tang_9"
+        ],
+        "layer": "object",
+        "file": "buildings/bao_thap/final.png",
+        "x": 448,
+        "y": 257,
+        "w": 247,
+        "h": 489,
+        "baseY": 746,
+        "fg": null,
+        "tierLinesY": [
+          692,
+          637,
+          583,
+          529,
+          474,
+          420,
+          366,
+          311,
+          257
+        ]
+      },
+      {
+        "id": "nha_to",
+        "items": [
+          "nha_to"
+        ],
+        "layer": "object",
+        "file": "buildings/nha_to/final.png",
+        "x": 912,
+        "y": 580,
+        "w": 308,
+        "h": 179,
+        "baseY": 758,
+        "fg": null
+      },
+      {
+        "id": "chinh_dien",
+        "items": [
+          "chinh_dien"
+        ],
+        "layer": "object",
+        "file": "buildings/chinh_dien/final.png",
+        "x": 470,
+        "y": 763,
+        "w": 761,
+        "h": 530,
+        "baseY": 1293,
+        "fg": null
+      },
+      {
+        "id": "hanh_lang_tay",
+        "items": [
+          "hanh_lang_tay"
+        ],
+        "layer": "object",
+        "file": "buildings/hanh_lang_tay/final.png",
+        "x": 69,
+        "y": 881,
+        "w": 343,
+        "h": 478,
+        "baseY": 1359,
+        "fg": null
+      },
+      {
+        "id": "hanh_lang_dong",
+        "items": [
+          "hanh_lang_dong"
+        ],
+        "layer": "object",
+        "file": "buildings/hanh_lang_dong/final.png",
+        "x": 1281,
+        "y": 881,
+        "w": 348,
+        "h": 497,
+        "baseY": 1377,
+        "fg": null
+      },
+      {
+        "id": "gac_chuong",
+        "items": [
+          "gac_chuong"
+        ],
+        "layer": "object",
+        "file": "buildings/gac_chuong/final.png",
+        "x": 174,
+        "y": 1349,
+        "w": 297,
+        "h": 433,
+        "baseY": 1781,
+        "fg": null
+      },
+      {
+        "id": "gac_trong",
+        "items": [
+          "gac_trong"
+        ],
+        "layer": "object",
+        "file": "buildings/gac_trong/final.png",
+        "x": 1234,
+        "y": 1349,
+        "w": 296,
+        "h": 433,
+        "baseY": 1781,
+        "fg": null
+      },
+      {
+        "id": "su_tu_da",
+        "items": [
+          "su_tu_da"
+        ],
+        "layer": "object",
+        "file": "buildings/su_tu_da/final.png",
+        "x": 514,
+        "y": 1560,
+        "w": 682,
+        "h": 191,
+        "baseY": 1750,
+        "fg": null
+      },
+      {
+        "id": "be_bo_de",
+        "items": [
+          "be_bo_de"
+        ],
+        "layer": "object",
+        "file": "buildings/be_bo_de/final.png",
+        "x": 716,
+        "y": 1542,
+        "w": 280,
+        "h": 152,
+        "baseY": 1691,
+        "fg": {
+          "file": "fg/be_bo_de.png",
+          "x": 771,
+          "y": 1577,
+          "w": 45,
+          "h": 38
+        }
+      },
+      {
+        "id": "tam_quan",
+        "items": [
+          "tam_quan"
+        ],
+        "layer": "object",
+        "file": "buildings/tam_quan/final.png",
+        "x": 451,
+        "y": 1700,
+        "w": 820,
+        "h": 533,
+        "baseY": 2233,
+        "fg": null
+      },
+      {
+        "id": "cau_da",
+        "items": [
+          "cau_da"
+        ],
+        "layer": "object",
+        "file": "buildings/cau_da/final.png",
+        "x": 521,
+        "y": 2220,
+        "w": 508,
+        "h": 250,
+        "baseY": 2468,
+        "fg": null
+      },
+      {
+        "id": "ho_sen",
+        "items": [
+          "ho_sen"
+        ],
+        "layer": "ground",
+        "file": "buildings/ho_sen/final.png",
+        "x": 0,
+        "y": 2188,
+        "w": 1728,
+        "h": 295,
+        "baseY": 2483,
+        "fg": null
+      },
+      {
+        "id": "tuong_bao",
+        "items": [
+          "tuong_bao"
+        ],
+        "layer": "ground",
+        "file": "buildings/tuong_bao/final.png",
+        "x": 0,
+        "y": 719,
+        "w": 1728,
+        "h": 1434,
+        "baseY": 2152,
+        "fg": null
+      },
+      {
+        "id": "san_gach",
+        "items": [
+          "san_gach"
+        ],
+        "layer": "ground",
+        "file": "buildings/san_gach/final.png",
+        "x": 66,
+        "y": 945,
+        "w": 1596,
+        "h": 1035,
+        "baseY": 1976,
+        "fg": null
+      },
+      {
+        "id": "san_nen",
+        "items": [
+          "san_nen"
+        ],
+        "layer": "ground",
+        "file": "buildings/san_nen/final.png",
+        "x": 0,
+        "y": 550,
+        "w": 1728,
+        "h": 1957,
+        "baseY": 2507,
+        "fg": null
+      }
+    ]
   }
 }

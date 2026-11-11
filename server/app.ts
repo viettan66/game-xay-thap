@@ -8,6 +8,8 @@ import type { GameCore } from './core.js';
 import { SimulatorNotAllowed, type LiveService, type SourceMode } from './live/service.js';
 import { FIRE_KINDS, SCENARIO_KEYS, SCENARIOS, type FireKind, type ScenarioKey } from './live/simulator.js';
 import { chooseBackground, gameAssetsDir, loadManifest, ManifestError, missingFiles, saveManifest } from './assets/manifest.js';
+import { loadCuts, MapCutError, missingSegments } from './assets/mapCut.js';
+import { MapCutQueue, updateBuildingCut, type MapTools } from './assets/mapTools.js';
 import { applyToManifest, parseToolUpdate } from './assets/tools.js';
 import { ConfigError } from './config/store.js';
 import type { StateBroadcaster } from './overlay/broadcaster.js';
@@ -19,6 +21,8 @@ export interface AppDeps {
   broadcaster: StateBroadcaster;
   rootDir: string;
   isAllowedOrigin: (origin: string | undefined) => boolean;
+  /** Cắt lại bản đồ trên trang /tools/assets (test thay bằng bản giả). */
+  mapTools: MapTools;
 }
 
 export function overlayDir(rootDir: string): string {
@@ -156,6 +160,29 @@ export function createApp(deps: AppDeps): express.Express {
     broadcaster.markDirty();
     res.json({ ok: true, manifest: loadManifest(rootDir) });
   });
+  // ---- Bản đồ quần thể chùa (R2): khung cắt từng công trình ----
+  const mapQueue = new MapCutQueue();
+  app.get('/api/tools/map', (_req, res) => {
+    const cuts = loadCuts(rootDir);
+    res.json({
+      cuts,
+      map: loadManifest(rootDir)?.map ?? null,
+      names: Object.fromEntries(core.project.items.map((i) => [i.id, i.name])),
+      canSegment: deps.mapTools.canSegment(),
+      missingSegments: missingSegments(rootDir, cuts),
+    });
+  });
+  app.post('/api/tools/map/building', async (req, res) => {
+    const r = await mapQueue.run(() => updateBuildingCut(rootDir, deps.mapTools, body(req).building));
+    broadcaster.markDirty();
+    res.json({ ok: true, ...r });
+  });
+  app.post('/api/tools/map/rebuild', async (_req, res) => {
+    const map = await mapQueue.run(() => deps.mapTools.build());
+    broadcaster.markDirty();
+    res.json({ ok: true, cuts: loadCuts(rootDir), map });
+  });
+
   app.get('/tools/assets', (_req, res) => {
     const page = path.join(overlayDir(rootDir), 'tools.html');
     if (!fs.existsSync(page)) return res.status(503).type('html').send('<meta charset="utf-8"><p>Chưa đóng gói. Chạy <code>npm run build</code>.</p>');
@@ -189,7 +216,9 @@ export function createApp(deps: AppDeps): express.Express {
   app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
     if (err instanceof SimulatorNotAllowed) return res.status(403).json({ error: err.message });
     if (err instanceof BadRequest) return res.status(400).json({ error: err.message });
-    if (err instanceof ManifestError || err instanceof ConfigError) return res.status(400).json({ error: err.message });
+    if (err instanceof ManifestError || err instanceof ConfigError || err instanceof MapCutError) {
+      return res.status(400).json({ error: err.message });
+    }
     next(err);
   });
   return app;

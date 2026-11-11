@@ -81,9 +81,13 @@ scripts/  công cụ phụ (cắt sprite, backup, giả lập)
 - Nguồn live: `server/live/` (giao diện `LiveAdapter`, `SimulatorAdapter`, `LiveService`). Hồ sơ test chọn giả lập/live thật (lưu trong bảng `settings`); production không bao giờ chạy giả lập.
 - Overlay: `overlay/src/` (PixiJS v8). Tính toán bố cục thuần trong `overlay/src/layout.ts` (có test); dữ liệu server gửi xuống định nghĩa ở `shared/protocol.ts`. Không viết cứng chữ người xem đọc được trong overlay, mọi chữ lấy từ state (config).
 - API POST chỉ nhận JSON và Origin của chính game (chống trang web lạ gửi lệnh tới 127.0.0.1); WebSocket cũng kiểm tra Origin.
-- Ảnh gốc mới có tên tiếng Việt mô tả (không trùng tên trong SPEC mục 7, ví dụ `map_built` = `Chín tầng tháp giữa quần thể chùa.png`). Script dựng ảnh dùng bảng ánh xạ tên SPEC → file thật, không đổi tên file gốc.
+- Ảnh gốc mới có tên tiếng Việt mô tả (không trùng tên trong SPEC mục 7). Bảng ánh xạ tên SPEC → file thật: `assets/raw-files.json` (đọc qua `server/assets/rawFiles.ts`; Python đọc trực tiếp). Không đổi tên file gốc.
+- Bản đồ (R2): `npm run assets:upscale` (Real-ESRGAN ×4 → `assets/work/esrgan`) → `assets:segment` (`scripts/assets/map_segment.py`, rembg từng khung object → `assets/work/map/rembg`) → `assets:map` (`server/assets/mapCut.ts`: nền ghép + dải .jpg, công trình `buildings/<id>/final.png`, tiền cảnh `fg/<id>.png`, `manifest.map`). Khung cắt (tọa độ ảnh gốc 941×1672) ở `assets/map-cuts.json`; tọa độ manifest theo hệ bản đồ rộng 1728. Mặt nạ thuần + test: `server/assets/mask.ts`. Kiểu + hàm thuần: `shared/map.ts`. Trang công cụ: `overlay/src/tools/map.ts` + API `/api/tools/map*` (`server/assets/mapTools.ts`, cắt lại tuần tự, lỗi thì trả file khung về cũ).
+- Cắt object = mặt nạ rembg trừ cụm "giống hệt ảnh đồi trống" chạm mép hình (cây đứng trước → fg) + lấp lỗ kín + viền chân APRON 10px (chỗ khác biệt chưa thuộc ai). Ground = khác biệt mềm trong vùng, trừ object và ground đứng trước trong danh sách; `san_nen` cuối cùng = phần còn lại.
+- sharp: ảnh xám vẫn có thể ra 3 kênh (`greyscale()` không đổi số kênh) → dùng `extractChannel(0)`; ghép lớp có alpha xong ảnh thành 4 kênh → `removeAlpha()` trước `.raw()`; `resize` chạy TRƯỚC `composite` trong cùng pipeline.
+- Overlay R2: `overlay/src/scene/map.ts` (bản đồ, dải tầng tháp, chớp sáng) + `overlay/src/mapLayout.ts` (camera tạm co vừa bề ngang, lia dọc, có test). Banner/bảng tự mờ khi che hạng mục đang xây (tạm tới R4).
 - Ảnh game: `scripts/assets/remove_bg.py` (rembg birefnet-general-lite, cắt từng vật rồi mới tách nền, khử viền trắng) → `assets/work/nobg`; `scripts/assets/build.ts` (sharp, dùng `scripts/slice-sheet.ts` + `scripts/assets/measure.ts`) → `assets/game` + `assets/manifest.json`. Kiểu manifest: `shared/manifest.ts`; kiểm tra/lưu: `server/assets/`. Giá trị chỉnh tay (`tuned: true`, …) được giữ khi chạy lại build.
-- Overlay R1 vẽ tạm bằng hình khối: `overlay/src/scene/site.ts` + `overlay/src/siteLayout.ts` (thuần, có test), thay ở R2–R4.
+- Overlay R1 vẽ tạm bằng hình khối: `overlay/src/scene/site.ts` + `overlay/src/siteLayout.ts`; từ R2 chỉ dùng khi chưa có `manifest.map`.
 - (Tháp cũ, chờ dọn sau R4) Xếp chồng tầng: `overlay/src/towerLayout.ts`, `scene/tower.ts` (nhận `TowerSceneInput`), `scene/background.ts`; chỉ trang `/tools/assets` (`overlay/tools.html` + `overlay/src/tools/main.ts`) còn dùng.
 - Máy chủ dự án dùng bảng mã cp932 khi ghi log: script Python phải `reconfigure(encoding='utf-8')` cho stdout.
 - Tự kiểm tra hình overlay: chạy server với `GAME_NO_BROWSER=1`, chụp bằng Edge headless (`--headless=new --user-data-dir=<thư mục nháp> --use-angle=swiftshader --window-size=1080,1920`); nếu ảnh ra đen thì chụp qua CDP.
@@ -96,7 +100,7 @@ Bản tháp cũ (tag `thap-100-tang`):
 
 Quần thể chùa (nhánh `quan-the-chua`):
 - [x] R1: mô hình dữ liệu hạng mục + giai đoạn, `project.json`, DB mới, simulator + overlay hình khối tạm (2026-11-11)
-- [ ] R2: ghép bản đồ, phóng to, cắt công trình, lớp tiền cảnh, manifest, `/tools/assets` mở rộng
+- [x] R2: ghép bản đồ, phóng to, cắt công trình, lớp tiền cảnh, manifest, `/tools/assets` mở rộng (2026-11-11)
 - [ ] R3: hiển thị giai đoạn (`visual.kind`), giàn giáo, đống vật liệu, ảnh mốc
 - [ ] R4: camera và bố cục giao diện mới
 - [ ] Giai đoạn 4 → 8 (mục 15)

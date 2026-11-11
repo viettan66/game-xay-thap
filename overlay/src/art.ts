@@ -3,6 +3,7 @@
 
 import { Texture } from 'pixi.js';
 import { assetUrl, type Manifest } from '../../shared/manifest.js';
+import { textureKey } from '../../shared/map.js';
 
 export interface Art {
   version: string;
@@ -42,6 +43,20 @@ export async function loadArt(version: string): Promise<Art> {
         }
       }),
     );
+    // Bản đồ (R2): nền, công trình, tiền cảnh. Khóa texture = đường dẫn bỏ đuôi, ví dụ "buildings/gac_chuong/final".
+    const map = manifest.map;
+    if (map) {
+      const files = [...map.tiles.map((t) => t.file), ...map.buildings.flatMap((b) => [b.file, ...(b.fg ? [b.fg.file] : [])])];
+      await Promise.all(
+        files.map(async (file) => {
+          try {
+            textures.set(textureKey(file), Texture.from(await fetchBitmap(`${assetUrl(file)}?v=${version}`)));
+          } catch {
+            console.warn(`Thiếu ảnh ${file}, bỏ qua`);
+          }
+        }),
+      );
+    }
   }
   return { version, manifest, textures, bitmaps };
 }

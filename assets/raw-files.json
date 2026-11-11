@@ -1,0 +1,20 @@
+{
+  "_ghi_chu": "Ánh xạ tên ảnh trong SPEC mục 7 → tên file thật trong assets/raw/ (ảnh gốc giữ nguyên tên, không đổi). Script Node và Python đều đọc file này.",
+  "map_built": "Chín tầng tháp giữa quần thể chùa.png",
+  "map_empty": "Đồi hoa xuân không cầu nước.png",
+  "map_ground_ext": "Con đường đá ấm giữa cỏ xanh.png",
+  "chars_danphu_nam_walk": "Bộ sprite người lao động Việt Nam.png",
+  "chars_danphu_nam_work": "Bộ sprite hành động lao động truyền thống.png",
+  "chars_danphu_nu_walk": "Bộ sprite nữ lao động dễ thương 4×4.png",
+  "chars_danphu_nu_work": "Bảng hoạt cảnh cô gái lao động xinh xắn.png",
+  "chars_thomoc_walk": "Bộ sprite người thợ mộc hoạt hình.png",
+  "chars_thomoc_work": "Bộ sprite người thợ mộc Việt Nam.png",
+  "chars_thone_walk": "Bộ Sprite Người Thợ Xây Việt Nam.png",
+  "chars_thone_work": "Thợ xây Việt Nam_ 12 tư thế lao động.png",
+  "chars_tusi_walk": "Chibi Tiểu Tăng Trong 16 Tư Thế Урыстә.png",
+  "chars_tusi_work": "Bảng hoạt cảnh chú tiểu làm việc.png",
+  "vehicles": "Chu kỳ vận chuyển trâu và voi.png",
+  "props": "Bộ vật liệu xây dựng minh họa isometric.png",
+  "honor_statues": "Ba Vệ Thần Đá Rêu Phong Cổ.png",
+  "lion_dance": "Lưới sprite múa lân Việt Nam праз.png"
+}

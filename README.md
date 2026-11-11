@@ -5,8 +5,8 @@ trên khu đồi. Công trình gồm 23 hạng mục (San nền, Bệ cây bồ 
 mỗi hạng mục qua nhiều giai đoạn thi công.
 Đặc tả đầy đủ: [SPEC.md](SPEC.md). Bản cũ "tháp 100 tầng" được lưu ở git tag `thap-100-tang` và file [SPEC_old.md](SPEC_old.md).
 
-> **Tiến độ:** đã xong **R1** (mô hình hạng mục và giai đoạn). Overlay đang vẽ **tạm bằng hình khối** cho từng hạng mục.
-> Sắp tới: R2 bản đồ thật và cắt công trình từ ảnh, R3 hiển thị từng giai đoạn, R4 camera và bố cục mới.
+> **Tiến độ:** đã xong **R1** (mô hình hạng mục và giai đoạn) và **R2** (bản đồ chùa thật: ghép nền, phóng to bằng AI,
+> cắt từng công trình từ ảnh, lớp tiền cảnh, trang chỉnh khung cắt). Sắp tới: R3 hiển thị từng giai đoạn thi công, R4 camera và bố cục mới.
 > Chưa có nhân vật và trụ trì (giai đoạn 4), chưa kết nối TikTok (giai đoạn 6).
 
 ---
@@ -53,10 +53,16 @@ Trên trang trạng thái có nút **Mở overlay ↗** để xem nhanh.
 3. Canvas của OBS nên đặt dọc 1080×1920: **Settings → Video → Base (Canvas) Resolution**.
 4. Nếu sửa game mà overlay chưa đổi: chuột phải vào source → **Refresh**.
 
-Trên overlay hiện có (bản **tạm** của R1, R2–R4 sẽ thay bằng bản đồ chùa thật):
-- **Công trường bằng hình khối:** mỗi hạng mục là một khối có tên. Khối **đỏ son** là đã xong, khối **đang xây** có phần vàng
-  dâng lên theo % của hạng mục và nhấp nháy nhẹ, khối mờ là chưa xây. Bảo tháp 9 tầng xếp chồng thành một cột bên trái.
-  Xong một giai đoạn thì khối chớp sáng nhẹ, xong hạng mục thì chớp mạnh.
+Trên overlay hiện có:
+- **Bản đồ quần thể chùa** (đồi, núi, trời, đường đá nối dài phía dưới). Mỗi hạng mục là một công trình cắt từ ảnh chùa hoàn chỉnh:
+  - **đã xong:** hiện đầy đủ;
+  - **đang xây:** hiện mờ, nhấp nháy nhẹ (R3 sẽ thay bằng từng giai đoạn: cắm mốc, đào móng, dựng khung, lợp mái…);
+  - **chưa xây:** chưa có, chỗ đó là đất trống. Riêng sân gạch chừa sẵn các ô đất đúng chỗ sẽ xây công trình.
+  - Bảo tháp: mỗi tầng một dải, tầng chưa xây thì chưa có.
+  - Xong giai đoạn thì công trình chớp sáng nhẹ, xong hạng mục thì chớp mạnh.
+- **Camera tạm:** bản đồ co vừa bề ngang, tự lia lên xuống để hạng mục đang xây nằm giữa màn hình (R4 làm camera đầy đủ:
+  phóng to, toàn cảnh, lia giới thiệu). Hạng mục ở đỉnh bản đồ (bảo tháp, nhà tổ) bị banner che thì banner tự mờ đi.
+- Chưa dựng bản đồ (thiếu ảnh) thì overlay tự quay về vẽ tạm bằng hình khối có tên, không bị dừng.
 - **Banner trên giữa:**
   - dòng 1 `Hạng mục 4/23 · Cổng tam quan`;
   - dòng 2 `Giai đoạn 5/10: Dựng cột` kèm % của giai đoạn;
@@ -75,15 +81,41 @@ Overlay không đặt thông tin vào các vùng nền tảng tự vẽ: trên 1
 
 ## 3b. Ảnh game và trang kiểm tra `/tools/assets`
 
-> Trang này hiện vẫn là bản của **tháp cũ** (xếp chồng tầng tháp). Ở R2 trang được làm lại cho bản đồ chùa:
-> xem bản đồ, bật/tắt từng công trình, kéo chỉnh khung cắt. Code tháp cũ chỉ được dọn sau R4 khi mình đồng ý.
-
 Ảnh gốc trong `assets\raw\` (không sửa, không đổi tên). Ảnh tháp cũ nằm trong `assets\raw\_old\`.
-Ảnh đã tách nền, cắt sẵn nằm trong `assets\game\`; thông số từng ảnh nằm trong `assets\manifest.json`.
+Tên file gốc tiếng Việt được ánh xạ sang tên trong SPEC mục 7 ở `assets\raw-files.json`
+(ví dụ `map_built` = `Chín tầng tháp giữa quần thể chùa.png`).
+Ảnh đã cắt nằm trong `assets\game\`; thông số từng ảnh nằm trong `assets\manifest.json`.
 
 Mở trang kiểm tra: trên trang trạng thái bấm **Kiểm tra ảnh ↗**, hoặc vào `http://127.0.0.1:3000/tools/assets`.
 
-### Làm lại ảnh từ ảnh gốc (chỉ khi thay ảnh trong `assets\raw\`)
+### Bản đồ quần thể chùa (mục đầu tiên của trang)
+- Bản đồ rộng 1728 điểm ảnh (= 1080 × phóng to tối đa 1,6), cao 5575:
+  - **ảnh đồi trống** ở trên;
+  - **đường đá nối dài** chồng lên đáy 308 điểm ảnh gốc, mờ dần chỗ chồng nên không lộ đường nối.
+- Cả ba ảnh được **phóng ×4 bằng AI (Real-ESRGAN)** rồi thu về cỡ bản đồ.
+- Mỗi công trình được cắt từ **ảnh chùa hoàn chỉnh**. Hai cách cắt:
+  - **Khung xanh** (công trình có hình khối): máy tách hình bằng rembg, rồi bỏ những chỗ giống hệt ảnh đồi trống.
+    Đó là cây có sẵn đứng trước công trình; các cây này được đưa vào **lớp tiền cảnh**, vẽ đè lên công trình.
+  - **Khung cam** (sân gạch, hồ sen, tường bao, san nền): lấy phần khác biệt với ảnh đồi trống trong vùng, trừ đi các công trình đè lên.
+- Trên trang:
+  - bỏ dấu tích để ẩn công trình;
+  - nút **Ẩn tất cả** để xem đồi trống;
+  - kéo thanh **Ảnh gốc map_built chồng lên** để so vị trí với ảnh gốc.
+- Bấm một công trình để chỉnh:
+  - **kéo khung** (kéo giữa để dời, kéo 4 góc để đổi cỡ) hoặc gõ số;
+  - **kéo vạch đỏ** = đường chân công trình (baseY). Chân thấp hơn thì đứng trước, che công trình phía sau;
+  - bảo tháp có thêm **vạch tím** = mép trên từng tầng. Tạm thời chia đều 9 dải, chờ ảnh bảo tháp 9 tầng vẽ riêng;
+  - bấm **Cắt lại công trình này**. Đổi khung xanh thì máy tách hình lại (10–60 giây), rồi dựng lại cả bản đồ; overlay đang mở tự cập nhật.
+- Khung cắt lưu trong `assets\map-cuts.json` (tọa độ theo ảnh gốc 941×1672).
+
+### Làm lại bản đồ từ ảnh gốc (chỉ khi thay ảnh bản đồ trong `assets\raw\`)
+Cần Python + rembg và Real-ESRGAN như bên dưới. Mở cửa sổ lệnh tại thư mục dự án rồi gõ lần lượt:
+1. `npm run assets:upscale`: phóng ×4 ba ảnh bản đồ bằng Real-ESRGAN (vài phút; ảnh đã phóng thì bỏ qua).
+2. `npm run assets:segment`: tách hình từng công trình bằng rembg (khoảng 10–60 giây mỗi công trình).
+3. `npm run assets:map`: ghép nền, cắt công trình, ghi manifest (khoảng 10 giây). Thêm `-- --background` để ghép lại nền.
+
+### Làm lại ảnh từ ảnh gốc: phần của bản tháp cũ (trụ trì, giao diện, bia… vẫn dùng)
+Quy trình của giai đoạn 3, giữ lại tới khi dọn code tháp sau R4.
 Cần Python 3 (máy đã có 3.13) và mạng Internet ở lần đầu để tải model.
 1. Mở cửa sổ lệnh tại thư mục dự án. Tạo môi trường Python riêng và cài rembg (chỉ một lần):
    ```
@@ -139,7 +171,19 @@ Mở cửa sổ lệnh **tại thư mục dự án**: mở thư mục `game-xay-
 7. Đóng cửa sổ đen rồi mở lại `start-test.bat`: overlay hiện **đúng hạng mục, đúng giai đoạn, đúng phần trăm** như trước khi tắt.
 8. (Tùy chọn) Đổi giá hoặc thêm hạng mục bằng cách sửa `config\project.json` (xem mục 6), lưu, tắt rồi bật lại game.
 
-**c) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
+**c) R2: bản đồ chùa**
+1. Nhấp đúp `start-test.bat`, bấm **Kiểm tra ảnh ↗**. Mục đầu tiên là bản đồ chùa đầy đủ công trình.
+2. Kéo thanh **Ảnh gốc map_built chồng lên** qua lại: các công trình phải trùng khít ảnh gốc, không lệch, không mất mảnh.
+3. Bấm **Ẩn tất cả (đồi trống)**: chỉ còn đồi, cây, núi. Kéo xuống dưới cùng: chỗ nối đường đá phải liền, không có vệt ngang.
+4. Bấm **Chỉ hiện phần nền** (sân gạch, hồ sen, tường bao, san nền): chỗ các công trình sẽ xây là ô đất trống.
+5. Bấm từng công trình trong danh sách, nhìn 3 ô xem trước (ô caro, nền tối, nền trắng) để **soi viền cắt**:
+   - xem có sót mảng sân, bị mất mái, mất cột, mất hoa văn không;
+   - chỗ nào chưa ổn: kéo khung rộng/hẹp lại rồi bấm **Cắt lại công trình này**.
+6. Mở overlay, ở trang trạng thái bấm **Quà lớn** nhiều lần:
+   - công trình hiện dần lên đúng chỗ trên bản đồ, camera lia theo hạng mục đang xây;
+   - tới bảo tháp thì từng tầng hiện lên, banner tự mờ đi để thấy tháp.
+
+**d) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
 Lệnh này xóa dữ liệu thử và chạy một chuỗi sự kiện mẫu. Màn hình in từng giai đoạn, từng hạng mục vừa xong, kèm các bảng xếp hạng.
 
 ---
@@ -229,7 +273,10 @@ Riêng các khóa `floor1WidthPx`, `towerTaper`, `towerCenterX`, `towerBaseY` tr
 | `npm start` / `npm run start:test` | Chạy server không qua file .bat |
 | `npm run demo` | Bắn sự kiện mẫu vào hồ sơ test |
 | `npm run assets:nobg` | Tách nền ảnh gốc bằng rembg → `assets/work/nobg` |
-| `npm run assets:build` | Cắt ảnh, đo điểm căn → `assets/game` + `assets/manifest.json` |
+| `npm run assets:build` | (Tháp cũ) Cắt ảnh trụ trì, giao diện, bia… → `assets/game` + `assets/manifest.json` |
+| `npm run assets:upscale` | Phóng ×4 ba ảnh bản đồ bằng Real-ESRGAN → `assets/work/esrgan` |
+| `npm run assets:segment [mã…]` | Tách hình công trình bằng rembg theo `assets/map-cuts.json` → `assets/work/map/rembg` |
+| `npm run assets:map` | Ghép nền, cắt công trình, tiền cảnh → `assets/game/map`, `buildings`, `fg` + phần `map` của manifest |
 | `node --import tsx scripts/slice-sheet.ts <sheet.png> <thư_mục> --names a,b --equal` | Cắt một sprite sheet nền trong suốt bất kỳ |
 
 Cấu trúc thư mục và quy tắc làm việc: xem [CLAUDE.md](CLAUDE.md) và mục 2 của [SPEC.md](SPEC.md).

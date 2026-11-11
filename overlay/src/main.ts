@@ -1,14 +1,17 @@
 // Overlay game (PixiJS v8): một trang, vẽ ở khung 1080×1920, co giãn vừa cửa sổ.
 // Dùng làm Browser Source trong OBS: http://127.0.0.1:3000/overlay/ (1080×1920).
 // Phím D: bật/tắt khung debug vùng an toàn.
-// Giai đoạn R1: công trường vẽ tạm bằng hình khối theo hạng mục (scene/site.ts). Cảnh tháp cũ (scene/tower.ts,
+// Giai đoạn R2: bản đồ quần thể chùa thật (scene/map.ts). Chưa dựng bản đồ (thiếu manifest.map) thì vẽ tạm bằng
+// hình khối theo hạng mục (scene/site.ts). Cảnh tháp cũ (scene/tower.ts,
 // scene/background.ts) chỉ còn dùng ở trang /tools/assets, chờ dọn sau R4.
 
 import { Application, Container } from 'pixi.js';
-import type { OverlayState, ServerMessage } from '../../shared/protocol.js';
+import type { OverlayState, SafeArea, ServerMessage } from '../../shared/protocol.js';
 import { destroyArt, EMPTY_ART, loadArt, type Art } from './art.js';
-import { STAGE_H, STAGE_W, uiRects } from './layout.js';
+import { rectsOverlap, STAGE_H, STAGE_W, uiRects, type Rect } from './layout.js';
 import { connectServer } from './net.js';
+import type { ViewBand } from './mapLayout.js';
+import { MapView } from './scene/map.js';
 import { SiteView } from './scene/site.js';
 import { loadFonts } from './theme.js';
 import { Badge, ConnectionDot, Disclaimer, MultiplierChip } from './ui/chrome.js';
@@ -24,6 +27,12 @@ interface Ui {
   badge: Badge;
   chip: MultiplierChip;
   disclaimer: Disclaimer;
+}
+
+/** Vùng màn hình còn thấy bản đồ: dưới khối giao diện phía trên, trên dải miễn trừ. */
+function mapViewBand(safe: SafeArea): ViewBand {
+  const r = uiRects(safe);
+  return { top: r.chip.y + r.chip.h, bottom: r.disclaimer.y };
 }
 
 async function boot(): Promise<void> {
@@ -42,10 +51,16 @@ async function boot(): Promise<void> {
 
   // Lớp từ sau ra trước: công trường (hình khối tạm) → giao diện → debug.
   const site = new SiteView(uiRects({ top: 180, bottom: 600, right: 150 }).site);
+  const mapView = new MapView(mapViewBand({ top: 180, bottom: 600, right: 150 }));
   const uiLayer = new Container();
   const safeDebug = new SafeAreaDebug();
   const dot = new ConnectionDot(STAGE_W - 170, 200);
-  app.stage.addChild(site.container, uiLayer, safeDebug.container, dot.container);
+  app.stage.addChild(site.container, mapView.container, uiLayer, safeDebug.container, dot.container);
+  const showMap = () => {
+    mapView.container.visible = mapView.ready;
+    site.container.visible = !mapView.ready;
+  };
+  showMap();
 
   let state: OverlayState | null = null;
   let ui: Ui | null = null;
@@ -79,6 +94,8 @@ async function boot(): Promise<void> {
     art = a;
     ui?.banner.setArt(a);
     ui?.board.setArt(a);
+    mapView.setArt(a);
+    showMap();
     if (old !== EMPTY_ART) destroyArt(old);
   };
 
@@ -95,6 +112,8 @@ async function boot(): Promise<void> {
     }
     site.setArea(uiRects(s.layout.safeArea).site);
     site.update(s.progress);
+    mapView.setView(mapViewBand(s.layout.safeArea));
+    mapView.update(s.progress);
     const u = ensureUi(s);
     u.banner.update(s);
     u.board.update(s);
@@ -108,8 +127,11 @@ async function boot(): Promise<void> {
     if (m.type === 'state') apply(m.state);
     else if (m.type === 'progress') {
       for (const t of m.transitions) {
-        if (t.type === 'stage_complete') site.flash(t.itemId, 0.45);
-        if (t.type === 'item_complete') site.flash(t.itemId, 0.9);
+        const strength = t.type === 'item_complete' ? 0.9 : t.type === 'stage_complete' ? 0.45 : 0;
+        if (strength > 0 && 'itemId' in t) {
+          site.flash(t.itemId, strength);
+          mapView.flash(t.itemId, strength);
+        }
       }
     }
   };
@@ -125,7 +147,20 @@ async function boot(): Promise<void> {
   app.ticker.add((t) => {
     if (!state) return;
     const dt = Math.min(0.1, t.deltaMS / 1000);
-    site.tick(dt);
+    if (mapView.ready) mapView.tick(dt);
+    else site.tick(dt);
+    // Tạm cho R2 (R4 làm bố cục mới): banner hoặc bảng che hạng mục đang xây thì mờ đi để vẫn thấy công trình.
+    const focus = mapView.ready ? mapView.focusOnScreen() : null;
+    if (ui && state) {
+      const r = uiRects(state.layout.safeArea);
+      const top: Rect = { x: r.banner.x, y: r.banner.y, w: r.banner.w, h: r.chip.y + r.chip.h - r.banner.y };
+      const fade = (c: { alpha: number }, covers: boolean) => {
+        const target = covers ? 0.3 : 1;
+        c.alpha += (target - c.alpha) * Math.min(1, dt * 4);
+      };
+      fade(ui.banner.container, !!focus && rectsOverlap(focus, top));
+      fade(ui.board.container, !!focus && rectsOverlap(focus, r.board));
+    }
     ui?.banner.tick(dt);
     ui?.board.tick(dt);
   });

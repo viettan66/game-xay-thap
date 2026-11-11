@@ -21,6 +21,32 @@ const entry = z.strictObject({
   tuned: z.boolean().optional(),
 });
 
+const mapFile = (ext: string) => z.string().regex(new RegExp(`^[a-z0-9_/]+\\.(${ext})$`), 'Tên file phải là chữ thường không dấu');
+const rect = { x: z.number(), y: z.number(), w: z.number().positive(), h: z.number().positive() };
+const mapSchema = z.strictObject({
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  scale: z.number().positive(),
+  rawWidth: z.number().int().positive(),
+  rawHeight: z.number().int().positive(),
+  overlap: z.number().int().min(0),
+  source: z.enum(['esrgan', 'lanczos']),
+  tiles: z.array(z.strictObject({ file: mapFile('jpg|png'), y: z.number().int().min(0), h: z.number().int().positive() })).min(1),
+  reference: mapFile('jpg|png').nullable(),
+  buildings: z.array(
+    z.strictObject({
+      id: z.string().regex(/^[a-z0-9_]+$/),
+      items: z.array(z.string()).min(1),
+      layer: z.enum(['ground', 'object']),
+      file: mapFile('png'),
+      ...rect,
+      baseY: z.number(),
+      fg: z.strictObject({ file: mapFile('png'), ...rect }).nullable(),
+      tierLinesY: z.array(z.number()).optional(),
+    }),
+  ),
+});
+
 export const manifestSchema = z
   .strictObject({
     version: z.literal(1),
@@ -34,6 +60,7 @@ export const manifestSchema = z
       skyOverlap: z.number().int().min(0).max(1000),
     }),
     tower: z.strictObject({ spireScale: z.number().min(0.3).max(3) }),
+    map: mapSchema.optional(),
   })
   .refine((m) => Object.values(m.images).every((e) => e.topY === undefined || e.eaveLineY === undefined || e.topY < e.eaveLineY), {
     message: 'topY phải nằm phía trên eaveLineY',
@@ -89,12 +116,15 @@ export function assetsVersion(rootDir: string): string {
   return version;
 }
 
-/** Danh sách ảnh khai báo trong manifest mà file không tồn tại. */
+/** Danh sách ảnh khai báo trong manifest (kể cả bản đồ) mà file không tồn tại. */
 export function missingFiles(rootDir: string, m: Manifest): string[] {
   const dir = gameAssetsDir(rootDir);
-  return Object.values(m.images)
-    .map((e) => e.file)
-    .filter((f) => !fs.existsSync(path.join(dir, f)));
+  const files = Object.values(m.images).map((e) => e.file);
+  if (m.map) {
+    files.push(...m.map.tiles.map((t) => t.file));
+    for (const b of m.map.buildings) files.push(b.file, ...(b.fg ? [b.fg.file] : []));
+  }
+  return files.filter((f) => !fs.existsSync(path.join(dir, f)));
 }
 
 /** Dùng một bản nền làm chính thức: chép thành bg/background.png và bg/sky_upper.png. */

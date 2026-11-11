@@ -3,6 +3,7 @@
 
 import type { AddressInfo } from 'node:net';
 import { createApp } from './app.js';
+import { defaultMapTools, type MapTools } from './assets/mapTools.js';
 import { GameCore } from './core.js';
 import { LiveService } from './live/service.js';
 import type { Logger } from './logger.js';
@@ -21,6 +22,8 @@ export interface ServerOptions {
   now?: () => number;
   simulatorTimer?: boolean;
   seed?: number;
+  /** Cắt lại bản đồ trên /tools/assets; mặc định gọi Python + bộ cắt thật. */
+  mapTools?: MapTools;
 }
 
 export interface RunningServer {
@@ -77,7 +80,14 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
   );
   core.configStore.onChange(() => broadcaster.markDirty());
 
-  const app = createApp({ core, live, broadcaster, rootDir: o.rootDir, isAllowedOrigin });
+  const app = createApp({
+    core,
+    live,
+    broadcaster,
+    rootDir: o.rootDir,
+    isAllowedOrigin,
+    mapTools: o.mapTools ?? defaultMapTools(o.rootDir),
+  });
   const server = await new Promise<import('node:http').Server>((resolve, reject) => {
     const s = app.listen(port, '127.0.0.1');
     s.once('listening', () => resolve(s));

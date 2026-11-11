@@ -1,4 +1,5 @@
-// Trang /tools/assets: soi ảnh đã cắt, so sánh nền A/B, xếp chồng thử tầng tháp và lưu điểm căn.
+// Trang /tools/assets: bản đồ quần thể chùa và khung cắt công trình (tools/map.ts, R2);
+// phần cũ của tháp: soi ảnh đã cắt, so sánh nền A/B, xếp chồng thử tầng tháp và lưu điểm căn.
 // Phần xếp chồng dùng đúng code vẽ của overlay (Backdrop, TowerView) nên thấy gì ở đây thì lên live y như vậy.
 
 import { Application, Container } from 'pixi.js';
@@ -9,6 +10,7 @@ import { Backdrop } from '../scene/background.js';
 import { TowerView, type TowerSceneInput } from '../scene/tower.js';
 import { loadFonts } from '../theme.js';
 import { cameraTargetFor, towerArtFrom } from '../towerLayout.js';
+import { initMapTool } from './map.js';
 
 interface ToolsData {
   manifest: Manifest | null;
@@ -403,6 +405,7 @@ async function reloadArt(): Promise<void> {
 }
 
 async function boot(): Promise<void> {
+  void initMapTool();
   await loadFonts();
   await fetchData();
   edit = data.manifest ? editFromManifest(data.manifest) : null;

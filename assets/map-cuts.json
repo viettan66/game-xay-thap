@@ -1,0 +1,117 @@
+{
+  "_ghi_chu": "Khung cắt từng công trình từ map_built (mục 7). Tọa độ theo ẢNH GỐC 941×1672. object = tách bằng rembg rồi bỏ chỗ giống ảnh đồi trống (cây đứng trước → lớp tiền cảnh); ground = lấy phần khác biệt trong vùng, trừ các công trình đè lên. Hạng mục ground ở trên được ưu tiên hơn ground ở dưới. Sửa trên trang /tools/assets hoặc sửa tay rồi chạy npm run assets:segment && npm run assets:map.",
+  "rawWidth": 941,
+  "rawHeight": 1672,
+  "overlap": 308,
+  "mapWidth": 1728,
+  "buildings": [
+    {
+      "id": "bao_thap",
+      "items": ["thap_tang_1", "thap_tang_2", "thap_tang_3", "thap_tang_4", "thap_tang_5", "thap_tang_6", "thap_tang_7", "thap_tang_8", "thap_tang_9"],
+      "parts": [
+        { "mode": "object", "box": [248, 136, 374, 398] },
+        { "mode": "ground", "box": [244, 350, 378, 406] }
+      ]
+    },
+    {
+      "id": "nha_to",
+      "parts": [
+        { "mode": "object", "box": [497, 316, 664, 413] }
+      ]
+    },
+    {
+      "id": "chinh_dien",
+      "parts": [
+        { "mode": "object", "box": [256, 416, 670, 704] }
+      ]
+    },
+    {
+      "id": "hanh_lang_tay",
+      "parts": [
+        { "mode": "object", "box": [38, 480, 224, 740] }
+      ]
+    },
+    {
+      "id": "hanh_lang_dong",
+      "parts": [
+        { "mode": "object", "box": [698, 480, 887, 750] }
+      ]
+    },
+    {
+      "id": "gac_chuong",
+      "parts": [
+        { "mode": "object", "box": [95, 735, 256, 970] }
+      ]
+    },
+    {
+      "id": "gac_trong",
+      "parts": [
+        { "mode": "object", "box": [672, 735, 833, 970] }
+      ]
+    },
+    {
+      "id": "su_tu_da",
+      "parts": [
+        { "mode": "object", "box": [280, 850, 343, 953] },
+        { "mode": "object", "box": [588, 850, 651, 953] }
+      ]
+    },
+    {
+      "id": "be_bo_de",
+      "parts": [
+        { "mode": "object", "box": [384, 840, 542, 922] }
+      ]
+    },
+    {
+      "id": "tam_quan",
+      "parts": [
+        { "mode": "object", "box": [246, 926, 692, 1216] }
+      ]
+    },
+    {
+      "id": "cau_da",
+      "parts": [
+        { "mode": "object", "box": [284, 1182, 646, 1346] }
+      ]
+    },
+    {
+      "id": "ho_sen",
+      "parts": [
+        { "mode": "ground", "box": [0, 1192, 941, 1352] }
+      ]
+    },
+    {
+      "id": "tuong_bao",
+      "parts": [
+        { "mode": "ground", "box": [0, 1076, 282, 1172] },
+        { "mode": "ground", "box": [654, 1076, 941, 1172] },
+        {
+          "mode": "ground",
+          "box": [0, 392, 120, 1080],
+          "polygon": [[92, 392], [120, 396], [62, 640], [44, 760], [42, 1080], [0, 1080], [0, 700], [22, 640]]
+        },
+        {
+          "mode": "ground",
+          "box": [806, 392, 941, 1080],
+          "polygon": [[806, 392], [834, 396], [915, 640], [941, 700], [941, 1080], [897, 1080], [892, 760], [872, 640]]
+        }
+      ]
+    },
+    {
+      "id": "san_gach",
+      "parts": [
+        {
+          "mode": "ground",
+          "box": [36, 515, 905, 1078],
+          "polygon": [[220, 515], [720, 515], [735, 560], [760, 745], [890, 750], [905, 1078], [36, 1078], [48, 745], [180, 740], [205, 560]]
+        }
+      ]
+    },
+    {
+      "id": "san_nen",
+      "parts": [
+        { "mode": "ground", "box": [0, 300, 941, 1365] }
+      ]
+    }
+  ]
+}

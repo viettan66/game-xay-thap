@@ -347,6 +347,8 @@ async function main(): Promise<void> {
       skyOverlap: prev?.background.skyOverlap ?? 150,
     },
     tower: { spireScale: prev?.tower.spireScale ?? 1 },
+    // Bản đồ do `npm run assets:map` dựng: giữ nguyên.
+    ...(prev?.map ? { map: prev.map } : {}),
   };
   saveManifest(ROOT, manifest);
   log(`Xong: ${Object.keys(images).length} ảnh, bản nền đang dùng: ${variant}. Đã ghi assets/manifest.json`);

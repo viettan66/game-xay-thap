@@ -56,6 +56,31 @@
   .ctl .val { font-variant-numeric: tabular-nums; text-align: right; }
   .ctl h3 { font-size: 14px; margin: 14px 0 4px; }
   #piece { max-width: 100%; border-radius: 8px; background: #1d232b; }
+  /* Bản đồ quần thể chùa */
+  .mapwrap { display: grid; grid-template-columns: minmax(400px, 1fr) 420px; gap: 14px; align-items: start; }
+  @media (max-width: 1100px) { .mapwrap { grid-template-columns: 1fr; } }
+  .mapvp { height: 820px; overflow: auto; border-radius: 8px; background: #222; position: relative; }
+  #m-sizer { position: relative; }
+  #m-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  #m-stage img { position: absolute; user-select: none; pointer-events: none; }
+  #m-stage img.ref { pointer-events: none; }
+  .m-outline { position: absolute; border: 2px dashed rgba(255,255,255,.55); cursor: pointer; }
+  .m-outline.sel { border-color: #ffeb3b; }
+  .m-box { position: absolute; border: 2px solid #00e5ff; background: rgba(0,229,255,.06); cursor: move; }
+  .m-box.ground { border-color: #ff9800; background: rgba(255,152,0,.05); }
+  .m-handle { position: absolute; background: #fff; border: 2px solid #00838f; border-radius: 50%; }
+  .m-handle.nw { left: 0; top: 0; cursor: nwse-resize; } .m-handle.ne { right: 0; top: 0; cursor: nesw-resize; }
+  .m-handle.sw { left: 0; bottom: 0; cursor: nesw-resize; } .m-handle.se { right: 0; bottom: 0; cursor: nwse-resize; }
+  .m-line { position: absolute; cursor: ns-resize; }
+  .m-line.base { background: #f44336; } .m-line.tier { background: #ba68c8; }
+  .m-poly { position: absolute; left: 0; top: 0; pointer-events: none; }
+  .mapside { max-height: 820px; overflow: auto; }
+  .m-item { display: grid; grid-template-columns: 26px 1fr auto; gap: 6px; align-items: center; padding: 4px 6px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  .m-item:hover { background: #f3eadb; } .m-item.sel { background: #ffe9a8; }
+  .m-item small { color: var(--muted); }
+  #m-edit h3 { font-size: 15px; margin: 14px 0 4px; }
+  .m-part { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; margin: 6px 0; font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .m-part input[type=number] { width: 66px; font: inherit; padding: 2px 4px; }
 </style>
 </head>
 <body>
@@ -67,7 +92,25 @@
 </header>
 <main>
   <section>
-    <h2>1. So sánh nền A / B</h2>
+    <h2>Bản đồ quần thể chùa – cắt công trình (giai đoạn R2)</h2>
+    <p class="note">Bản đồ ghép (đồi trống + mặt đất nối dài) với từng công trình cắt từ ảnh <i>đã xây</i>. Bỏ dấu tích để ẩn công trình,
+      kéo thanh "Ảnh gốc" để so vị trí với ảnh map_built. Bấm một công trình để chỉnh khung cắt, đường chân, rồi bấm <b>Cắt lại</b>.</p>
+    <div class="row">
+      <label>Thu phóng <select id="m-zoom"><option value="0.25">25%</option><option value="0.4" selected>40%</option><option value="0.6">60%</option><option value="1">100%</option></select></label>
+      <label>Ảnh gốc map_built chồng lên <input type="range" id="m-ref" min="0" max="100" value="0"> <span id="m-ref-v">0%</span></label>
+      <label><input type="checkbox" id="m-outline" checked> Viền khung công trình</label>
+      <label><input type="checkbox" id="m-fg" checked> Lớp tiền cảnh</label>
+      <button id="m-all">Hiện tất cả</button><button id="m-ground">Chỉ hiện phần nền</button><button id="m-none">Ẩn tất cả (đồi trống)</button>
+    </div>
+    <p id="m-msg" class="note"></p>
+    <div class="mapwrap">
+      <div class="mapvp" id="m-vp"><div id="m-sizer"><div id="m-stage"></div></div></div>
+      <div class="mapside"><div id="m-list"></div><div id="m-edit"></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>1. So sánh nền A / B (tháp cũ)</h2>
     <p class="note">A: phóng to thường (Lanczos). B: phóng to bằng AI (Real-ESRGAN x4plus) rồi thu về 1080×1920. B2: Real-ESRGAN bản anime.
       Rê chuột lên một ảnh để soi cùng một chỗ trên cả ba. Bấm <b>Dùng bản này</b> để chọn làm chính thức (overlay đổi ngay).</p>
     <div class="row">
@@ -79,14 +122,14 @@
   </section>
 
   <section>
-    <h2>2. Ảnh đã cắt – soi viền trên 3 nền</h2>
+    <h2>2. Ảnh đã cắt – soi viền trên 3 nền (trụ trì, giao diện, bia… và tháp cũ)</h2>
     <p class="note">Mỗi ảnh hiện trên nền ô caro, trắng và tối. Viền trắng bám mép thường lộ trên nền tối; mép bị ăn lẹm thường lộ trên nền trắng. Bấm vào ảnh để phóng to.</p>
     <div id="missing"></div>
     <div class="groups" id="groups"></div>
   </section>
 
   <section>
-    <h2>3. Xếp chồng thử 10 tầng + chóp trên nền thật</h2>
+    <h2>3. Xếp chồng thử 10 tầng + chóp (tháp cũ, chờ dọn sau R4)</h2>
     <p class="note">Tầng sau đặt <b>mép dưới dải ngói (eaveLineY, vạch đỏ)</b> lên <b>mép trên phẳng (topY, vạch xanh)</b> của tầng dưới. Tầng 1 đặt đáy lên điểm vàng trên bệ móng.
       Kéo thanh trượt để xem ngay; bấm <b>Lưu</b> để ghi: điểm căn và vị trí tháp vào <code>assets/manifest.json</code>, độ rộng tầng 1 và độ thu nhỏ vào <code>config.json</code>.</p>
     <div class="stack">

@@ -1,5 +1,7 @@
 // Khai báo ảnh game (assets/manifest.json, mục 7 SPEC): đường dẫn, kích thước, điểm neo, thông số căn chỉnh.
-// Toạ độ tính bằng điểm ảnh của chính file ảnh đó.
+// Toạ độ tính bằng điểm ảnh của chính file ảnh đó (riêng phần `map` tính theo hệ tọa độ bản đồ, xem shared/map.ts).
+
+import type { MapManifest } from './map.js';
 
 export interface Point {
   x: number;
@@ -56,6 +58,8 @@ export interface Manifest {
     /** Bề rộng mái chóp so với mái tầng cuối. */
     spireScale: number;
   };
+  /** Bản đồ quần thể chùa (giai đoạn R2): nền ghép, công trình, tiền cảnh. Chưa dựng thì không có. */
+  map?: MapManifest;
 }
 
 export const FLOOR_STAGE_KEYS = [1, 2, 3, 4, 5].map((n) => `tower/floor_stage_${n}`);
