@@ -39,6 +39,12 @@ export interface HudRects {
   minimap: Rect;
   /** Chỗ đứng của trụ trì: bên trái (mặc định) và bên phải (khi né công trình). */
   abbot: Record<AbbotSide, Rect>;
+  /** Thông báo quà lớn: góc trên trái, dưới nhãn CHẾ ĐỘ THỬ. */
+  toast: Rect;
+  /** Chip "+công" kèm tên (phòng đông): bay lên rồi mờ, ngay dưới chỗ thông báo quà. */
+  plus: Rect;
+  /** Sân diễn múa lân khi đủ mục tiêu tim: dải ngay trên dải miễn trừ. */
+  festival: Rect;
   disclaimer: Rect;
   /** Vùng vẽ công trường tạm bằng hình khối (khi chưa có bản đồ). */
   site: Rect;
@@ -74,7 +80,10 @@ export function hudRects(safe: SafeArea): HudRects {
   };
   const siteTop = progress.y + progress.h + M;
   const site = { x: left + 16, y: siteTop, w: right - 32, h: disclaimer.y - M - siteTop };
-  return { content, view: { left, right, top, bottom }, badge, progress, events, boards, minimap, abbot, disclaimer, site };
+  const toast = { x: left + M, y: badge.y + badge.h + 10, w: Math.min(440, progress.x - M - (left + M)), h: 96 };
+  const plus = { x: left + M, y: toast.y + toast.h + 8, w: toast.w, h: 34 };
+  const festival = { x: left, y: disclaimer.y - 8 - 280, w: right - left, h: 280 };
+  return { content, view: { left, right, top, bottom }, badge, progress, events, boards, minimap, abbot, toast, plus, festival, disclaimer, site };
 }
 
 function overlapArea(a: Rect, b: Rect): number {

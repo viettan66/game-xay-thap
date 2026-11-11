@@ -226,6 +226,132 @@
         "y": 201
       }
     },
+    "festival/cymbal_1": {
+      "file": "festival/cymbal_1.png",
+      "w": 158,
+      "h": 264,
+      "anchor": {
+        "x": 79,
+        "y": 262
+      }
+    },
+    "festival/cymbal_2": {
+      "file": "festival/cymbal_2.png",
+      "w": 158,
+      "h": 264,
+      "anchor": {
+        "x": 79,
+        "y": 262
+      }
+    },
+    "festival/drum_1": {
+      "file": "festival/drum_1.png",
+      "w": 188,
+      "h": 272,
+      "anchor": {
+        "x": 94,
+        "y": 270
+      }
+    },
+    "festival/drum_2": {
+      "file": "festival/drum_2.png",
+      "w": 188,
+      "h": 272,
+      "anchor": {
+        "x": 94,
+        "y": 270
+      }
+    },
+    "festival/lion_front_1": {
+      "file": "festival/lion_front_1.png",
+      "w": 222,
+      "h": 267,
+      "anchor": {
+        "x": 111,
+        "y": 265
+      }
+    },
+    "festival/lion_front_2": {
+      "file": "festival/lion_front_2.png",
+      "w": 222,
+      "h": 267,
+      "anchor": {
+        "x": 111,
+        "y": 265
+      }
+    },
+    "festival/lion_front_3": {
+      "file": "festival/lion_front_3.png",
+      "w": 222,
+      "h": 267,
+      "anchor": {
+        "x": 111,
+        "y": 265
+      }
+    },
+    "festival/lion_front_4": {
+      "file": "festival/lion_front_4.png",
+      "w": 222,
+      "h": 267,
+      "anchor": {
+        "x": 111,
+        "y": 265
+      }
+    },
+    "festival/lion_side_1": {
+      "file": "festival/lion_side_1.png",
+      "w": 250,
+      "h": 241,
+      "anchor": {
+        "x": 125,
+        "y": 239
+      }
+    },
+    "festival/lion_side_2": {
+      "file": "festival/lion_side_2.png",
+      "w": 250,
+      "h": 241,
+      "anchor": {
+        "x": 125,
+        "y": 239
+      }
+    },
+    "festival/lion_side_3": {
+      "file": "festival/lion_side_3.png",
+      "w": 250,
+      "h": 241,
+      "anchor": {
+        "x": 125,
+        "y": 239
+      }
+    },
+    "festival/lion_side_4": {
+      "file": "festival/lion_side_4.png",
+      "w": 250,
+      "h": 241,
+      "anchor": {
+        "x": 125,
+        "y": 239
+      }
+    },
+    "festival/ongdia_1": {
+      "file": "festival/ongdia_1.png",
+      "w": 238,
+      "h": 260,
+      "anchor": {
+        "x": 119,
+        "y": 258
+      }
+    },
+    "festival/ongdia_2": {
+      "file": "festival/ongdia_2.png",
+      "w": 238,
+      "h": 260,
+      "anchor": {
+        "x": 119,
+        "y": 258
+      }
+    },
     "items/bell": {
       "file": "items/bell.png",
       "w": 226,

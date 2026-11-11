@@ -10,9 +10,10 @@ mỗi hạng mục qua nhiều giai đoạn thi công.
 > ("xây từng mảnh": mỗi lần có công, từng viên gạch, viên ngói, thanh gỗ bay vào đúng chỗ), **R3c** (trang thử xây
 > `/tools/build`: chọn hạng mục, giai đoạn, nút tim và quà, đo FPS) và **R4** (camera phóng to, toàn cảnh, lia giới thiệu;
 > giao diện mới: thanh tiến độ góc trên phải, bảng xếp hạng thu gọn tự tránh công trình, ô sự kiện, bản đồ thu nhỏ, lọc tên).
-> Giai đoạn 4 làm từng phần: đã xong **4a** (chế độ độ đông của phòng, kho thoại, trụ trì nói chuyện trên overlay, tên quà theo mức).
-> Sắp tới: 4b (thông báo quà lớn, mục tiêu tim, trang Kho thoại), 4c (ảnh nhân vật, lối đi), 4d (nhân vật người xem,
-> hiệu ứng quà), 4e (dân phu, người góp công cũ). Chưa kết nối TikTok (giai đoạn 6).
+> Giai đoạn 4 làm từng phần: đã xong **4a** (chế độ độ đông của phòng, kho thoại, trụ trì nói chuyện trên overlay, tên quà theo mức)
+> và **4b** (thông báo quà, mục tiêu tim của phiên với phần thưởng múa lân, trang Kho thoại).
+> Sắp tới: 4c (ảnh nhân vật, lối đi), 4d (nhân vật người xem, hiệu ứng quà), 4e (dân phu, người góp công cũ).
+> Chưa kết nối TikTok (giai đoạn 6).
 
 ---
 
@@ -102,7 +103,17 @@ Trên overlay hiện có:
   Bảng chưa có ai thì bỏ qua. Bảng có 3 chỗ đặt sẵn (trái giữa, phải giữa, trái trên) và **tự dời sang chỗ không che
   hạng mục đang xây** (mờ đi, dời, hiện lại). Muốn cố định một chỗ: chỉnh trên trang trạng thái.
 - **Ô sự kiện** dưới thanh tiến độ, chỉ hiện khi có: `Giờ vàng ×2 · còn 12:34` (đồng hồ đếm ngược), sự kiện lịch
-  (ví dụ `Ngày Rằm ×2`), tổng hệ số khi có từ hai thứ trở lên. (Mục tiêu tim của phiên làm ở giai đoạn 4b.)
+  (ví dụ `Ngày Rằm ×2`), tổng hệ số khi có từ hai thứ trở lên, và **mục tiêu tim của phiên**: `❤ 1.234/5.000 · Đủ 5.000 tim mở khóa màn múa lân`.
+- **Mục tiêu tim của phiên** (bảng 9A): khi bắt đầu phiên lấy theo chế độ lúc đó (vắng 500, vừa 5.000, đông 10.000,
+  rất đông 50.000 → 100.000 → 200.000). Đủ tim thì **múa lân** khoảng 14 giây ngay trên dải miễn trừ (người đánh trống,
+  chũm chọe, con lân, ông Địa, hoa giấy rơi) và trụ trì dang tay mời xem. Chế độ tăng mà mục tiêu đã đạt thì mở nấc của chế độ mới.
+  Trang trạng thái đặt tay được mục tiêu (luôn ưu tiên) hoặc để tự động.
+- **Thông báo quà** góc trên trái (dưới nhãn CHẾ ĐỘ THỬ), khoảng 4 giây: avatar tạm (vòng tròn chữ cái đầu; ảnh avatar thật có ở
+  giai đoạn 6), tên, câu `… vừa góp một xe trâu chở đá`, ảnh vật phẩm (gạch, bó gỗ, xe trâu, voi, chuông, tượng). Có hàng đợi,
+  quà lớn hiện trước. Theo chế độ (bảng 9A):
+  - vắng, vừa: mọi quà; quà nhỏ liên tiếp của cùng một người trong 5 giây gộp vào một thông báo (cộng dồn);
+  - đông: quà từ 100 xu; quà nhỏ hơn chỉ hiện dòng nhỏ `+1.000 công · Tên` bay lên;
+  - rất đông: chỉ quà thuộc top 10% giá trị trong 5 phút gần nhất và từ 500 xu; còn lại hiện `+công`.
 - **Chế độ độ đông** (SPEC mục 9A): **vắng**, **vừa**, **đông**, **rất đông**, tính từ số người xem và số người tương tác
   (bình luận, tim, quà) trong 5 phút, lấy mức cao hơn. Đổi chế độ khi ổn định 2 phút; có đợt dồn dập (hơn 100 sự kiện trong
   10 giây) thì lên mức ngay. Trang trạng thái hiện chế độ và có nút ép tay. Chế độ đổi: tốc độ đặt mảnh, nhịp camera, cách trụ trì nói.
@@ -355,7 +366,18 @@ Mở cửa sổ lệnh **tại thư mục dự án**: mở thư mục `game-xay-
    **Phòng rất đông**, bấm **▶ Chạy**: sau vài giây chế độ lên **Rất đông** (đợt dồn dập), mảnh bay chậm lại (10 mảnh/giây).
 9. Xây tới công trình to (ví dụ Chính điện): trụ trì tự sang bên phải nếu đứng bên trái che công trình.
 
-**i) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
+**i) Giai đoạn 4b: thông báo quà, mục tiêu tim, Kho thoại**
+1. Đóng game đang chạy, nhấp đúp lại `start-test.bat`, mở overlay cạnh trang trạng thái. Bấm **Bắt đầu phiên**.
+2. Khung **Độ đông**: bấm **Vừa**. Bấm **Quà nhỏ** nhiều lần liền: thông báo góc trên trái gộp lại, số quà tăng dần
+   ("một viên gạch" → "một bó gỗ"). Bấm **Quà vừa**, **Quà lớn**: thông báo có ảnh xe trâu, chuông.
+3. Bấm **Đông**, bấm **Quà nhỏ**: chỉ hiện dòng nhỏ `+… công · Tên` bay lên; **Quà vừa** vẫn bật thông báo.
+4. Ô sự kiện (dưới thanh tiến độ) hiện `❤ 0/5.000 · Đủ 5.000 tim mở khóa màn múa lân`. Khung **Mục tiêu tim**: gõ `2000`,
+   bấm **Đặt mục tiêu**. Bấm **1.000 tim** hai lần: múa lân khoảng 14 giây, hoa giấy rơi, trụ trì mời xem;
+   ô sự kiện đổi thành `❤ 2.000 tim · đã mở khóa màn múa lân`. Bấm **Tự động theo chế độ** để về nấc tự động.
+5. Bấm **Kho thoại ↗**: xem cảnh báo, bấm một nhóm, thử sửa một câu thêm chữ "may mắn" (hiện ⚠), bấm **Nói thử** (trụ trì nói trên overlay),
+   **Duyệt** vài câu, **Lưu**. Mở lại trang thấy câu đã duyệt hết viền cam.
+
+**j) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
 Lệnh này xóa dữ liệu thử và chạy một chuỗi sự kiện mẫu. Màn hình in từng giai đoạn, từng hạng mục vừa xong, kèm các bảng xếp hạng.
 
 ---
@@ -377,7 +399,8 @@ Các file sau được tạo tự động ở lần chạy đầu, từ bản m�
 
 ### `config\dialogues.json`: kho thoại
 Mỗi nhóm (`session_start`, `greet_single`, `greet_group`, `returning`, `gift_small`, `gift_medium`, `gift_large`, `gift_huge`,
-`gift_thanks_group`, `progress`, `item_complete`, `stage_ritual`, `idle_story`, `idle_howto`, `session_end`, `piece_burst`) có:
+`gift_thanks_group`, `progress`, `item_complete`, `stage_ritual`, `idle_story`, `idle_howto`, `session_end`, `toast_gift` (chữ thông báo quà),
+`goal_text` (chữ mục tiêu tim), `goal_reached` (trụ trì nói khi đủ tim), `piece_burst`) có:
 - `mode`: `shuffle` (xáo trộn, hết một vòng mới lặp lại), `sequential` (lần lượt), `random` (ngẫu nhiên theo `weight`);
 - `cooldownSec`: nghỉ ít nhất bao nhiêu giây giữa hai lần nói cùng nhóm;
 - `lines`: danh sách câu, mỗi câu `{ "text", "tiers", "weight", "enabled", "verified" }`.
@@ -385,9 +408,19 @@ Mỗi nhóm (`session_start`, `greet_single`, `greet_group`, `returning`, `gift_
 - Biến dùng được: `{name}` `{names}` `{n}` `{gift}` `{material}` `{item}` `{stage}` `{ritual}` `{itemIndex}` `{itemTotal}`
   `{percent}` `{count}` `{target}` `{reward}`. Ghi sai biến (ví dụ `{ten}`) thì game báo lỗi khi mở.
 - **Duyệt câu:** câu do em viết thêm có `"verified": false`. Live thật chỉ nói câu `"verified": true`. Mình đọc từng câu
-  (nhất là nhóm `idle_story` có kiến thức lịch sử), thấy đúng thì đổi thành `true`. (Trang Kho thoại để duyệt bằng nút bấm làm ở 4b.)
+  (nhất là nhóm `idle_story` có kiến thức lịch sử), thấy đúng thì đổi thành `true` – hoặc dùng **trang Kho thoại** (dưới).
 - Nguyên tắc: không hứa phước báu, may mắn, bình an; nhóm `gift_…` không có từ ngữ tôn giáo; "A Di Đà Phật" chỉ ở mở phiên,
   đóng phiên, lễ, xong hạng mục. Test tự động (`npm test`) quét kho thoại mặc định theo các nguyên tắc này.
+
+**Trang Kho thoại** (trang trạng thái → **Kho thoại ↗**, hoặc `http://127.0.0.1:3000/admin/dialogues`), sửa trực tiếp, không cần mở file:
+- Cột trái: các nhóm, số câu **chưa duyệt**, số câu **lỗi**; trên cùng là cảnh báo nhóm nào chưa có câu đã duyệt (live thật sẽ im lặng lúc đó).
+- Bấm một nhóm: sửa câu, chọn chế độ dùng câu (vắng/vừa/đông/rất đông), trọng số, bật/tắt; **Duyệt** từng câu hoặc **Duyệt cả nhóm**;
+  **+ Thêm câu** (câu mình tự thêm mặc định đã duyệt); kéo ⠿ để đổi thứ tự; **Xóa**.
+- Gõ tới đâu kiểm tra tới đó: có từ cấm, từ tôn giáo trong câu cảm ơn quà, biến sai thì hiện ⚠ ngay dưới câu.
+- **Nói thử**: trụ trì nói câu đó trên overlay với dữ liệu mẫu ("Tên người xem", "một xe trâu chở đá"…); câu của `toast_gift` hiện thành thông báo quà.
+- **Lưu**: có hiệu lực ngay. Bản cũ tự backup vào `data\<hồ sơ>\backups\dialogues\` (giữ 30 bản). Lỗi thì không lưu, báo rõ chỗ sai.
+- **Xuất file JSON** / **Nhập file JSON** (hỏi lại trước khi thay, bản cũ được backup).
+- Trang trạng thái cũng hiện cảnh báo nhóm chưa có câu duyệt, để mình duyệt trước khi live thật.
 
 ### `config\project.json`: hạng mục và giai đoạn
 Mỗi hạng mục trong `items` có:
@@ -487,6 +520,13 @@ Mục `abbot` (trụ trì): `idleSec` = khoảng nghỉ giữa hai lần nói ch
 `greetGroupSec` (10) = gộp lời chào; `thanksGroupSec` (30) = gộp lời cảm ơn chung; `maxQueue` (6) = hàng đợi câu nói tối đa;
 `progressMarks` (`[50, 80, 95]`) = mốc % báo tiến độ ở phòng đông.
 
+Mục `toast` (thông báo quà): `sec` (4) = hiện bao nhiêu giây; `mergeSec` (5) = gộp quà nhỏ liên tiếp trong bao nhiêu giây;
+`smallMaxCoins` (99) = quà nhỏ là tới bao nhiêu xu; `dongMinCoins` (100), `ratdongMinCoins` (500) = ngưỡng ở phòng đông, rất đông;
+`ratdongTopPercent` (10) và `windowSec` (300) = phòng rất đông chỉ hiện quà thuộc top 10% trong 5 phút.
+Mục `heartGoal` (mục tiêu tim): `targets` = các nấc theo chế độ; `reward` = tên phần thưởng hiện trong `{reward}` (mặc định "màn múa lân");
+`festivalSec` (14) = múa lân bao lâu. Chữ trong ô sự kiện: `labels.events.heartGoal`, `labels.events.heartGoalDone`; dòng "+công": `labels.plusPoints`.
+Ảnh vật phẩm trong thông báo quà: `gifts.tiers[].icon`.
+
 File `config.json` cũ của bản tháp (có mục `tower`, tên tầng, các khóa `floor1WidthPx`, `towerTaper`, `towerCenterX`, `towerBaseY`
 trong mục `overlay`…) được game **tự dọn** ở lần chạy đầu, phần mình đã chỉnh khác được giữ nguyên.
 
@@ -519,6 +559,7 @@ trong mục `overlay`…) được game **tự dọn** ở lần chạy đầu, 
 | `npm run assets:upscale` | Phóng ×4 ba ảnh bản đồ bằng Real-ESRGAN → `assets/work/esrgan` |
 | `npm run assets:segment [mã…]` | Tách hình công trình bằng rembg theo `assets/map-cuts.json` → `assets/work/map/rembg` |
 | `npm run assets:nobg props` rồi `npm run assets:props` | Tách nền và cắt 18 ảnh đống vật liệu → `assets/game/props` + manifest |
+| `npm run assets:nobg lion_dance` rồi `npm run assets:festival` | Tách nền và cắt 14 khung múa lân → `assets/game/festival` + manifest |
 | `npm run assets:map` | Ghép nền, cắt công trình, tiền cảnh → `assets/game/map`, `buildings`, `fg` + phần `map` của manifest |
 | `node --import tsx scripts/slice-sheet.ts <sheet.png> <thư_mục> --names a,b --equal` | Cắt một sprite sheet nền trong suốt bất kỳ |
 

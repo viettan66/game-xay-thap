@@ -12,7 +12,12 @@ import { loadCuts, MapCutError, missingSegments } from './assets/mapCut.js';
 import { partsForEditing, partsStatus, proposeForBuilding, saveParts, syncManifestParts, validateLabels } from './assets/parts.js';
 import { PARTS } from '../shared/parts.js';
 import { MapCutQueue, updateBuildingCut, type MapTools } from './assets/mapTools.js';
+import type { AbbotDirector } from './abbot/director.js';
 import type { GameConfig } from './config/schema.js';
+import { DIALOGUE_VARS, lineProblems, unverifiedGroups, USED_GROUPS } from './dialogue/rules.js';
+import { fillTemplate } from '../shared/project.js';
+import type { ServerMessage } from '../shared/protocol.js';
+import { vnStamp } from '../shared/time.js';
 import { ConfigError } from './config/store.js';
 import type { StateBroadcaster } from './overlay/broadcaster.js';
 import { buildOverlayState, dialogueLines } from './overlay/state.js';
@@ -21,6 +26,10 @@ export interface AppDeps {
   core: GameCore;
   live: LiveService;
   broadcaster: StateBroadcaster;
+  /** Trụ trì (nút "nói thử" của trang Kho thoại). */
+  abbot: AbbotDirector;
+  /** Gửi tin xuống mọi overlay đang mở. */
+  sendOverlay: (msg: ServerMessage) => void;
   rootDir: string;
   isAllowedOrigin: (origin: string | undefined) => boolean;
   /** Cắt lại bản đồ trên trang /tools/assets (test thay bằng bản giả). */
@@ -47,6 +56,9 @@ export function buildStatus({ core, live }: Pick<AppDeps, 'core' | 'live'>) {
     live: live.status(),
     sim: live.simState(),
     crowd: core.crowd.info(core.now()),
+    goal: core.goals.info(),
+    // Nhóm thoại chưa có câu đã duyệt: live thật thì lúc đó im lặng (mục 9C).
+    dialogueWarnings: unverifiedGroups(core.configStore.getDialogues().groups),
     scenarios: SCENARIO_KEYS.map((k) => ({ key: k, label: SCENARIOS[k].label })),
   };
 }
@@ -151,6 +163,80 @@ export function createApp(deps: AppDeps): express.Express {
     if (tier === 'auto') core.setCrowdForced(null);
     else if (tier === 'vang' || tier === 'vua' || tier === 'dong' || tier === 'ratdong') core.setCrowdForced(tier);
     else throw new BadRequest('Chế độ không hợp lệ');
+    ok(res);
+  });
+
+  // ---- Trang Kho thoại (mục 9C) ----
+  const dialoguesPayload = () => {
+    const file = core.configStore.getDialogues();
+    const problems: Record<string, Record<number, string[]>> = {};
+    for (const [g, group] of Object.entries(file.groups)) {
+      group.lines.forEach((l, i) => {
+        const p = lineProblems(g, l.text);
+        if (p.length) (problems[g] ??= {})[i] = p;
+      });
+    }
+    return { file, problems, used: USED_GROUPS, warnings: unverifiedGroups(file.groups), vars: DIALOGUE_VARS, tiers: ['vang', 'vua', 'dong', 'ratdong'] };
+  };
+  app.get('/api/dialogues', (_req, res) => {
+    res.json(dialoguesPayload());
+  });
+  app.post('/api/dialogues/check', (req, res) => {
+    const b = body(req);
+    res.json({ problems: lineProblems(String(b.group ?? ''), String(b.text ?? '')) });
+  });
+  app.post('/api/dialogues', (req, res) => {
+    core.saveDialogues(body(req).file, { source: 'admin/dialogues' });
+    broadcaster.markDirty();
+    res.json(dialoguesPayload());
+  });
+  app.get('/api/dialogues/export', (_req, res) => {
+    res.set('Content-Disposition', `attachment; filename="dialogues-${vnStamp(core.now())}.json"`);
+    res.type('application/json').send(`${JSON.stringify(core.configStore.getDialogues(), null, 2)}\n`);
+  });
+  /** Nói thử một câu trên overlay với dữ liệu mẫu (không phải tên người xem thật). */
+  app.post('/api/dialogues/say', (req, res) => {
+    const b = body(req);
+    const group = String(b.group ?? '');
+    const text = String(b.text ?? '');
+    if (!text) throw new BadRequest('Thiếu câu');
+    const p = core.engine.status();
+    const cfg = core.config;
+    const sample: Record<string, string | number> = {
+      name: 'Tên người xem',
+      names: 'Tên A, Tên B và Tên C',
+      n: 3,
+      gift: cfg.gifts.tiers[2]?.name ?? cfg.gifts.tiers[0]!.name,
+      material: cfg.pieces.materials.tuong ?? 'viên gạch',
+      item: p.item.name,
+      stage: p.stage.name,
+      ritual: 'Lễ dựng cột',
+      itemIndex: p.item.number,
+      itemTotal: p.item.count,
+      percent: 50,
+      count: 12,
+      target: (5000).toLocaleString('vi-VN'),
+      reward: cfg.heartGoal.reward,
+    };
+    const filled = fillTemplate(text, sample);
+    const verified = b.verified !== false;
+    if (group.startsWith('toast_')) {
+      deps.sendOverlay({ type: 'toast', id: `thu-${core.now()}`, kind: 'big', platformId: 'thu', name: sample.name as string, text: filled, icon: cfg.gifts.tiers[2]?.icon ?? null, coins: 100, verified });
+    } else {
+      deps.abbot.testSay(filled, verified);
+    }
+    res.json({ ok: true, text: filled });
+  });
+  app.get('/admin/dialogues', (_req, res) => {
+    res.sendFile(path.join(rootDir, 'admin', 'dialogues.html'));
+  });
+
+  // ---- Mục tiêu tim của phiên (bảng 9A): admin đặt tay hoặc để tự động ----
+  app.post('/api/goal', (req, res) => {
+    const t = body(req).target;
+    if (t === null || t === 'auto') core.setHeartGoal(null);
+    else if (typeof t === 'number' && Number.isInteger(t) && t > 0 && t <= 100_000_000) core.setHeartGoal(t);
+    else throw new BadRequest('Mục tiêu tim phải là số nguyên dương');
     ok(res);
   });
 

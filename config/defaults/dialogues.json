@@ -172,6 +172,39 @@
         {"text": "Bình luận đôi câu cũng được tính công, mời quý vị trò chuyện cùng thầy.", "tiers": [], "weight": 1, "enabled": true, "verified": false}
       ]
     },
+    "toast_gift": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "{name} vừa góp {gift}", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "{name} gửi tới {gift}", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "{gift} từ {name}", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "{name} vừa tặng công trường {gift}", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Cảm ơn {name}: {gift}", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "goal_text": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "Đủ {target} tim mở khóa {reward}", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Gom đủ {target} tim để xem {reward}", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "{target} tim là có {reward}", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Thả đủ {target} tim, công trường mở {reward}", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Mục tiêu {target} tim: {reward}", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "goal_reached": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "Đủ {target} tim rồi! Mời cả nhà xem {reward}.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Cảm ơn quý vị, {target} tim đã đủ. Trống lân đâu, vào thôi!", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Hay quá, đủ {target} tim! Đoàn lân ra sân nào.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Công trường mở hội, cảm ơn {target} trái tim của quý vị.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Đủ tim rồi, các thợ nghỉ tay xem {reward} nhé!", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
     "session_end": {
       "mode": "shuffle",
       "cooldownSec": 0,

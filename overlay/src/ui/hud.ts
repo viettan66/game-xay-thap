@@ -296,7 +296,7 @@ export class EventBox {
             fontFamily: FONT_BODY,
             fontSize: 21,
             fontWeight: l.kind === 'event' ? '600' : '700',
-            fill: l.kind === 'golden' ? C.goldLight : C.cream,
+            fill: l.kind === 'golden' ? C.goldLight : l.kind === 'goal' ? 0xffc2cc : C.cream,
             dropShadow: shadow,
           },
         });
@@ -328,7 +328,11 @@ export class EventBox {
       const t = this.texts[i];
       if (!t) return;
       const s = l.endsAt !== null ? l.text.replace(/\{time\}/g, formatCountdown(l.endsAt - now)) : l.text.replace(/\{time\}/g, '');
-      if (t.text !== s) t.text = s;
+      if (t.text === s) return;
+      t.text = s;
+      // Dài quá khung thì chữ nhỏ lại (không nhỏ hơn 15).
+      t.style.fontSize = 21;
+      while (t.width > this.r.w - 32 && Number(t.style.fontSize) > 15) t.style.fontSize = Number(t.style.fontSize) - 1;
     });
   }
 

@@ -115,11 +115,13 @@ export interface HudConfig {
   /** Độ đậm nền từng khung (0–1). */
   opacity: { progress: number; board: number; events: number; disclaimer: number };
   boardRotateSec: number;
+  /** Thông báo quà lớn hiện bao nhiêu giây. */
+  toastSec: number;
 }
 
 /** Một dòng trong ô sự kiện. Chữ đã điền sẵn, riêng {time} overlay tự đếm ngược tới endsAt. */
 export interface EventLine {
-  kind: 'golden' | 'event' | 'total';
+  kind: 'golden' | 'event' | 'total' | 'goal';
   text: string;
   endsAt: number | null;
 }
@@ -141,7 +143,7 @@ export interface OverlayState {
   hud: HudConfig;
   camera: CameraConfig;
   crowd: CrowdTier;
-  /** Ô sự kiện: giờ vàng (đếm ngược), sự kiện lịch, tổng hệ số. Rỗng thì ẩn ô. */
+  /** Ô sự kiện: mục tiêu tim, giờ vàng (đếm ngược), sự kiện lịch, tổng hệ số. Rỗng thì ẩn ô. */
   eventBox: EventLine[];
   /** Giờ của server lúc gửi (ms), để overlay đếm ngược đúng dù đồng hồ máy lệch. */
   serverNow: number;
@@ -169,5 +171,12 @@ export type ServerMessage =
     }
   /** Trụ trì nói một câu (text null: chỉ đổi dáng). verified false: câu chưa duyệt (chỉ có ở giả lập, viền cam). */
   | { type: 'say'; text: string | null; pose: AbbotPose; durationMs: number; verified: boolean }
+  /**
+   * Thông báo quà (mục 8): kind "big" bật lên khoảng 4 giây (avatar, tên, ảnh vật phẩm); "plus" chỉ hiện "+công" kèm tên.
+   * Cùng id = gộp vào thông báo đang chờ / đang hiện (quà nhỏ liên tiếp của cùng một người).
+   */
+  | { type: 'toast'; id: string; kind: 'big' | 'plus'; platformId: string; name: string; text: string; icon: string | null; coins: number; verified: boolean }
+  /** Đủ mục tiêu tim của phiên: mở khóa phần thưởng (múa lân, bảng 9A). */
+  | { type: 'festival'; target: number; durationMs: number }
   /** Admin bấm "Toàn cảnh" / "Lia giới thiệu" (mục 8). */
   | { type: 'camera'; mode: Exclude<CameraMode, 'site'> };

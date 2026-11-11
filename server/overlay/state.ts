@@ -59,6 +59,21 @@ export function buildOverlayState(core: GameCore, badge: string | null): Overlay
   const L = cfg.labels.events;
   const mult = (x: number) => String(Math.round(x * 100) / 100).replace('.', ',');
   const eventBox: EventLine[] = [];
+  // Mục tiêu tim của phiên (bảng 9A): chỉ khi đang có phiên.
+  const goal = core.goals.info();
+  if (goal.sessionId !== null) {
+    const fmt = (n: number) => n.toLocaleString('vi-VN');
+    const reward = cfg.heartGoal.reward;
+    if (goal.target !== null) {
+      // Câu goal_text cố định theo nấc (không đổi mỗi lần gửi trạng thái).
+      const lines = dialogueLines(core, 'goal_text', badge !== cfg.labels.testBadge);
+      const tpl = lines.length ? lines[goal.target % lines.length]! : '';
+      const text = fillTemplate(L.heartGoal, { count: fmt(goal.count), target: fmt(goal.target), goal: fillTemplate(tpl, { target: fmt(goal.target), reward }) });
+      eventBox.push({ kind: 'goal', text: text.replace(/\s*·\s*$/, ''), endsAt: null });
+    } else if (goal.reached.length) {
+      eventBox.push({ kind: 'goal', text: fillTemplate(L.heartGoalDone, { count: fmt(goal.count), reward }), endsAt: null });
+    }
+  }
   if (m.goldenHour) {
     eventBox.push({
       kind: 'golden',
@@ -70,7 +85,7 @@ export function buildOverlayState(core: GameCore, badge: string | null): Overlay
     const e = events.find((x) => x.key === k);
     if (e) eventBox.push({ kind: 'event', text: fillTemplate(L.event, { name: e.name, multiplier: mult(e.multiplier) }), endsAt: null });
   }
-  if (eventBox.length > 1 && m.total !== 1) eventBox.push({ kind: 'total', text: fillTemplate(L.total, { multiplier: mult(m.total) }), endsAt: null });
+  if (eventBox.filter((e) => e.kind !== 'goal').length > 1 && m.total !== 1) eventBox.push({ kind: 'total', text: fillTemplate(L.total, { multiplier: mult(m.total) }), endsAt: null });
   const crowd = currentCrowd(core);
   const cam = cfg.camera;
 
@@ -90,6 +105,7 @@ export function buildOverlayState(core: GameCore, badge: string | null): Overlay
       minimap: cfg.overlay.minimap,
       opacity: { ...cfg.overlay.opacity },
       boardRotateSec: cfg.overlay.boardRotateSec,
+      toastSec: cfg.toast.sec,
     },
     camera: {
       maxZoom: cam.maxZoom,

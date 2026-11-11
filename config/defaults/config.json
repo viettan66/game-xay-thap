@@ -55,14 +55,28 @@
   },
   "gifts": {
     "tiers": [
-      { "minCoins": 0, "name": "một viên gạch", "dialogue": "gift_small" },
-      { "minCoins": 10, "name": "một bó gỗ", "dialogue": "gift_small" },
-      { "minCoins": 100, "name": "một xe trâu chở đá", "dialogue": "gift_medium" },
-      { "minCoins": 500, "name": "một đoàn voi chở gỗ", "dialogue": "gift_large" },
-      { "minCoins": 1000, "name": "một quả đại hồng chung", "dialogue": "gift_huge" },
-      { "minCoins": 5000, "name": "một tượng võ tướng đá", "dialogue": "gift_huge" }
+      { "minCoins": 0, "name": "một viên gạch", "dialogue": "gift_small", "icon": "items/brick" },
+      { "minCoins": 10, "name": "một bó gỗ", "dialogue": "gift_small", "icon": "items/logs" },
+      { "minCoins": 100, "name": "một xe trâu chở đá", "dialogue": "gift_medium", "icon": "items/buffalo_cart" },
+      { "minCoins": 500, "name": "một đoàn voi chở gỗ", "dialogue": "gift_large", "icon": "items/elephant" },
+      { "minCoins": 1000, "name": "một quả đại hồng chung", "dialogue": "gift_huge", "icon": "items/bell" },
+      { "minCoins": 5000, "name": "một tượng võ tướng đá", "dialogue": "gift_huge", "icon": "items/guardian" }
     ],
     "displayNames": {}
+  },
+  "toast": {
+    "sec": 4,
+    "mergeSec": 5,
+    "smallMaxCoins": 99,
+    "dongMinCoins": 100,
+    "ratdongMinCoins": 500,
+    "ratdongTopPercent": 10,
+    "windowSec": 300
+  },
+  "heartGoal": {
+    "targets": { "vang": [500], "vua": [5000], "dong": [10000], "ratdong": [50000, 100000, 200000] },
+    "reward": "màn múa lân",
+    "festivalSec": 14
   },
   "abbot": {
     "idleSec": { "vang": [60, 90], "vua": [120, 180], "dong": [300, 300], "ratdong": [0, 0] },
@@ -114,7 +128,10 @@
     "events": {
       "goldenHour": "{name} ×{multiplier} · còn {time}",
       "event": "{name} ×{multiplier}",
-      "total": "Tổng hệ số ×{multiplier}"
-    }
+      "total": "Tổng hệ số ×{multiplier}",
+      "heartGoal": "❤ {count}/{target} · {goal}",
+      "heartGoalDone": "❤ {count} tim · đã mở khóa {reward}"
+    },
+    "plusPoints": "+{points} {unit} · {name}"
   }
 }

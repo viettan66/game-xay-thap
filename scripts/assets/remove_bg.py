@@ -36,6 +36,8 @@ SHEETS = {
     "stele": {"model": "birefnet-general-lite"},
     # R3b: đống vật liệu (gạch, gỗ, ngói, đá – 3 mức; cát, giá cưa, ròng rọc, thang, quang gánh, xe cút kít).
     "props": {"model": "birefnet-general-lite"},
+    # 4b: múa lân (phần thưởng khi đủ mục tiêu tim): lân nhìn thẳng, lân đi ngang, người đánh trống, chũm chọe, ông Địa.
+    "lion_dance": {"model": "birefnet-general-lite"},
 }
 ALREADY_TRANSPARENT = ["ui_kit"]
 

@@ -12,6 +12,7 @@ import { itemContributorCount } from './game/queries.js';
 import { LiveService } from './live/service.js';
 import type { Logger } from './logger.js';
 import { StateBroadcaster } from './overlay/broadcaster.js';
+import { GiftToasts } from './overlay/toasts.js';
 import { overlayName } from './overlay/state.js';
 import { attachOverlaySocket } from './overlay/socket.js';
 import { buildOverlayState } from './overlay/state.js';
@@ -86,6 +87,21 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
     send: (msg) => socket?.broadcast(msg),
     now: core.now,
   });
+  // Thông báo quà (mục 8, bảng 9A).
+  const toasts = new GiftToasts({
+    config: () => core.config,
+    tier: () => core.crowd.tier,
+    selector,
+    verifiedOnly: () => live.mode() !== 'simulator',
+    send: (msg) => socket?.broadcast(msg),
+    now: core.now,
+  });
+  // Đủ mục tiêu tim: múa lân trên overlay, trụ trì mời xem.
+  core.bus.on('goal', (target: number) => {
+    socket?.broadcast({ type: 'festival', target, durationMs: core.config.heartGoal.festivalSec * 1000 });
+    abbot.onGoalReached(target);
+    broadcaster.markDirty();
+  });
   core.bus.on('sessionStart', () => abbot.onSessionStart());
   core.bus.on('sessionEnd', () => abbot.onSessionEnd());
   core.bus.on('crowd', () => broadcaster.markDirty());
@@ -93,6 +109,9 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
     logger: o.logger,
     onProcessed: (r, ev) => {
       abbot.onEvent(ev, r);
+      if (ev.type === 'gift' && r.status === 'counted' && r.score) {
+        toasts.onGift(ev.user.platformId, overlayName(core, ev.user.nickname), Math.max(0, ev.coinValueEach) * Math.max(0, ev.count), r.score.points, ev.giftId);
+      }
       broadcaster.markDirty();
       if (r.status === 'counted' && r.score && ev.type !== 'viewers' && r.score.source !== 'none') {
         broadcaster.contribution({
@@ -120,6 +139,8 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
     core,
     live,
     broadcaster,
+    abbot,
+    sendOverlay: (msg) => socket?.broadcast(msg),
     rootDir: o.rootDir,
     isAllowedOrigin,
     mapTools: o.mapTools ?? defaultMapTools(o.rootDir),

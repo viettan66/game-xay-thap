@@ -2,8 +2,10 @@
 // Dùng chung cho server thật (main.ts), script demo và test.
 
 import { EventEmitter } from 'node:events';
+import fs from 'node:fs';
 import path from 'node:path';
 import { resolveProject, type ApplyResult, type ProjectFile, type ResolvedProject } from '../shared/project.js';
+import { vnStamp } from '../shared/time.js';
 import type { LiveEvent } from '../shared/types.js';
 import { createBackup, isDailyBackupDue, listBackups } from './backup.js';
 import type { GameConfig } from './config/schema.js';
@@ -12,6 +14,7 @@ import { openDatabase, type DB } from './db/database.js';
 import { retireLegacyTowerDb } from './db/legacy.js';
 import { getSetting, setSetting } from './db/settings.js';
 import { CROWD_TIERS, CrowdTracker } from './game/crowd.js';
+import { HeartGoalService } from './game/heartGoal.js';
 import type { CrowdTier } from '../shared/protocol.js';
 import { GameEngine, type ProcessResult, type RepricePreview } from './game/engine.js';
 import { silentLogger, type Logger } from './logger.js';
@@ -48,7 +51,9 @@ export class GameCore {
   readonly now: () => number;
   /** Chế độ độ đông của phòng (mục 9A). */
   readonly crowd: CrowdTracker;
-  /** Sự kiện cho các phần khác (trụ trì…): 'sessionStart', 'sessionEnd' (SessionRow), 'crowd' (CrowdTier). */
+  /** Mục tiêu tim của phiên (bảng 9A). */
+  readonly goals: HeartGoalService;
+  /** Sự kiện cho các phần khác (trụ trì…): 'sessionStart', 'sessionEnd' (SessionRow), 'crowd' (CrowdTier), 'goal' (nấc vừa đạt). */
   readonly bus = new EventEmitter();
   private readonly log: Logger;
   private pendingBackups: Promise<unknown>[] = [];
@@ -80,6 +85,7 @@ export class GameCore {
       autoEndOfflineMin: () => this.config.session.autoEndOfflineMin,
       onStart: (s) => {
         this.log.info(`Bắt đầu phiên live #${s.id} (${s.start_reason})`);
+        this.goals?.onSessionStart(s.id);
         this.bus.emit('sessionStart', s);
       },
       onEnd: (s) => {
@@ -102,6 +108,7 @@ export class GameCore {
     try {
       this.engine.init();
       this.sessions.recoverOnBoot();
+      this.goals = new HeartGoalService(this.db, () => this.config.heartGoal.targets, () => this.crowd.tier, () => this.sessions.currentId());
     } catch (e) {
       // project.json không khớp với dữ liệu đã xây: đóng DB rồi báo lỗi (để file không bị giữ khóa).
       this.db.close();
@@ -133,6 +140,7 @@ export class GameCore {
     if (r.status !== 'duplicate') {
       this.crowd.observe(ev, this.now());
       this.updateCrowd();
+      this.goalHit(this.goals.onEvent(ev));
     }
     return r;
   }
@@ -141,6 +149,7 @@ export class GameCore {
   updateCrowd(): void {
     if (this.crowd.update(this.now())) {
       this.log.info(`Chế độ độ đông: ${this.crowd.tier}`);
+      this.goals.onTier();
       this.bus.emit('crowd', this.crowd.tier);
     }
   }
@@ -151,7 +160,22 @@ export class GameCore {
     this.crowd.forced = tier;
     setSetting(this.db, 'crowd_forced', tier);
     this.log.info(tier ? `Ép chế độ độ đông: ${tier}` : 'Chế độ độ đông: tự động');
-    if (this.crowd.tier !== before) this.bus.emit('crowd', this.crowd.tier);
+    if (this.crowd.tier !== before) {
+      this.goals.onTier();
+      this.bus.emit('crowd', this.crowd.tier);
+    }
+  }
+
+  /** Admin đặt mục tiêu tim của phiên (null = bỏ đặt tay). */
+  setHeartGoal(target: number | null): void {
+    this.log.info(target === null ? 'Mục tiêu tim: tự động' : `Đặt mục tiêu tim: ${target}`);
+    this.goalHit(this.goals.setManual(target));
+  }
+
+  private goalHit(target: number | null): void {
+    if (target === null) return;
+    this.log.info(`Đạt mục tiêu tim của phiên: ${target}`);
+    this.bus.emit('goal', target);
   }
 
   /** Lưu config.json mới (kiểm tra bằng zod, ghi nhật ký, áp dụng ngay). */
@@ -190,6 +214,28 @@ export class GameCore {
     const extended = this.engine.syncProject();
     if (extended) progress.push(extended);
     return { status: 'saved', changes, repriced, progress };
+  }
+
+  /**
+   * Lưu kho thoại (mục 9C): backup bản cũ vào thư mục backup của hồ sơ trước, rồi ghi; ghi nhật ký thay đổi.
+   * Câu đổi thì vòng shuffle của nhóm đó tự tạo lại (bộ chọn so mã băm danh sách câu).
+   */
+  saveDialogues(next: unknown, opts: { source: string }): ConfigChange[] {
+    const before = this.configStore.getDialogues();
+    const { changes } = this.configStore.saveDialogues(next);
+    if (changes.length === 0) return changes;
+    try {
+      const dir = path.join(this.paths.backupsDir, 'dialogues');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, `dialogues-${vnStamp(this.now())}.json`), `${JSON.stringify(before, null, 2)}\n`, 'utf8');
+      // Giữ 30 bản gần nhất.
+      const files = fs.readdirSync(dir).filter((f) => f.startsWith('dialogues-')).sort();
+      for (const f of files.slice(0, Math.max(0, files.length - 30))) fs.rmSync(path.join(dir, f), { force: true });
+    } catch (e) {
+      this.log.error('Không backup được kho thoại cũ', e);
+    }
+    this.logChanges(changes, opts.source);
+    return changes;
   }
 
   saveEvents(next: unknown, opts: { source: string }): ConfigChange[] {

@@ -18,6 +18,8 @@ import { SiteView } from './scene/site.js';
 import { loadFonts } from './theme.js';
 import { AbbotView } from './ui/abbot.js';
 import { Badge, ConnectionDot, Disclaimer } from './ui/chrome.js';
+import { FestivalView } from './ui/festival.js';
+import { ToastView } from './ui/toast.js';
 import { SafeAreaDebug } from './ui/debug.js';
 import { CompactBoard, EventBox, ProgressPanel } from './ui/hud.js';
 import { Minimap } from './ui/minimap.js';
@@ -59,10 +61,23 @@ async function boot(): Promise<void> {
   const minimap = new Minimap();
   // Trụ trì (mục 9): không gian màn hình, trên giao diện, dưới bản đồ thu nhỏ.
   const abbot = new AbbotView(initial.abbot);
+  // Thông báo quà (mục 8) và múa lân khi đủ mục tiêu tim (bảng 9A).
+  const toasts = new ToastView(initial.toast, initial.plus);
+  const festival = new FestivalView(initial.festival);
   const safeDebug = new SafeAreaDebug();
   const shots = new ScreenshotCompare(app.canvas);
   const dot = new ConnectionDot(STAGE_W - 170, 200);
-  app.stage.addChild(site.container, mapView.container, uiLayer, abbot.container, minimap.container, safeDebug.container, dot.container);
+  app.stage.addChild(
+    site.container,
+    mapView.container,
+    uiLayer,
+    festival.container,
+    abbot.container,
+    toasts.container,
+    minimap.container,
+    safeDebug.container,
+    dot.container,
+  );
   const showMap = () => {
     mapView.container.visible = mapView.ready;
     site.container.visible = !mapView.ready;
@@ -95,6 +110,8 @@ async function boot(): Promise<void> {
     next.root.addChild(next.disclaimer.container, next.board.container, next.events.container, next.progress.container, next.badge.container);
     uiLayer.addChild(next.root);
     abbot.setSpots(r.abbot);
+    toasts.setRects(r.toast, r.plus, s.hud.toastSec);
+    festival.setRect(r.festival);
     hud = next;
     loadMinimap();
     return next;
@@ -111,6 +128,8 @@ async function boot(): Promise<void> {
     art = a;
     hud?.board.setArt(a);
     abbot.setArt(a);
+    toasts.setArt(a);
+    festival.setArt(a);
     mapView.setArt(a);
     showMap();
     loadMinimap();
@@ -138,6 +157,7 @@ async function boot(): Promise<void> {
     h.board.update(s.boards, s.labels.pointUnit, s.hud.opacity.board, s.hud.boardRotateSec);
     h.events.update(s.eventBox, s.serverNow, s.hud.opacity.events);
     h.badge.update(s.badge);
+    toasts.setRects(h.rects.toast, h.rects.plus, s.hud.toastSec);
     h.disclaimer.update(s.labels.disclaimer, s.hud.opacity.disclaimer);
     safeDebug.update(s.layout.safeArea);
   };
@@ -150,6 +170,8 @@ async function boot(): Promise<void> {
       if (state && m.coins >= state.camera.shakeMinCoins) mapView.shake();
     } else if (m.type === 'camera') mapView.requestCamera(m.mode);
     else if (m.type === 'say') abbot.say(m);
+    else if (m.type === 'toast') toasts.push(m);
+    else if (m.type === 'festival') festival.start(m.durationMs);
     else if (m.type === 'progress' && !mapView.ready) {
       // Hình khối tạm (chưa có bản đồ): chớp sáng ngay. Trên bản đồ thì chớp khi mảnh cuối của giai đoạn đã đặt xong.
       for (const t of m.transitions) {
@@ -203,6 +225,8 @@ async function boot(): Promise<void> {
         abbot.setSide(chooseAbbotSide(hud.rects.abbot, mapView.ready ? mapView.focusOnScreen() : null, overview));
       }
       abbot.tick(dt);
+      toasts.tick(dt);
+      festival.tick(dt);
       hud.progress.tick(dt);
       hud.board.tick(dt);
       hud.events.tick(dt);

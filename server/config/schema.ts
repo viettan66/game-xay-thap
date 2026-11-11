@@ -94,6 +94,8 @@ export const configSchema = z.strictObject({
           minCoins: int(0),
           name: z.string().min(1),
           dialogue: z.string().regex(/^gift_[a-z0-9_]+$/, 'Nhóm thoại cảm ơn quà phải bắt đầu bằng gift_'),
+          /** Ảnh vật phẩm trong thông báo quà, ví dụ "items/brick" (thiếu thì bỏ qua). */
+          icon: z.string().optional(),
         }),
       )
       .min(1)
@@ -102,6 +104,27 @@ export const configSchema = z.strictObject({
       }),
     /** Tên tiếng Việt của quà gốc theo giftId (tùy chọn): có thì {gift} nhắc thêm tên quà. */
     displayNames: z.record(z.string(), z.string().min(1)),
+  }),
+  // Thông báo quà lớn (mục 8, bảng 9A): thời gian hiện, gộp quà nhỏ liên tiếp, ngưỡng theo chế độ.
+  toast: z.strictObject({
+    sec: z.number().min(1).max(20),
+    mergeSec: z.number().min(0).max(60),
+    smallMaxCoins: int(0),
+    dongMinCoins: int(0),
+    ratdongMinCoins: int(0),
+    ratdongTopPercent: z.number().min(1).max(100),
+    windowSec: z.number().min(10).max(3600),
+  }),
+  // Mục tiêu tim của phiên (bảng 9A): các nấc theo chế độ, phần thưởng (múa lân) dài bao lâu.
+  heartGoal: z.strictObject({
+    targets: z.strictObject({
+      vang: z.array(int(1)).min(1),
+      vua: z.array(int(1)).min(1),
+      dong: z.array(int(1)).min(1),
+      ratdong: z.array(int(1)).min(1),
+    }),
+    reward: z.string().min(1),
+    festivalSec: z.number().min(3).max(120),
   }),
   // Trụ trì (mục 9, 9A, 9C): nhịp thoại tự do theo chế độ, ngưỡng vẫy chào / cúi chào, gộp chào và cảm ơn.
   abbot: z.strictObject({
@@ -150,11 +173,16 @@ export const configSchema = z.strictObject({
       itemTop: z.string().min(1),
     }),
     // Ô sự kiện (mục 8): {name}, {multiplier}; {time} là đồng hồ đếm ngược giờ vàng.
+    // Mục tiêu tim: {count} tim đã có, {target}, {goal} = câu goal_text trong kho thoại, {reward}.
     events: z.strictObject({
       goldenHour: z.string().min(1),
       event: z.string().min(1),
       total: z.string().min(1),
+      heartGoal: z.string().min(1),
+      heartGoalDone: z.string().min(1),
     }),
+    // Phòng đông: quà nhỏ chỉ hiện "+công" kèm tên: {points}, {unit}, {name}.
+    plusPoints: z.string().min(1),
   }),
 });
 

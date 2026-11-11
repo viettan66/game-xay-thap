@@ -62,6 +62,7 @@
   <a class="btn" href="/tools/assets" target="_blank">Kiểm tra ảnh ↗</a>
   <a class="btn" href="/tools/parts" target="_blank">Chia vùng ↗</a>
   <a class="btn" href="/tools/build" target="_blank">Thử xây ↗</a>
+  <a class="btn" href="/admin/dialogues" target="_blank">Kho thoại ↗</a>
   <span class="note">Trang tạm. Trang quản trị đầy đủ có ở giai đoạn 7. Tự cập nhật mỗi 2 giây.</span>
   <span id="error" class="err"></span>
 </header>
@@ -111,6 +112,15 @@
       <button data-post="/api/session/start">Bắt đầu phiên</button>
       <button data-post="/api/session/end">Kết thúc phiên</button>
     </div>
+    <h2 style="margin-top:18px">Mục tiêu tim của phiên</h2>
+    <div class="row"><span>Tim phiên này</span><b id="goal-count">–</b></div>
+    <div class="row"><span>Mục tiêu</span><span id="goal-target">–</span></div>
+    <div class="buttons">
+      <input type="number" id="goal-input" min="1" step="100" placeholder="Số tim" style="width:110px; padding:6px; border-radius:8px; border:1px solid #c9b79a">
+      <button id="goal-set">Đặt mục tiêu</button>
+      <button id="goal-auto">Tự động theo chế độ</button>
+    </div>
+    <p id="dlg-warn" class="note" style="margin:10px 0 0"></p>
   </section>
   <section>
     <h2>Camera và hiển thị</h2>
@@ -216,6 +226,15 @@
     $('livestate').textContent = live.text;
     $('livestate').className = live.status.state === 'connected' ? 'state-ok' : live.status.state === 'error' ? 'state-bad' : '';
     $('viewers').textContent = live.viewers == null ? '–' : fmt(live.viewers);
+    if (s.goal) {
+      $('goal-count').textContent = s.goal.sessionId === null ? 'chưa có phiên' : fmt(s.goal.count);
+      $('goal-target').textContent = s.goal.sessionId === null ? '–'
+        : (s.goal.target === null ? 'đã đạt hết' : `${fmt(s.goal.target)}${s.goal.manual ? ' (đặt tay)' : ' (tự động)'}`)
+          + (s.goal.reached.length ? ` · đã đạt: ${s.goal.reached.map(fmt).join(', ')}` : '');
+    }
+    $('dlg-warn').innerHTML = s.dialogueWarnings && s.dialogueWarnings.length
+      ? `⚠ Live thật chỉ nói câu đã duyệt; nhóm thoại chưa có câu duyệt: ${s.dialogueWarnings.join(', ')}. <a href="/admin/dialogues" target="_blank">Mở Kho thoại</a>`
+      : '';
     if (s.crowd) {
       const TIER = { vang: 'Vắng', vua: 'Vừa', dong: 'Đông', ratdong: 'Rất đông' };
       $('crowd-tier').textContent = s.crowd.forced ? `${TIER[s.crowd.tier]} (ép tay; tự tính: ${TIER[s.crowd.raw]})` : `${TIER[s.crowd.tier]} (tự động${s.crowd.raw !== s.crowd.tier ? `, đang chuyển sang ${TIER[s.crowd.raw]}` : ''})`;
@@ -277,6 +296,11 @@
     if (b.dataset.fire) post('/api/sim/fire', { kind: b.dataset.fire });
     if (b.dataset.mode) post('/api/live/mode', { mode: b.dataset.mode });
     if (b.dataset.crowd) post('/api/crowd', { tier: b.dataset.crowd });
+    if (b.id === 'goal-set') {
+      const n = Math.floor(Number($('goal-input').value));
+      if (n > 0) post('/api/goal', { target: n });
+    }
+    if (b.id === 'goal-auto') post('/api/goal', { target: 'auto' });
     if (b.id === 'sim-start') post('/api/sim/start', simSettings());
     if (b.id === 'sim-stop') post('/api/sim/stop');
   });

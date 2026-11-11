@@ -262,6 +262,82 @@ describe('độ đông và trụ trì (4a)', () => {
   });
 });
 
+describe('thông báo quà, mục tiêu tim, kho thoại (4b)', () => {
+  it('tặng quà: overlay nhận thông báo quà kèm ảnh vật phẩm', async () => {
+    await start();
+    const c = connect(`http://127.0.0.1:${srv.port}`);
+    await c.waitFor((m) => m.type === 'state');
+    await post('/api/sim/fire', { kind: 'gift_large' });
+    const t = (await c.waitFor((m) => m.type === 'toast')) as Extract<ServerMessage, { type: 'toast' }>;
+    expect(t).toMatchObject({ kind: 'big', coins: 1000, icon: 'items/bell' });
+    expect(t.text).toContain('đại hồng chung');
+  });
+
+  it('đặt mục tiêu tim từ admin; đủ tim thì overlay múa lân; ô sự kiện hiện tiến độ tim', async () => {
+    await start();
+    const c = connect(`http://127.0.0.1:${srv.port}`);
+    await c.waitFor((m) => m.type === 'state');
+    await post('/api/session/start');
+    let r = (await (await post('/api/goal', { target: 2000 })).json()) as { goal: { target: number; manual: number } };
+    expect(r.goal).toMatchObject({ target: 2000, manual: 2000 });
+    const box = buildOverlayState(srv.core, null).eventBox.find((e) => e.kind === 'goal')!;
+    expect(box.text).toBe('❤ 0/2.000 · Đủ 2.000 tim mở khóa màn múa lân');
+    await post('/api/sim/fire', { kind: 'like_1000' });
+    await post('/api/sim/fire', { kind: 'like_1000' });
+    const f = (await c.waitFor((m) => m.type === 'festival')) as Extract<ServerMessage, { type: 'festival' }>;
+    expect(f).toEqual({ type: 'festival', target: 2000, durationMs: 14_000 });
+    expect(buildOverlayState(srv.core, null).eventBox.find((e) => e.kind === 'goal')!.text).toBe('❤ 2.000 tim · đã mở khóa màn múa lân');
+    r = (await (await post('/api/goal', { target: 'auto' })).json()) as { goal: { target: number; manual: number } };
+    expect(r.goal.manual).toBeNull();
+    expect((await post('/api/goal', { target: -5 })).status).toBe(400);
+  });
+
+  it('trang Kho thoại: đọc, kiểm tra câu, lưu (có backup bản cũ), nói thử, xuất file', async () => {
+    await start();
+    const g = (await (await fetch(`${srv.url}/api/dialogues`)).json()) as {
+      file: { groups: Record<string, { lines: { text: string; verified: boolean }[] }> };
+      warnings: string[];
+      used: string[];
+    };
+    expect(g.used).toContain('toast_gift');
+    expect(g.warnings).toContain('goal_reached'); // chưa có câu nào được duyệt
+    const status = (await (await fetch(`${srv.url}/api/status`)).json()) as { dialogueWarnings: string[] };
+    expect(status.dialogueWarnings).toEqual(g.warnings);
+
+    const chk = (await (await post('/api/dialogues/check', { group: 'gift_small', text: 'Cảm ơn {ten}, chúc may mắn' })).json()) as { problems: string[] };
+    expect(chk.problems).toHaveLength(2);
+
+    const next = structuredClone(g.file);
+    for (const l of next.groups.goal_reached!.lines) l.verified = true;
+    next.groups.goal_reached!.lines.push({ ...next.groups.goal_reached!.lines[0]!, text: 'Đủ {target} tim rồi, mời xem lân!' });
+    const saved = (await (await post('/api/dialogues', { file: next })).json()) as { warnings: string[]; file: typeof next };
+    expect(saved.warnings).not.toContain('goal_reached');
+    expect(saved.file.groups.goal_reached!.lines).toHaveLength(6);
+    const disk = JSON.parse(fs.readFileSync(path.join(root, 'config', 'dialogues.json'), 'utf8')) as typeof next;
+    expect(disk.groups.goal_reached!.lines).toHaveLength(6);
+    const backups = fs.readdirSync(path.join(srv.core.paths.backupsDir, 'dialogues'));
+    expect(backups).toHaveLength(1);
+
+    const bad = structuredClone(next);
+    bad.groups.gift_small!.lines[0]!.text = 'Cảm ơn {ten}';
+    const br = await post('/api/dialogues', { file: bad });
+    expect(br.status).toBe(400);
+    expect(((await br.json()) as { error: string }).error).toContain('{ten}');
+
+    const c = connect(`http://127.0.0.1:${srv.port}`);
+    await c.waitFor((m) => m.type === 'state');
+    await post('/api/dialogues/say', { group: 'gift_small', text: 'Cảm ơn {name} đã góp {gift}!', verified: false });
+    const say = (await c.waitFor((m) => m.type === 'say')) as Extract<ServerMessage, { type: 'say' }>;
+    expect(say).toMatchObject({ text: 'Cảm ơn Tên người xem đã góp một xe trâu chở đá!', verified: false });
+    await post('/api/dialogues/say', { group: 'toast_gift', text: '{name} vừa góp {gift}' });
+    expect(await c.waitFor((m) => m.type === 'toast')).toMatchObject({ kind: 'big', text: 'Tên người xem vừa góp một xe trâu chở đá' });
+
+    const ex = await fetch(`${srv.url}/api/dialogues/export`);
+    expect(ex.headers.get('content-disposition')).toContain('dialogues-');
+    expect(((await ex.json()) as typeof next).groups.goal_reached!.lines).toHaveLength(6);
+  });
+});
+
 describe('trang thử xây /tools/build', () => {
   it('trả về danh sách hạng mục, chỗ đang xây, quy tắc tính công; không ghi gì vào dữ liệu game', async () => {
     await start();

@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kho thoại – Đại Danh Lam Thiên Phúc</title>
+<style>
+  :root { --bg: #f6f1e7; --card: #fffdf8; --ink: #2b2118; --muted: #7a6a58; --line: #e4d9c6; --accent: #b5462b; --ok: #2e7d32; --warn: #c06a00; --bad: #b3261e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+  header { position: sticky; top: 0; z-index: 5; padding: 10px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); background: var(--card); }
+  header h1 { font-size: 19px; margin: 0; }
+  header a { color: var(--accent); font-size: 14px; }
+  button, select, input, textarea { font: inherit; font-size: 14px; }
+  button { padding: 6px 12px; border-radius: 8px; border: 1px solid #c9b79a; background: #fff; color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.small { padding: 3px 8px; font-size: 13px; }
+  button:disabled { opacity: .45; cursor: default; }
+  main { display: grid; grid-template-columns: 300px 1fr; gap: 14px; padding: 14px 20px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  aside, section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  aside { height: calc(100vh - 90px); overflow: auto; position: sticky; top: 70px; }
+  .grp { padding: 7px 8px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; margin-bottom: 2px; }
+  .grp:hover { background: #f3eadb; }
+  .grp.sel { border-color: var(--ink); background: #fff3d6; }
+  .grp b { font-family: monospace; font-size: 13px; }
+  .grp .d { color: var(--muted); font-size: 12px; }
+  .pill { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 9px; margin-left: 4px; vertical-align: 1px; }
+  .pill.uv { background: #ffe6c7; color: var(--warn); }
+  .pill.bad { background: #fde0dd; color: var(--bad); }
+  .pill.off { background: #eee; color: #777; }
+  .note { color: var(--muted); font-size: 13px; }
+  .err { color: var(--bad); font-weight: 600; }
+  .ok { color: var(--ok); font-weight: 600; }
+  .warnbox { background: #fff4e0; border: 1px solid #f0c890; border-radius: 8px; padding: 6px 10px; font-size: 13px; color: #7a4a00; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+  .line { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; margin: 6px 0; background: #fff; }
+  .line.unv { border-left: 5px solid #ff8c1a; }
+  .line.off { opacity: .55; }
+  .line.dragover { outline: 2px dashed var(--accent); }
+  .handle { cursor: grab; color: #a89880; font-size: 18px; line-height: 1; user-select: none; padding-top: 4px; }
+  .line textarea { width: 100%; resize: vertical; min-height: 38px; padding: 6px 8px; border: 1px solid #d8ccb6; border-radius: 6px; }
+  .opts { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; margin-top: 4px; }
+  .opts label { display: inline-flex; gap: 3px; align-items: center; }
+  .opts input[type=number] { width: 56px; padding: 2px 4px; }
+  .probs { color: var(--bad); font-size: 13px; margin-top: 3px; }
+  .acts { display: flex; flex-direction: column; gap: 4px; }
+  code { background: #f3eadb; border-radius: 4px; padding: 0 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Kho thoại</h1>
+  <a href="/admin">← Trang trạng thái</a>
+  <button class="primary" id="save" disabled>Lưu</button>
+  <button id="revert" disabled>Bỏ thay đổi</button>
+  <a href="/api/dialogues/export">Xuất file JSON</a>
+  <label class="note" style="cursor:pointer">Nhập file JSON <input type="file" id="import" accept=".json,application/json" style="display:none"></label>
+  <span id="msg" class="note"></span>
+</header>
+<main>
+  <aside>
+    <div id="warn"></div>
+    <div id="groups"></div>
+  </aside>
+  <section>
+    <div id="editor"><p class="note">Chọn một nhóm bên trái.</p></div>
+  </section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const DESC = {
+    session_start: 'Mở phiên live',
+    greet_single: 'Chào một người mới',
+    greet_group: 'Chào nhiều người cùng lúc ({names}, {n})',
+    returning: 'Người góp công cũ quay lại (dùng từ giai đoạn 4e)',
+    gift_small: 'Cảm ơn quà dưới 100 xu',
+    gift_medium: 'Cảm ơn quà 100–499 xu',
+    gift_large: 'Cảm ơn quà 500–999 xu',
+    gift_huge: 'Cảm ơn quà từ 1.000 xu',
+    gift_thanks_group: 'Cảm ơn chung nhiều người (phòng đông)',
+    progress: 'Báo tiến độ giai đoạn ({percent})',
+    item_complete: 'Xong hạng mục ({count} người góp)',
+    stage_ritual: 'Lễ của giai đoạn ({ritual})',
+    idle_story: 'Kể chuyện lúc rảnh – kiến thức, kiểm tra kỹ',
+    idle_howto: 'Hướng dẫn cách góp công',
+    session_end: 'Đóng phiên live',
+    toast_gift: 'Chữ trong thông báo quà lớn',
+    goal_text: 'Chữ mục tiêu tim trong ô sự kiện',
+    goal_reached: 'Trụ trì nói khi đủ mục tiêu tim',
+    piece_burst: 'Nhãn nhỏ khi mảnh bay vào công trình',
+  };
+  const TIER_NAME = { vang: 'Vắng', vua: 'Vừa', dong: 'Đông', ratdong: 'Rất đông' };
+
+  let data = null;   // từ server
+  let file = null;   // bản đang sửa
+  let saved = '';    // JSON bản đã lưu (để biết có thay đổi)
+  let current = null;
+  let localProblems = {}; // group -> index -> problems (kiểm tra khi gõ)
+
+  function dirty() { return JSON.stringify(file) !== saved; }
+  function refreshButtons() {
+    $('save').disabled = !dirty();
+    $('revert').disabled = !dirty();
+    if (dirty()) $('msg').textContent = 'Có thay đổi chưa lưu.';
+  }
+  function problemsOf(g, i) {
+    return (localProblems[g] && localProblems[g][i]) || (data.problems[g] && data.problems[g][i]) || [];
+  }
+
+  async function load() {
+    data = await (await fetch('/api/dialogues', { cache: 'no-store' })).json();
+    file = JSON.parse(JSON.stringify(data.file));
+    saved = JSON.stringify(file);
+    localProblems = {};
+    if (!current || !file.groups[current]) current = Object.keys(file.groups)[0];
+    renderAll();
+    refreshButtons();
+  }
+
+  function renderAll() { renderGroups(); renderEditor(); }
+
+  function renderGroups() {
+    const warn = data.warnings;
+    $('warn').innerHTML = warn.length
+      ? `<div class="warnbox">Live thật chỉ nói câu <b>đã duyệt</b>. Các nhóm sau chưa có câu nào đã duyệt nên lúc đó sẽ im lặng: ${warn.map((g) => `<code>${esc(g)}</code>`).join(' ')}</div>`
+      : '<p class="ok">Mọi nhóm đang dùng đều có câu đã duyệt.</p>';
+    $('groups').innerHTML = Object.entries(file.groups)
+      .map(([g, grp]) => {
+        const uv = grp.lines.filter((l) => !l.verified).length;
+        const bad = grp.lines.filter((_, i) => problemsOf(g, i).length).length;
+        const unused = !data.used.includes(g);
+        return `<div class="grp ${g === current ? 'sel' : ''}" data-g="${esc(g)}"><b>${esc(g)}</b> (${grp.lines.length})${uv ? `<span class="pill uv">${uv} chưa duyệt</span>` : ''}${bad ? `<span class="pill bad">${bad} lỗi</span>` : ''}${unused ? '<span class="pill off">chưa dùng</span>' : ''}<div class="d">${esc(DESC[g] || '')}</div></div>`;
+      })
+      .join('');
+  }
+
+  function renderEditor() {
+    const g = current;
+    const grp = file.groups[g];
+    if (!grp) return;
+    const uv = grp.lines.filter((l) => !l.verified).length;
+    $('editor').innerHTML = `
+      <h2 style="margin:4px 0">${esc(g)} <span class="note">${esc(DESC[g] || '')}</span></h2>
+      <div class="row">
+        <label>Cách chọn câu <select id="mode">
+          <option value="shuffle">Xáo trộn (hết vòng mới lặp)</option>
+          <option value="sequential">Lần lượt theo thứ tự</option>
+          <option value="random">Ngẫu nhiên theo trọng số</option>
+        </select></label>
+        <label>Nghỉ giữa hai lần nói <input type="number" id="cooldown" min="0" style="width:70px"> giây</label>
+        <button id="verify-all" ${uv ? '' : 'disabled'}>Duyệt cả nhóm (${uv})</button>
+        <button id="add">+ Thêm câu</button>
+      </div>
+      <p class="note">Biến dùng được: ${data.vars.map((v) => `<code>{${v}}</code>`).join(' ')}. Kéo ⠿ để đổi thứ tự. Câu viền cam là câu chưa duyệt (live thật không nói).</p>
+      <div id="lines">${grp.lines.map((l, i) => lineHtml(g, l, i)).join('')}</div>`;
+    $('mode').value = grp.mode;
+    $('cooldown').value = grp.cooldownSec;
+  }
+
+  function lineHtml(g, l, i) {
+    const probs = problemsOf(g, i);
+    return `<div class="line ${l.verified ? '' : 'unv'} ${l.enabled ? '' : 'off'}" draggable="false" data-i="${i}">
+      <div class="handle" title="Kéo để đổi thứ tự" data-handle="${i}">⠿</div>
+      <div>
+        <textarea data-text="${i}" rows="1">${esc(l.text)}</textarea>
+        <div class="opts">
+          <span>Chế độ:</span>${Object.keys(TIER_NAME).map((t) => `<label><input type="checkbox" data-tier="${i}" value="${t}" ${l.tiers.includes(t) ? 'checked' : ''}>${TIER_NAME[t]}</label>`).join('')}
+          <span class="note">(không chọn = mọi chế độ)</span>
+          <label>Trọng số <input type="number" min="0.1" step="0.1" data-weight="${i}" value="${l.weight}"></label>
+          <label><input type="checkbox" data-enabled="${i}" ${l.enabled ? 'checked' : ''}>Đang bật</label>
+          ${l.verified ? '<span class="ok">✓ Đã duyệt</span>' : `<button class="small" data-verify="${i}">Duyệt</button>`}
+        </div>
+        ${probs.length ? `<div class="probs">⚠ ${probs.map(esc).join('; ')}</div>` : ''}
+      </div>
+      <div class="acts">
+        <button class="small" data-say="${i}">Nói thử</button>
+        ${l.verified ? `<button class="small" data-unverify="${i}">Bỏ duyệt</button>` : ''}
+        <button class="small" data-del="${i}">Xóa</button>
+      </div>
+    </div>`;
+  }
+
+  let checkTimer = null;
+  function checkLine(g, i) {
+    clearTimeout(checkTimer);
+    checkTimer = setTimeout(async () => {
+      const text = file.groups[g].lines[i]?.text ?? '';
+      const r = await (await fetch('/api/dialogues/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group: g, text }) })).json();
+      (localProblems[g] ??= {})[i] = r.problems;
+      const box = document.querySelector(`.line[data-i="${i}"] .probs`);
+      const wrap = document.querySelector(`.line[data-i="${i}"] > div:nth-child(2)`);
+      if (box) box.remove();
+      if (r.problems.length && wrap) wrap.insertAdjacentHTML('beforeend', `<div class="probs">⚠ ${r.problems.map(esc).join('; ')}</div>`);
+      renderGroups();
+    }, 350);
+  }
+
+  $('groups').addEventListener('click', (e) => {
+    const el = e.target.closest('[data-g]');
+    if (!el) return;
+    current = el.dataset.g;
+    renderAll();
+  });
+
+  $('editor').addEventListener('input', (e) => {
+    const t = e.target;
+    const grp = file.groups[current];
+    if (t.id === 'cooldown') grp.cooldownSec = Math.max(0, Number(t.value) || 0);
+    else if (t.dataset.text !== undefined) {
+      grp.lines[+t.dataset.text].text = t.value;
+      checkLine(current, +t.dataset.text);
+    } else if (t.dataset.weight !== undefined) grp.lines[+t.dataset.weight].weight = Math.max(0.1, Number(t.value) || 1);
+    refreshButtons();
+  });
+
+  $('editor').addEventListener('change', (e) => {
+    const t = e.target;
+    const grp = file.groups[current];
+    if (t.id === 'mode') grp.mode = t.value;
+    else if (t.dataset.tier !== undefined) {
+      const l = grp.lines[+t.dataset.tier];
+      l.tiers = Object.keys(TIER_NAME).filter((x) => document.querySelector(`[data-tier="${t.dataset.tier}"][value="${x}"]`).checked);
+    } else if (t.dataset.enabled !== undefined) {
+      grp.lines[+t.dataset.enabled].enabled = t.checked;
+      renderEditor();
+    }
+    refreshButtons();
+  });
+
+  $('editor').addEventListener('click', async (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const grp = file.groups[current];
+    if (b.id === 'add') {
+      // Câu do chủ dự án tự thêm mặc định là đã duyệt (mục 9C).
+      grp.lines.push({ text: '', tiers: [], weight: 1, enabled: true, verified: true });
+      renderAll();
+      const ta = document.querySelector(`[data-text="${grp.lines.length - 1}"]`);
+      if (ta) ta.focus();
+    } else if (b.id === 'verify-all') {
+      grp.lines.forEach((l) => (l.verified = true));
+      renderAll();
+    } else if (b.dataset.verify !== undefined) {
+      grp.lines[+b.dataset.verify].verified = true;
+      renderAll();
+    } else if (b.dataset.unverify !== undefined) {
+      grp.lines[+b.dataset.unverify].verified = false;
+      renderAll();
+    } else if (b.dataset.del !== undefined) {
+      const i = +b.dataset.del;
+      if (!confirm(`Xóa câu: "${grp.lines[i].text}"?`)) return;
+      grp.lines.splice(i, 1);
+      localProblems[current] = {};
+      renderAll();
+    } else if (b.dataset.say !== undefined) {
+      const l = grp.lines[+b.dataset.say];
+      const r = await fetch('/api/dialogues/say', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group: current, text: l.text, verified: l.verified }) });
+      const j = await r.json();
+      $('msg').textContent = r.ok ? `Đã nói thử trên overlay: "${j.text}"` : j.error || 'Lỗi';
+      return;
+    }
+    refreshButtons();
+  });
+
+  // Kéo thả đổi thứ tự câu (giữ ⠿ rồi kéo).
+  let dragFrom = null;
+  $('editor').addEventListener('mousedown', (e) => {
+    const h = e.target.closest('[data-handle]');
+    document.querySelectorAll('.line').forEach((el) => (el.draggable = false));
+    if (h) h.closest('.line').draggable = true;
+  });
+  $('editor').addEventListener('dragstart', (e) => {
+    const el = e.target.closest('.line');
+    if (!el) return;
+    dragFrom = +el.dataset.i;
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  $('editor').addEventListener('dragover', (e) => {
+    const el = e.target.closest('.line');
+    if (dragFrom === null || !el) return;
+    e.preventDefault();
+    document.querySelectorAll('.line.dragover').forEach((x) => x.classList.remove('dragover'));
+    el.classList.add('dragover');
+  });
+  $('editor').addEventListener('drop', (e) => {
+    const el = e.target.closest('.line');
+    if (dragFrom === null || !el) return;
+    e.preventDefault();
+    const to = +el.dataset.i;
+    const lines = file.groups[current].lines;
+    const [moved] = lines.splice(dragFrom, 1);
+    lines.splice(to, 0, moved);
+    dragFrom = null;
+    localProblems[current] = {};
+    renderAll();
+    refreshButtons();
+  });
+  $('editor').addEventListener('dragend', () => {
+    dragFrom = null;
+    document.querySelectorAll('.line.dragover').forEach((x) => x.classList.remove('dragover'));
+  });
+
+  async function save(next) {
+    $('msg').textContent = 'Đang lưu…';
+    const r = await fetch('/api/dialogues', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file: next }) });
+    const j = await r.json();
+    if (!r.ok) {
+      $('msg').innerHTML = `<span class="err">Chưa lưu: ${esc(j.error || 'Lỗi')}</span>`;
+      return false;
+    }
+    data = j;
+    file = JSON.parse(JSON.stringify(j.file));
+    saved = JSON.stringify(file);
+    localProblems = {};
+    renderAll();
+    refreshButtons();
+    $('msg').innerHTML = '<span class="ok">Đã lưu. Bản cũ được backup. Có hiệu lực ngay.</span>';
+    return true;
+  }
+  $('save').addEventListener('click', () => {
+    // Bỏ câu trống trước khi lưu.
+    for (const grp of Object.values(file.groups)) grp.lines = grp.lines.filter((l) => l.text.trim());
+    void save(file);
+  });
+  $('revert').addEventListener('click', () => {
+    if (!confirm('Bỏ mọi thay đổi chưa lưu?')) return;
+    file = JSON.parse(saved);
+    localProblems = {};
+    renderAll();
+    refreshButtons();
+    $('msg').textContent = '';
+  });
+  $('import').addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    let next;
+    try {
+      next = JSON.parse(await f.text());
+    } catch {
+      $('msg').innerHTML = '<span class="err">File không phải JSON hợp lệ.</span>';
+      return;
+    }
+    if (!confirm(`Thay toàn bộ kho thoại bằng file "${f.name}"? Bản đang dùng sẽ được backup.`)) return;
+    await save(next);
+  });
+  window.addEventListener('beforeunload', (e) => {
+    if (file && dirty()) e.preventDefault();
+  });
+  load();
+</script>
+</body>
+</html>

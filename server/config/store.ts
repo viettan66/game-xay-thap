@@ -245,6 +245,21 @@ export class ConfigStore {
     return changes;
   }
 
+  /**
+   * Lưu kho thoại (trang Kho thoại, mục 9C). Ghi đủ các nhóm vào config/dialogues.json.
+   * Trả về các thay đổi và nội dung cũ (để backup trước khi ghi).
+   */
+  saveDialogues(next: unknown): { changes: ConfigChange[]; previous: DialoguesFile } {
+    const valid = validate(dialoguesFileSchema, next, DIALOGUES_FILE);
+    const previous = this.getDialogues();
+    const changes = diffValues(previous, valid).map((c) => ({ file: DIALOGUES_FILE, ...c }));
+    if (changes.length === 0) return { changes, previous };
+    writeJsonAtomic(path.join(this.configDir, DIALOGUES_FILE), valid);
+    this.dialogues = valid;
+    this.emit();
+    return { changes, previous };
+  }
+
   /** Lưu project.json. Gọi qua GameCore.saveProject để được kiểm tra với tiến độ đã xây. */
   saveProject(next: unknown): ConfigChange[] {
     const valid = this.validateProject(next);

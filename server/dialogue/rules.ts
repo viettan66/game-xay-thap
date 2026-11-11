@@ -42,7 +42,7 @@ export const RESTRICTED_PHRASES: Record<string, string[]> = {
   'tùy hỷ': ['stage_ritual', 'item_complete'],
 };
 
-/** Nhóm gắn với quà (gift_*) KHÔNG chứa bất kỳ từ ngữ tôn giáo nào. */
+/** Nhóm gắn với quà (gift_*, và chữ thông báo quà toast_*) KHÔNG chứa bất kỳ từ ngữ tôn giáo nào. */
 export const GIFT_RELIGIOUS_WORDS = ['a di đà', 'phật', 'tùy hỷ', 'công đức', 'hoan hỷ', 'chùa', 'thí chủ', 'cúng', 'dâng', 'phước', 'phúc'];
 
 const norm = (s: string) => s.normalize('NFC').toLowerCase();
@@ -63,6 +63,33 @@ export function varsOf(text: string): string[] {
   return [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!);
 }
 
+/** Các nhóm game đang dùng (giai đoạn 4b). Live thật mà nhóm không có câu đã duyệt thì lúc đó im lặng. */
+export const USED_GROUPS = [
+  'session_start',
+  'greet_single',
+  'greet_group',
+  'gift_small',
+  'gift_medium',
+  'gift_large',
+  'gift_huge',
+  'gift_thanks_group',
+  'progress',
+  'item_complete',
+  'stage_ritual',
+  'idle_story',
+  'idle_howto',
+  'session_end',
+  'toast_gift',
+  'goal_text',
+  'goal_reached',
+  'piece_burst',
+];
+
+/** Nhóm đang dùng mà chưa có câu nào vừa bật vừa đã duyệt (cảnh báo trước khi live thật, mục 9C). */
+export function unverifiedGroups(groups: Record<string, { lines: { enabled: boolean; verified: boolean }[] }>): string[] {
+  return USED_GROUPS.filter((g) => !(groups[g]?.lines ?? []).some((l) => l.enabled && l.verified));
+}
+
 /** Lỗi ngôn ngữ của một câu trong nhóm (rỗng = đạt). */
 export function lineProblems(group: string, text: string): string[] {
   const out: string[] = [];
@@ -70,7 +97,7 @@ export function lineProblems(group: string, text: string): string[] {
   for (const [p, groups] of Object.entries(RESTRICTED_PHRASES)) {
     if (containsPhrase(text, p) && !groupAllowed(group, groups)) out.push(`"${p}" chỉ được dùng trong nhóm ${groups.join(', ')}`);
   }
-  if (group.startsWith('gift_')) {
+  if (group.startsWith('gift_') || group.startsWith('toast_')) {
     for (const w of GIFT_RELIGIOUS_WORDS) if (containsPhrase(text, w)) out.push(`nhóm quà không được có từ tôn giáo "${w}"`);
   }
   for (const v of varsOf(text)) if (!(DIALOGUE_VARS as readonly string[]).includes(v)) out.push(`biến không hợp lệ {${v}}`);

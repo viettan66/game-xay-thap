@@ -19,6 +19,7 @@ import type { LiveEvent } from '../../shared/types.js';
 import type { GameConfig } from '../config/schema.js';
 import type { DialogueSelector, DialogueVars } from '../dialogue/selector.js';
 import type { ProcessResult } from '../game/engine.js';
+import { giftLabel, giftTier } from '../game/gifts.js';
 
 export type SayMessage = Extract<ServerMessage, { type: 'say' }>;
 
@@ -105,6 +106,18 @@ export class AbbotDirector {
     this.enqueue({ groups: ['session_start'], vars: { item: p.item.name, stage: p.stage.name }, pose: 'welcome', priority: PRIORITY.event });
   }
 
+  /** Trang Kho thoại bấm "nói thử": nói ngay câu đã điền dữ liệu mẫu (chen lên trước hàng đợi). */
+  testSay(text: string, verified: boolean, pose: AbbotPose = 'wave'): void {
+    const durationMs = sayDurationMs(text);
+    this.d.send({ type: 'say', text, pose, durationMs, verified });
+    this.busyUntil = this.d.now() + durationMs + 700;
+  }
+
+  /** Đủ mục tiêu tim: dang tay, mời xem phần thưởng. */
+  onGoalReached(target: number): void {
+    this.enqueue({ groups: ['goal_reached'], vars: { target: target.toLocaleString('vi-VN'), reward: this.d.config().heartGoal.reward }, pose: 'welcome', priority: PRIORITY.event });
+  }
+
   onSessionEnd(): void {
     this.queue = this.queue.filter((q) => q.priority >= PRIORITY.event);
     this.enqueue({ groups: ['session_end'], vars: {}, pose: 'pray', priority: PRIORITY.event });
@@ -163,9 +176,8 @@ export class AbbotDirector {
 
   private giftParts(name: string, coins: number, giftId: string, tier: CrowdTier): Pick<QueueItem, 'groups' | 'vars' | 'pose'> {
     const cfg = this.d.config();
-    const t = [...cfg.gifts.tiers].reverse().find((x) => coins >= x.minCoins) ?? cfg.gifts.tiers[0]!;
-    const display = cfg.gifts.displayNames[giftId];
-    const gift = display ? `${t.name} (${display})` : t.name;
+    const t = giftTier(cfg, coins);
+    const gift = giftLabel(cfg, coins, giftId);
     const pose: AbbotPose = tier === 'vang' || coins >= cfg.abbot.bowMinCoins ? 'bow' : coins >= cfg.abbot.waveMinCoins ? 'wave' : 'pray';
     return { groups: [t.dialogue, 'gift_small'], vars: { name, gift }, pose };
   }
