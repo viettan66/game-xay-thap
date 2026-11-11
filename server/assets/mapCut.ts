@@ -540,13 +540,11 @@ async function writeBackground(root: string, cuts: MapCuts, src: Sources, force:
   return { tiles, height, reference };
 }
 
-/** Manifest tối thiểu khi chưa có (bản tháp cũ đã có sẵn manifest). */
+/** Manifest tối thiểu khi chưa có. */
 function emptyManifest(): Manifest {
   return {
     version: 1,
     images: {},
-    background: { variant: 'A', variants: [], towerAnchor: { x: 540, y: 1215 }, skyOverlap: 150 },
-    tower: { spireScale: 1 },
   };
 }
 

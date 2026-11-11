@@ -81,6 +81,7 @@ describe('config.json của bản tháp cũ', () => {
     const old = {
       tower: { totalFloors: 100, baseFloorCost: 20_000 },
       points: { likePoints: 2 },
+      overlay: { floor1WidthPx: 540, towerTaper: 0.99, towerCenterX: 510, towerBaseY: 1215, boardRotateSec: 20 },
       labels: {
         disclaimer: 'Trò chơi mô phỏng xây tháp – không phải quyên góp tôn giáo',
         foundationName: 'Nền móng',
@@ -95,6 +96,10 @@ describe('config.json của bản tháp cũ', () => {
     store.load();
     expect(store.upgradedKeys).toEqual([
       'tower',
+      'overlay.floor1WidthPx',
+      'overlay.towerTaper',
+      'overlay.towerCenterX',
+      'overlay.towerBaseY',
       'labels.foundationName',
       'labels.floorName',
       'labels.foundationStages',
@@ -105,7 +110,8 @@ describe('config.json của bản tháp cũ', () => {
     expect(store.get().points.likePoints).toBe(2);
     expect(store.get().labels.boards).toEqual({ sessionTop: 'Top phiên này', totalTop: 'Bảng vàng', itemTop: 'Bia ghi danh – {item}' });
     expect(store.get().labels.disclaimer).toBe('Trò chơi mô phỏng xây chùa – không phải quyên góp tôn giáo');
-    expect(readCfg()).toEqual({ points: { likePoints: 2 }, labels: { boards: { totalTop: 'Bảng vàng' } } });
+    expect(readCfg()).toEqual({ points: { likePoints: 2 }, overlay: { boardRotateSec: 20 }, labels: { boards: { totalTop: 'Bảng vàng' } } });
+    expect(store.get().overlay.boardRotateSec).toBe(20);
     // Lần đọc sau không còn gì phải dọn.
     const again = new ConfigStore(configDir());
     again.load();

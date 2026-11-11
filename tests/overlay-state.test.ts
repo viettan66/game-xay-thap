@@ -36,10 +36,6 @@ describe('trạng thái gửi xuống overlay', () => {
     expect(s.labels).toEqual({ pointUnit: 'công', disclaimer: 'Trò chơi mô phỏng xây chùa – không phải quyên góp tôn giáo' });
     expect(s.layout).toEqual({
       safeArea: { top: 180, bottom: 600, right: 150 },
-      floor1WidthPx: 520,
-      towerTaper: 0.995,
-      towerCenterX: 510,
-      towerBaseY: 1215,
       boardRotateSec: 15,
     });
     expect(s.multiplier).toBeNull();

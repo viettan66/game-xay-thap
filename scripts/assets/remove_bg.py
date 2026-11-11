@@ -29,10 +29,8 @@ RAW = ROOT / "assets" / "raw"
 OUT = ROOT / "assets" / "work" / "nobg"
 
 # Ảnh nền trắng cần tách. Model birefnet-general-lite giữ viền tốt nhất với vật màu sáng
-# (bia đá, trụ trì, chóp tháp), không để lại vệt sáng ở đầu đao, giữ được ô cửa sổ trắng.
+# (bia đá, trụ trì), không để lại vệt sáng ở mép. (Ảnh tầng tháp, chóp tháp cũ đã bỏ sau R4.)
 SHEETS = {
-    "tower_floor_stages": {"model": "birefnet-general-lite"},
-    "tower_spire": {"model": "birefnet-general-lite"},
     "abbot_poses": {"model": "birefnet-general-lite"},
     "chars_workers": {"model": "birefnet-general-lite"},
     "stele": {"model": "birefnet-general-lite"},

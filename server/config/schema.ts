@@ -49,11 +49,6 @@ export const configSchema = z.strictObject({
   }),
   overlay: z.strictObject({
     safeArea: z.strictObject({ top: int(0).max(960), bottom: int(0).max(960), right: int(0).max(540) }),
-    // Thông số tháp cũ: chỉ trang /tools/assets còn dùng; bỏ khi dọn code tháp sau R4.
-    floor1WidthPx: int(100).max(1000),
-    towerTaper: z.number().min(0.9).max(1),
-    towerCenterX: int(0).max(1080),
-    towerBaseY: int(0).max(1920),
     boardRotateSec: z.number().min(3).max(300),
     // Bố cục giao diện (mục 8, 14.13): vị trí bảng xếp hạng, bản đồ thu nhỏ, độ đậm nền từng khung.
     boardPosition: z.enum(['auto', 'leftMiddle', 'rightMiddle', 'leftTop']),

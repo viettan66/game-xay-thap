@@ -202,8 +202,7 @@ Cần Python + rembg và Real-ESRGAN như bên dưới. Mở cửa sổ lệnh t
 2. `npm run assets:segment`: tách hình từng công trình bằng rembg (khoảng 10–60 giây mỗi công trình).
 3. `npm run assets:map`: ghép nền, cắt công trình, ghi manifest (khoảng 10 giây). Thêm `-- --background` để ghép lại nền.
 
-### Làm lại ảnh từ ảnh gốc: phần của bản tháp cũ (trụ trì, giao diện, bia… vẫn dùng)
-Quy trình của giai đoạn 3, giữ lại tới khi dọn code tháp sau R4.
+### Làm lại ảnh trụ trì, giao diện, vật phẩm, bia từ ảnh gốc
 Cần Python 3 (máy đã có 3.13) và mạng Internet ở lần đầu để tải model.
 1. Mở cửa sổ lệnh tại thư mục dự án. Tạo môi trường Python riêng và cài rembg (chỉ một lần):
    ```
@@ -215,7 +214,7 @@ Cần Python 3 (máy đã có 3.13) và mạng Internet ở lần đầu để t
    https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip
    và giải nén vào thư mục `.tools\realesrgan\` trong dự án.
 3. `npm run assets:nobg`: tách nền (khoảng 5–10 phút; lần đầu tải model khoảng 200MB).
-4. `npm run assets:build`: cắt, đặt tên, đo điểm căn, ghi manifest. Những gì đã chỉnh và lưu trên trang `/tools/assets` được giữ nguyên.
+4. `npm run assets:build`: cắt, đặt tên, ghi manifest. Phần bản đồ và ảnh đống vật liệu (`props/`) trong manifest được giữ nguyên.
 
 Thư mục `.venv\`, `.tools\`, `assets\work\` là đồ trung gian, không đưa lên git.
 
@@ -431,8 +430,8 @@ Mục `overlay` (bố cục): `boardPosition` (`auto`, `leftMiddle`, `rightMiddl
 Ô sự kiện: chữ ở `labels.events` (`goldenHour` mặc định `{name} ×{multiplier} · còn {time}`, `event`, `total`).
 Lọc tên: `nameFilter.bannedWords`, ví dụ `"bannedWords": ["từ cấm 1", "từ cấm 2"]`; tên vi phạm hiện `labels.anonymousName`.
 
-File `config.json` cũ của bản tháp (có mục `tower`, tên tầng…) được game **tự dọn** ở lần chạy đầu, phần mình đã chỉnh khác được giữ nguyên.
-Riêng các khóa `floor1WidthPx`, `towerTaper`, `towerCenterX`, `towerBaseY` trong mục `overlay` chỉ còn dùng cho trang `/tools/assets` cũ.
+File `config.json` cũ của bản tháp (có mục `tower`, tên tầng, các khóa `floor1WidthPx`, `towerTaper`, `towerCenterX`, `towerBaseY`
+trong mục `overlay`…) được game **tự dọn** ở lần chạy đầu, phần mình đã chỉnh khác được giữ nguyên.
 
 ---
 
@@ -459,7 +458,7 @@ Riêng các khóa `floor1WidthPx`, `towerTaper`, `towerCenterX`, `towerBaseY` tr
 | `npm start` / `npm run start:test` | Chạy server không qua file .bat |
 | `npm run demo` | Bắn sự kiện mẫu vào hồ sơ test |
 | `npm run assets:nobg` | Tách nền ảnh gốc bằng rembg → `assets/work/nobg` |
-| `npm run assets:build` | (Tháp cũ) Cắt ảnh trụ trì, giao diện, bia… → `assets/game` + `assets/manifest.json` |
+| `npm run assets:build` | Cắt ảnh trụ trì, giao diện, vật phẩm, bia → `assets/game` + `assets/manifest.json` |
 | `npm run assets:upscale` | Phóng ×4 ba ảnh bản đồ bằng Real-ESRGAN → `assets/work/esrgan` |
 | `npm run assets:segment [mã…]` | Tách hình công trình bằng rembg theo `assets/map-cuts.json` → `assets/work/map/rembg` |
 | `npm run assets:nobg props` rồi `npm run assets:props` | Tách nền và cắt 18 ảnh đống vật liệu → `assets/game/props` + manifest |

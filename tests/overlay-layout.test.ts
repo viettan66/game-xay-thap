@@ -1,84 +1,9 @@
+// Bố cục giao diện và hàm định dạng dùng chung của overlay.
+
 import { describe, expect, it } from 'vitest';
-import {
-  bannerTitle,
-  CAMERA_FOCUS_Y,
-  cameraTarget,
-  floorWidth,
-  FOUNDATION_HEIGHT,
-  formatMultiplier,
-  formatPoints,
-  lerpCamera,
-  nextBoardIndex,
-  rectInside,
-  rectsOverlap,
-  STAGE_H,
-  STAGE_W,
-  towerGeometry,
-  truncateToWidth,
-} from '../overlay/src/layout.js';
-import type { Board, OverlayLayout } from '../shared/protocol.js';
 import { hudRects } from '../overlay/src/hudLayout.js';
-
-const layout: OverlayLayout = {
-  safeArea: { top: 180, bottom: 600, right: 150 },
-  floor1WidthPx: 520,
-  towerTaper: 0.995,
-  towerCenterX: 510,
-  towerBaseY: 1215,
-  boardRotateSec: 15,
-};
-
-describe('xếp chồng tầng tạm', () => {
-  it('tầng n thu nhỏ towerTaper^(n-1) so với tầng 1', () => {
-    expect(floorWidth(1, layout)).toBe(520);
-    expect(floorWidth(2, layout)).toBeCloseTo(520 * 0.995);
-    expect(floorWidth(100, layout)).toBeCloseTo(520 * Math.pow(0.995, 99));
-    expect(floorWidth(0, layout)).toBeGreaterThan(520); // nền móng rộng hơn
-  });
-
-  it('tầng sau đặt ngay trên tầng trước', () => {
-    const g = towerGeometry(layout, 100);
-    expect(g.baseY).toHaveLength(101);
-    expect(g.baseY[0]).toBe(1215);
-    expect(g.baseY[1]).toBe(1215 - FOUNDATION_HEIGHT);
-    for (let f = 1; f < 100; f++) expect(g.baseY[f + 1]).toBeCloseTo(g.baseY[f]! - g.heights[f]!);
-  });
-});
-
-describe('camera', () => {
-  const g = towerGeometry(layout, 100);
-
-  it('tháp còn thấp thì camera đứng yên ở cảnh nền', () => {
-    expect(cameraTarget(g, 0, false)).toBe(0);
-    expect(cameraTarget(g, 1, false)).toBe(0);
-  });
-
-  it('tháp cao thì giữ tầng đang xây ở khoảng 45% chiều cao màn hình', () => {
-    for (const f of [5, 27, 100]) {
-      const offset = cameraTarget(g, f, false);
-      expect(offset).toBeGreaterThan(0);
-      const centerOnScreen = g.baseY[f]! - g.heights[f]! / 2 + offset;
-      expect(centerOnScreen).toBeCloseTo(CAMERA_FOCUS_Y);
-      expect(CAMERA_FOCUS_Y / STAGE_H).toBeCloseTo(0.45);
-    }
-  });
-
-  it('xong tháp thì camera nhìn lên chóp', () => {
-    expect(cameraTarget(g, 100, true)).toBeGreaterThan(cameraTarget(g, 100, false));
-  });
-
-  it('camera đi mượt, không vượt quá đích', () => {
-    let c = 0;
-    const values: number[] = [];
-    for (let i = 0; i < 120; i++) {
-      c = lerpCamera(c, 1000, 1 / 60);
-      values.push(c);
-    }
-    expect(values).toEqual([...values].sort((a, b) => a - b));
-    expect(values.at(-1)!).toBeGreaterThan(900);
-    expect(values.at(-1)!).toBeLessThanOrEqual(1000);
-  });
-});
+import { formatPoints, nextBoardIndex, rectInside, rectsOverlap, STAGE_H, STAGE_W, truncateToWidth } from '../overlay/src/layout.js';
+import type { Board } from '../shared/protocol.js';
 
 describe('giao diện không đặt vào vùng an toàn (mục 8)', () => {
   for (const safe of [
@@ -126,13 +51,6 @@ describe('chữ và số trên overlay', () => {
 
   it('định dạng số kiểu Việt Nam', () => {
     expect(formatPoints(1234567)).toBe('1.234.567');
-    expect(formatMultiplier(1.5)).toBe('×1,5');
-    expect(formatMultiplier(2)).toBe('×2');
-  });
-
-  it('tiêu đề banner', () => {
-    expect(bannerTitle(0, 'Nền móng', 100)).toBe('Nền móng');
-    expect(bannerTitle(27, 'Tầng 27', 100)).toBe('Tầng 27/100');
   });
 });
 

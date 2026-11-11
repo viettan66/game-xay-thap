@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
-import type { BackgroundVariant, Manifest } from '../../shared/manifest.js';
+import type { Manifest } from '../../shared/manifest.js';
 import { formatZodError } from '../config/schema.js';
 import { PART_KEYS } from '../../shared/parts.js';
 
@@ -14,12 +14,6 @@ const entry = z.strictObject({
   w: z.number().int().positive(),
   h: z.number().int().positive(),
   anchor: point,
-  eaveLineY: z.number().optional(),
-  topY: z.number().optional(),
-  bottomY: z.number().optional(),
-  eaveWidth: z.number().positive().optional(),
-  auto: z.strictObject({ eaveLineY: z.number(), topY: z.number() }).optional(),
-  tuned: z.boolean().optional(),
 });
 
 const mapFile = (ext: string) => z.string().regex(new RegExp(`^[a-z0-9_/]+\\.(${ext})$`), 'Tên file phải là chữ thường không dấu');
@@ -52,24 +46,11 @@ const mapSchema = z.strictObject({
   ),
 });
 
-export const manifestSchema = z
-  .strictObject({
-    version: z.literal(1),
-    images: z.record(z.string(), entry),
-    background: z.strictObject({
-      variant: z.string(),
-      variants: z.array(
-        z.strictObject({ key: z.string(), label: z.string(), background: z.string(), sky: z.string() }),
-      ),
-      towerAnchor: point,
-      skyOverlap: z.number().int().min(0).max(1000),
-    }),
-    tower: z.strictObject({ spireScale: z.number().min(0.3).max(3) }),
-    map: mapSchema.optional(),
-  })
-  .refine((m) => Object.values(m.images).every((e) => e.topY === undefined || e.eaveLineY === undefined || e.topY < e.eaveLineY), {
-    message: 'topY phải nằm phía trên eaveLineY',
-  });
+export const manifestSchema = z.strictObject({
+  version: z.literal(1),
+  images: z.record(z.string(), entry),
+  map: mapSchema.optional(),
+});
 
 export class ManifestError extends Error {
   constructor(readonly problems: string[]) {
@@ -85,8 +66,32 @@ export function gameAssetsDir(rootDir: string): string {
   return path.join(rootDir, 'assets', 'game');
 }
 
+/** Khóa và ảnh của bản tháp cũ (đã bỏ sau R4): manifest cũ còn thì tự bỏ đi khi đọc. */
+const LEGACY_KEYS = ['background', 'tower'];
+const LEGACY_IMAGE = /^(tower|bg)\//;
+const LEGACY_ENTRY_KEYS = ['eaveLineY', 'topY', 'bottomY', 'eaveWidth', 'auto', 'tuned'];
+
+export function stripLegacyManifest(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw;
+  const m = { ...(raw as Record<string, unknown>) };
+  for (const k of LEGACY_KEYS) delete m[k];
+  if (m.images && typeof m.images === 'object') {
+    const images: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(m.images as Record<string, unknown>)) {
+      if (LEGACY_IMAGE.test(k)) continue;
+      if (v && typeof v === 'object') {
+        const e = { ...(v as Record<string, unknown>) };
+        for (const x of LEGACY_ENTRY_KEYS) delete e[x];
+        images[k] = e;
+      } else images[k] = v;
+    }
+    m.images = images;
+  }
+  return m;
+}
+
 export function validateManifest(raw: unknown): Manifest {
-  const r = manifestSchema.safeParse(raw);
+  const r = manifestSchema.safeParse(stripLegacyManifest(raw));
   if (!r.success) throw new ManifestError(formatZodError(r.error));
   return r.data as Manifest;
 }
@@ -130,14 +135,4 @@ export function missingFiles(rootDir: string, m: Manifest): string[] {
     for (const b of m.map.buildings) files.push(b.file, ...(b.fg ? [b.fg.file] : []));
   }
   return files.filter((f) => !fs.existsSync(path.join(dir, f)));
-}
-
-/** Dùng một bản nền làm chính thức: chép thành bg/background.png và bg/sky_upper.png. */
-export function chooseBackground(rootDir: string, variants: BackgroundVariant[], key: string): void {
-  const v = variants.find((x) => x.key === key);
-  if (!v) throw new ManifestError([`Không có bản nền "${key}"`]);
-  const dir = gameAssetsDir(rootDir);
-  fs.mkdirSync(path.join(dir, 'bg'), { recursive: true });
-  fs.copyFileSync(path.join(dir, v.background), path.join(dir, 'bg', 'background.png'));
-  fs.copyFileSync(path.join(dir, v.sky), path.join(dir, 'bg', 'sky_upper.png'));
 }

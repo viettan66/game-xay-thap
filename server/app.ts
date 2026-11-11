@@ -7,12 +7,11 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import type { GameCore } from './core.js';
 import { SimulatorNotAllowed, type LiveService, type SourceMode } from './live/service.js';
 import { FIRE_KINDS, SCENARIO_KEYS, SCENARIOS, type FireKind, type ScenarioKey } from './live/simulator.js';
-import { assetsVersion, chooseBackground, gameAssetsDir, loadManifest, ManifestError, missingFiles, saveManifest } from './assets/manifest.js';
+import { assetsVersion, gameAssetsDir, loadManifest, ManifestError, missingFiles } from './assets/manifest.js';
 import { loadCuts, MapCutError, missingSegments } from './assets/mapCut.js';
 import { partsForEditing, partsStatus, proposeForBuilding, saveParts, syncManifestParts, validateLabels } from './assets/parts.js';
 import { PARTS } from '../shared/parts.js';
 import { MapCutQueue, updateBuildingCut, type MapTools } from './assets/mapTools.js';
-import { applyToManifest, parseToolUpdate } from './assets/tools.js';
 import type { GameConfig } from './config/schema.js';
 import { ConfigError } from './config/store.js';
 import type { StateBroadcaster } from './overlay/broadcaster.js';
@@ -183,35 +182,7 @@ export function createApp(deps: AppDeps): express.Express {
   // ---- Trang kiểm tra ảnh /tools/assets ----
   app.get('/api/tools/assets', (_req, res) => {
     const m = loadManifest(rootDir);
-    res.json({
-      manifest: m,
-      missing: m ? missingFiles(rootDir, m) : [],
-      config: { floor1WidthPx: core.config.overlay.floor1WidthPx, towerTaper: core.config.overlay.towerTaper },
-    });
-  });
-  app.post('/api/tools/manifest', (req, res) => {
-    const m = loadManifest(rootDir);
-    if (!m) throw new ManifestError(['Chưa có assets/manifest.json']);
-    const u = parseToolUpdate(body(req));
-    saveManifest(rootDir, applyToManifest(m, u));
-    // Độ thu nhỏ từng tầng và bề rộng tầng 1 nằm trong config (mục 8, 14.13).
-    if (u.floor1WidthPx !== undefined || u.towerTaper !== undefined) {
-      const next = structuredClone(core.config);
-      if (u.floor1WidthPx !== undefined) next.overlay.floor1WidthPx = u.floor1WidthPx;
-      if (u.towerTaper !== undefined) next.overlay.towerTaper = u.towerTaper;
-      core.saveConfig(next, { source: 'tools/assets' });
-    }
-    broadcaster.markDirty();
-    res.json({ ok: true, manifest: loadManifest(rootDir) });
-  });
-  app.post('/api/tools/background', (req, res) => {
-    const m = loadManifest(rootDir);
-    if (!m) throw new ManifestError(['Chưa có assets/manifest.json']);
-    const key = String(body(req).variant ?? '');
-    chooseBackground(rootDir, m.background.variants, key);
-    saveManifest(rootDir, { ...m, background: { ...m.background, variant: key } });
-    broadcaster.markDirty();
-    res.json({ ok: true, manifest: loadManifest(rootDir) });
+    res.json({ manifest: m, missing: m ? missingFiles(rootDir, m) : [] });
   });
   // ---- Bản đồ quần thể chùa (R2): khung cắt từng công trình ----
   const mapQueue = new MapCutQueue();

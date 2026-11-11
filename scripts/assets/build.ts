@@ -1,16 +1,16 @@
 // Dựng toàn bộ ảnh game từ ảnh đã tách nền (assets/work/nobg, do remove_bg.py tạo) → assets/game + assets/manifest.json.
 //   npm run assets:build
-// Các giá trị đã chỉnh tay trên trang /tools/assets (eaveLineY, topY có tuned: true, bản nền đang chọn,
-// vị trí đặt tháp, tỉ lệ chóp) được giữ nguyên khi chạy lại.
+// Ảnh do script khác thêm vào manifest (props/ của assets:props) và phần bản đồ (assets:map) được giữ nguyên.
+// (Ảnh tầng tháp, chóp, nền tháp cũ đã bỏ sau R4.)
 
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
-import type { BackgroundVariant, Manifest, ManifestEntry } from '../../shared/manifest.js';
-import { chooseBackground, saveManifest, validateManifest } from '../../server/assets/manifest.js';
+import type { Manifest, ManifestEntry } from '../../shared/manifest.js';
+import { saveManifest, validateManifest } from '../../server/assets/manifest.js';
 import { extractSprite, findSprites, packGroup, type Frame, type PackedGroup } from '../slice-sheet.js';
 import { crop, loadImg, saveImg, type Img } from './image.js';
-import { bottomOf, headCenterX, measureEave, rowWidths } from './measure.js';
+import { bottomOf, headCenterX, rowWidths } from './measure.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const RAW = path.join(ROOT, 'assets', 'raw');
@@ -20,6 +20,8 @@ const GAME = path.join(ROOT, 'assets', 'game');
 const MANIFEST = path.join(ROOT, 'assets', 'manifest.json');
 
 const images: Record<string, ManifestEntry> = {};
+/** Nhóm ảnh script này dựng lại (ảnh cũ cùng nhóm được thay hẳn). */
+const BUILT = ['abbot', 'chars', 'stele', 'ui', 'items'];
 const log = (s: string) => console.log(s);
 
 function previous(): Manifest | null {
@@ -59,55 +61,6 @@ async function writeGroup(group: PackedGroup, extra?: (name: string, i: number) 
 /** Nhân vật: căn theo giữa đầu (ngang) và bàn chân (dọc), cùng kích thước ô trong nhóm. */
 function charFrame(name: string, img: Img): Frame {
   return { name, img, ax: headCenterX(img), ay: bottomOf(img) };
-}
-
-async function towerFloors(): Promise<void> {
-  const imgs = slice(await sheet('tower_floor_stages'), 5, { minGap: 12 });
-  const metrics = imgs.map((im) => measureEave(im));
-  const frames = imgs.map((img, i) => ({ name: `tower/floor_stage_${i + 1}`, img, ax: metrics[i]!.centerX, ay: metrics[i]!.eaveLineY }));
-  const group = packGroup(frames, 8);
-  // Cả 5 giai đoạn có chung mái hiên và dầm đỡ: đáy thân lấy từ giai đoạn 1–4 (giai đoạn 5 có đèn lồng thòng xuống).
-  const bottomBelowEave = Math.max(...metrics.slice(0, 4).map((m) => m.bottomY - m.eaveLineY));
-  await writeGroup(group, (name, i) => {
-    const m = metrics[i]!;
-    const dy = group.frames[i]!.dy;
-    const auto = { eaveLineY: group.ay, topY: m.topY + dy };
-    const old = prev?.images[name];
-    const keep = old?.tuned && old.w === group.cellW && old.h === group.cellH;
-    return {
-      eaveLineY: keep ? old.eaveLineY! : auto.eaveLineY,
-      topY: keep ? old.topY! : auto.topY,
-      bottomY: group.ay + bottomBelowEave,
-      eaveWidth: m.eaveWidth,
-      auto,
-      ...(keep ? { tuned: true } : {}),
-    };
-  });
-  for (const [i, m] of metrics.entries()) {
-    log(`  tầng giai đoạn ${i + 1}: eaveLineY=${m.eaveLineY} topY=${m.topY} bottomY=${m.bottomY} mái rộng ${m.eaveWidth}px`);
-  }
-}
-
-async function spire(): Promise<void> {
-  const [img] = slice(await sheet('tower_spire'), 1);
-  // Chóp: phần rộng nhất là hai đầu đao; dải ngói đi xuống tới dải dầm đỏ.
-  const m = measureEave(img!, { topRatio: 0.02, bottomRatio: 0.5 });
-  const group = packGroup([{ name: 'tower/spire', img: img!, ax: m.centerX, ay: m.eaveLineY }], 8);
-  await writeGroup(group, (name) => {
-    const dy = group.frames[0]!.dy;
-    const auto = { eaveLineY: group.ay, topY: m.topY + dy };
-    const old = prev?.images[name];
-    const keep = old?.tuned && old.w === group.cellW && old.h === group.cellH;
-    return {
-      eaveLineY: keep ? old.eaveLineY! : auto.eaveLineY,
-      topY: keep ? old.topY! : auto.topY,
-      bottomY: m.bottomY + dy,
-      eaveWidth: m.eaveWidth,
-      auto,
-      ...(keep ? { tuned: true } : {}),
-    };
-  });
-  log(`  chóp: eaveLineY=${m.eaveLineY} bottomY=${m.bottomY} mái rộng ${m.eaveWidth}px`);
 }
 
 async function abbot(): Promise<void> {
@@ -278,51 +231,8 @@ async function equalize(names: string[]): Promise<void> {
   await writeGroup(packGroup(frames, 0));
 }
 
-async function backgrounds(): Promise<BackgroundVariant[]> {
-  const W = 1080;
-  const H = 1920;
-  const sources: { key: string; label: string; bg: string; sky: string }[] = [
-    { key: 'A', label: 'A – phóng to thường (Lanczos)', bg: path.join(RAW, 'bg_background.png'), sky: path.join(RAW, 'bg_sky_upper.png') },
-    {
-      key: 'B',
-      label: 'B – Real-ESRGAN x4plus rồi thu về',
-      bg: path.join(WORK, 'esrgan', 'bg_background_realesrgan-x4plus.png'),
-      sky: path.join(WORK, 'esrgan', 'bg_sky_upper_realesrgan-x4plus.png'),
-    },
-    {
-      key: 'B2',
-      label: 'B2 – Real-ESRGAN x4plus-anime rồi thu về',
-      bg: path.join(WORK, 'esrgan', 'bg_background_realesrgan-x4plus-anime.png'),
-      sky: path.join(WORK, 'esrgan', 'bg_sky_upper_realesrgan-x4plus-anime.png'),
-    },
-  ];
-  const out: BackgroundVariant[] = [];
-  for (const s of sources) {
-    if (!fs.existsSync(s.bg) || !fs.existsSync(s.sky)) {
-      log(`  bỏ qua bản nền ${s.key} (chưa có ảnh phóng to)`);
-      continue;
-    }
-    const v: BackgroundVariant = { key: s.key, label: s.label, background: `bg/variants/background_${s.key}.png`, sky: `bg/variants/sky_upper_${s.key}.png` };
-    for (const [src, dst] of [
-      [s.bg, v.background],
-      [s.sky, v.sky],
-    ] as const) {
-      const target = path.join(GAME, dst);
-      fs.mkdirSync(path.dirname(target), { recursive: true });
-      // Giữ tỉ lệ, phủ kín 1080×1920, cắt phần thừa ở giữa (không kéo méo).
-      await sharp(src).resize(W, H, { fit: 'cover', position: 'centre', kernel: 'lanczos3' }).png({ compressionLevel: 9 }).toFile(target);
-    }
-    out.push(v);
-  }
-  return out;
-}
-
 async function main(): Promise<void> {
   log('Dựng ảnh game từ assets/work/nobg → assets/game');
-  log('- Tầng tháp');
-  await towerFloors();
-  log('- Chóp tháp');
-  await spire();
   log('- Trụ trì');
   await abbot();
   log('- Nhân vật');
@@ -331,27 +241,17 @@ async function main(): Promise<void> {
   await stele();
   log('- Bộ giao diện và vật phẩm');
   await uiKit();
-  log('- Nền và trời (1080×1920)');
-  const variants = await backgrounds();
-  const variant = prev && variants.some((v) => v.key === prev.background.variant) ? prev.background.variant : variants.some((v) => v.key === 'B') ? 'B' : 'A';
-  chooseBackground(ROOT, variants, variant);
-  for (const key of ['bg/background', 'bg/sky_upper']) images[key] = { file: `${key}.png`, w: 1080, h: 1920, anchor: { x: 0, y: 0 } };
+  // Ảnh do script khác thêm (ví dụ props/ của assets:props) thì giữ nguyên.
+  for (const [k, e] of Object.entries(prev?.images ?? {})) if (!(k in images) && !BUILT.some((g) => k.startsWith(`${g}/`))) images[k] = e;
 
   const manifest: Manifest = {
     version: 1,
     images: Object.fromEntries(Object.entries(images).sort(([a], [b]) => a.localeCompare(b))),
-    background: {
-      variant,
-      variants,
-      towerAnchor: prev?.background.towerAnchor ?? { x: 508, y: 1215 },
-      skyOverlap: prev?.background.skyOverlap ?? 150,
-    },
-    tower: { spireScale: prev?.tower.spireScale ?? 1 },
     // Bản đồ do `npm run assets:map` dựng: giữ nguyên.
     ...(prev?.map ? { map: prev.map } : {}),
   };
   saveManifest(ROOT, manifest);
-  log(`Xong: ${Object.keys(images).length} ảnh, bản nền đang dùng: ${variant}. Đã ghi assets/manifest.json`);
+  log(`Xong: ${Object.keys(images).length} ảnh. Đã ghi assets/manifest.json`);
 }
 
 await main();

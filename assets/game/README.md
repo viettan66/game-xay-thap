@@ -13,5 +13,5 @@ Bản đồ quần thể chùa (giai đoạn R2), tạo bằng `npm run assets:u
 - `props/<loại>_<mức>.png`: đống vật liệu (gạch, gỗ, ngói, đá – lớn/vừa/nhỏ; cát, giá cưa, ròng rọc, thang tre, quang gánh, xe cút kít),
   tạo bằng `npm run assets:nobg props` rồi `npm run assets:props`.
 
-Phần của bản tháp cũ (giai đoạn 3; trụ trì, giao diện, bia vẫn dùng), tạo bằng `npm run assets:nobg` rồi `npm run assets:build`:
-- `abbot/`, `ui/`, `items/`, `stele/`, `chars/`, `tower/`, `bg/`. `bg/variants/`: các bản nền tháp A / B / B2 (chờ dọn sau R4).
+Trụ trì, giao diện, vật phẩm, bia, nhân vật tạm, tạo bằng `npm run assets:nobg` rồi `npm run assets:build`:
+- `abbot/`, `ui/`, `items/`, `stele/`, `chars/`. (Ảnh tầng tháp, nền tháp của bản cũ đã bỏ sau R4; ảnh gốc vẫn ở `assets/raw/_old/`.)

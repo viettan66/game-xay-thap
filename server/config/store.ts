@@ -81,6 +81,8 @@ export function upgradeLegacyConfig(raw: unknown): { value: unknown; removed: st
     }
   };
   drop(value, 'tower', 'tower');
+  // Thông số vẽ tháp cũ trong mục overlay (bỏ sau R4).
+  for (const k of ['floor1WidthPx', 'towerTaper', 'towerCenterX', 'towerBaseY']) drop(value.overlay, k, `overlay.${k}`);
   const labels = value.labels;
   for (const k of ['foundationName', 'floorName', 'foundationStages', 'floorStages']) drop(labels, k, `labels.${k}`);
   if (isPlain(labels)) {
@@ -91,10 +93,10 @@ export function upgradeLegacyConfig(raw: unknown): { value: unknown; removed: st
 }
 
 /**
- * Chuy\u1EC3n project.json t\u1EA1o tr\u01B0\u1EDBc R3b (giai \u0111o\u1EA1n c\u00F3 `visual`) sang c\u00E1ch x\u00E2y t\u1EEBng m\u1EA3nh (`build`, m\u1EE5c 5, 7):
- * b\u1ECF `visual`; giai \u0111o\u1EA1n ch\u01B0a c\u00F3 `build` th\u00EC l\u1EA5y `build` c\u1EE7a b\u1EA3n m\u1EB7c \u0111\u1ECBnh \u1EDF c\u00F9ng ch\u1ED7 n\u1EBFu tr\u00F9ng t\u00EAn giai \u0111o\u1EA1n
- * (m\u1EABu c\u00F9ng t\u00EAn, ho\u1EB7c h\u1EA1ng m\u1EE5c c\u00F9ng m\u00E3). Giai \u0111o\u1EA1n m\u00ECnh t\u1EF1 th\u00EAm th\u00EC \u0111\u1EC3 tr\u1ED1ng (game x\u00E2y ph\u1EA7n c\u00F2n l\u1EA1i).
- * Tr\u1EA3 v\u1EC1 file \u0111\u00E3 chuy\u1EC3n v\u00E0 s\u1ED1 giai \u0111o\u1EA1n \u0111\u00E3 s\u1EEDa.
+ * Chuyển project.json tạo trước R3b (giai đoạn có `visual`) sang cách xây từng mảnh (`build`, mục 5, 7):
+ * bỏ `visual`; giai đoạn chưa có `build` thì lấy `build` của bản mặc định ở cùng chỗ nếu trùng tên giai đoạn
+ * (mẫu cùng tên, hoặc hạng mục cùng mã). Giai đoạn mình tự thêm thì để trống (game xây phần còn lại).
+ * Trả về file đã chuyển và số giai đoạn đã sửa.
  */
 export function upgradeLegacyProject(raw: unknown, defaults: unknown): { value: unknown; changed: number } {
   if (!isPlain(raw)) return { value: raw, changed: 0 };

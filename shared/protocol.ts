@@ -66,11 +66,6 @@ export interface SafeArea {
 
 export interface OverlayLayout {
   safeArea: SafeArea;
-  /** Thông số tháp cũ (chỉ /tools/assets còn dùng, bỏ sau R4). */
-  floor1WidthPx: number;
-  towerTaper: number;
-  towerCenterX: number;
-  towerBaseY: number;
   boardRotateSec: number;
 }
 

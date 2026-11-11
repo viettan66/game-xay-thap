@@ -6,7 +6,6 @@
 // (hudLayout.ts + ui/hud.ts): thanh tiến độ góc trên phải, bảng xếp hạng thu gọn tự dời chỗ không che công trình,
 // ô sự kiện, bản đồ thu nhỏ (mặc định chỉ khi thu toàn cảnh), dải miễn trừ nhỏ.
 // Chưa dựng bản đồ (thiếu manifest.map) thì vẽ tạm bằng hình khối theo hạng mục (scene/site.ts).
-// Cảnh tháp cũ (scene/tower.ts, scene/background.ts) chỉ còn dùng ở trang /tools/assets.
 
 import { Application, Container } from 'pixi.js';
 import type { OverlayState, ServerMessage } from '../../shared/protocol.js';

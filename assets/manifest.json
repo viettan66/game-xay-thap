@@ -37,24 +37,6 @@
         "y": 686
       }
     },
-    "bg/background": {
-      "file": "bg/background.png",
-      "w": 1080,
-      "h": 1920,
-      "anchor": {
-        "x": 0,
-        "y": 0
-      }
-    },
-    "bg/sky_upper": {
-      "file": "bg/sky_upper.png",
-      "w": 1080,
-      "h": 1920,
-      "anchor": {
-        "x": 0,
-        "y": 0
-      }
-    },
     "chars/carpenter_1": {
       "file": "chars/carpenter_1.png",
       "w": 185,
@@ -469,108 +451,6 @@
         "y": 1412
       }
     },
-    "tower/floor_stage_1": {
-      "file": "tower/floor_stage_1.png",
-      "w": 423,
-      "h": 472,
-      "anchor": {
-        "x": 211,
-        "y": 361
-      },
-      "eaveLineY": 361,
-      "topY": 297,
-      "bottomY": 409,
-      "eaveWidth": 403,
-      "auto": {
-        "eaveLineY": 361,
-        "topY": 297
-      }
-    },
-    "tower/floor_stage_2": {
-      "file": "tower/floor_stage_2.png",
-      "w": 423,
-      "h": 472,
-      "anchor": {
-        "x": 211,
-        "y": 361
-      },
-      "eaveLineY": 361,
-      "topY": 57,
-      "bottomY": 409,
-      "eaveWidth": 402,
-      "auto": {
-        "eaveLineY": 361,
-        "topY": 57
-      }
-    },
-    "tower/floor_stage_3": {
-      "file": "tower/floor_stage_3.png",
-      "w": 423,
-      "h": 472,
-      "anchor": {
-        "x": 211,
-        "y": 361
-      },
-      "eaveLineY": 361,
-      "topY": 56,
-      "bottomY": 409,
-      "eaveWidth": 402,
-      "auto": {
-        "eaveLineY": 361,
-        "topY": 56
-      }
-    },
-    "tower/floor_stage_4": {
-      "file": "tower/floor_stage_4.png",
-      "w": 423,
-      "h": 472,
-      "anchor": {
-        "x": 211,
-        "y": 361
-      },
-      "eaveLineY": 361,
-      "topY": 58,
-      "bottomY": 409,
-      "eaveWidth": 401,
-      "auto": {
-        "eaveLineY": 361,
-        "topY": 58
-      }
-    },
-    "tower/floor_stage_5": {
-      "file": "tower/floor_stage_5.png",
-      "w": 423,
-      "h": 472,
-      "anchor": {
-        "x": 211,
-        "y": 361
-      },
-      "eaveLineY": 361,
-      "topY": 58,
-      "bottomY": 409,
-      "eaveWidth": 400,
-      "auto": {
-        "eaveLineY": 361,
-        "topY": 58
-      }
-    },
-    "tower/spire": {
-      "file": "tower/spire.png",
-      "w": 1106,
-      "h": 941,
-      "anchor": {
-        "x": 552,
-        "y": 802
-      },
-      "eaveLineY": 802,
-      "topY": 33,
-      "bottomY": 931,
-      "eaveWidth": 1086,
-      "auto": {
-        "eaveLineY": 802,
-        "topY": 33
-      }
-    },
     "ui/avatar_frame": {
       "file": "ui/avatar_frame.png",
       "w": 280,
@@ -724,37 +604,6 @@
         "y": 93
       }
     }
-  },
-  "background": {
-    "variant": "B",
-    "variants": [
-      {
-        "key": "A",
-        "label": "A – phóng to thường (Lanczos)",
-        "background": "bg/variants/background_A.png",
-        "sky": "bg/variants/sky_upper_A.png"
-      },
-      {
-        "key": "B",
-        "label": "B – Real-ESRGAN x4plus rồi thu về",
-        "background": "bg/variants/background_B.png",
-        "sky": "bg/variants/sky_upper_B.png"
-      },
-      {
-        "key": "B2",
-        "label": "B2 – Real-ESRGAN x4plus-anime rồi thu về",
-        "background": "bg/variants/background_B2.png",
-        "sky": "bg/variants/sky_upper_B2.png"
-      }
-    ],
-    "towerAnchor": {
-      "x": 508,
-      "y": 1215
-    },
-    "skyOverlap": 150
-  },
-  "tower": {
-    "spireScale": 1
   },
   "map": {
     "width": 1728,

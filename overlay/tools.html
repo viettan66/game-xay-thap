@@ -111,57 +111,10 @@
   </section>
 
   <section>
-    <h2>1. So sánh nền A / B (tháp cũ)</h2>
-    <p class="note">A: phóng to thường (Lanczos). B: phóng to bằng AI (Real-ESRGAN x4plus) rồi thu về 1080×1920. B2: Real-ESRGAN bản anime.
-      Rê chuột lên một ảnh để soi cùng một chỗ trên cả ba. Bấm <b>Dùng bản này</b> để chọn làm chính thức (overlay đổi ngay).</p>
-    <div class="row">
-      <select id="cmp-what"><option value="background">Nền (có bệ móng)</option><option value="sky">Trời</option></select>
-      <label>Phóng to <select id="cmp-zoom"><option value="1">vừa khung</option><option value="2">×2</option><option value="4">×4</option><option value="8">×8</option></select></label>
-      <label><input type="checkbox" id="cmp-pixel"> Thấy rõ từng điểm ảnh</label>
-    </div>
-    <div class="cmp" id="cmp"></div>
-  </section>
-
-  <section>
-    <h2>2. Ảnh đã cắt – soi viền trên 3 nền (trụ trì, giao diện, bia… và tháp cũ)</h2>
+    <h2>Ảnh đã cắt – soi viền trên 3 nền (trụ trì, giao diện, vật phẩm, bia, đống vật liệu…)</h2>
     <p class="note">Mỗi ảnh hiện trên nền ô caro, trắng và tối. Viền trắng bám mép thường lộ trên nền tối; mép bị ăn lẹm thường lộ trên nền trắng. Bấm vào ảnh để phóng to.</p>
     <div id="missing"></div>
     <div class="groups" id="groups"></div>
-  </section>
-
-  <section>
-    <h2>3. Xếp chồng thử 10 tầng + chóp (tháp cũ, chờ dọn sau R4)</h2>
-    <p class="note">Tầng sau đặt <b>mép dưới dải ngói (eaveLineY, vạch đỏ)</b> lên <b>mép trên phẳng (topY, vạch xanh)</b> của tầng dưới. Tầng 1 đặt đáy lên điểm vàng trên bệ móng.
-      Kéo thanh trượt để xem ngay; bấm <b>Lưu</b> để ghi: điểm căn và vị trí tháp vào <code>assets/manifest.json</code>, độ rộng tầng 1 và độ thu nhỏ vào <code>config.json</code>.</p>
-    <div class="stack">
-      <div id="preview"></div>
-      <div class="ctl">
-        <div class="row">
-          <label style="display:flex">Số tầng <select id="floors"></select></label>
-          <label style="display:flex">Tầng trên cùng đang ở giai đoạn <select id="topStage"><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option></select></label>
-          <label style="display:flex"><input type="checkbox" id="withSpire" checked> Đặt chóp</label>
-          <label style="display:flex"><input type="checkbox" id="fitAll" checked> Nhìn toàn tháp</label>
-        </div>
-        <h3>Điểm căn ảnh (điểm ảnh, tính trên file ảnh đã cắt)</h3>
-        <div class="row"><label style="display:flex">Ảnh đang chỉnh <select id="editStage"><option value="1">Tầng – giai đoạn 1</option><option value="2">Tầng – giai đoạn 2</option><option value="3">Tầng – giai đoạn 3</option><option value="4">Tầng – giai đoạn 4</option><option value="5" selected>Tầng – giai đoạn 5</option><option value="spire">Chóp tháp</option></select></label></div>
-        <label><span>eaveLineY <small id="eave-hint"></small></span><input type="range" id="eave" step="1"><span class="val" id="eave-v"></span></label>
-        <label>topY<input type="range" id="top" step="1"><span class="val" id="top-v"></span></label>
-        <p class="note" id="auto-note"></p>
-        <canvas id="piece" width="440" height="500"></canvas>
-        <h3>Kích thước và vị trí</h3>
-        <label>Bề rộng tầng 1 (px)<input type="range" id="w1" min="300" max="800" step="2"><span class="val" id="w1-v"></span></label>
-        <label>Độ thu nhỏ mỗi tầng<input type="range" id="taper" min="0.95" max="1" step="0.001"><span class="val" id="taper-v"></span></label>
-        <label>Chóp rộng so với tầng cuối<input type="range" id="spireScale" min="0.5" max="1.6" step="0.01"><span class="val" id="spireScale-v"></span></label>
-        <label>Vị trí tháp – ngang (x)<input type="range" id="ax" min="300" max="780" step="1"><span class="val" id="ax-v"></span></label>
-        <label>Vị trí tháp – dọc (y)<input type="range" id="ay" min="900" max="1500" step="1"><span class="val" id="ay-v"></span></label>
-        <div class="row">
-          <button class="primary" id="save">Lưu</button>
-          <button id="reset-auto">Về giá trị máy đo</button>
-          <button id="reload">Bỏ thay đổi</button>
-          <span id="save-msg"></span>
-        </div>
-      </div>
-    </div>
   </section>
 </main>
 <div id="zoom"><div class="bar"><button data-bg="checker">Ô caro</button><button data-bg="white">Trắng</button><button data-bg="dark">Tối</button><button id="zoom-close">Đóng ✕</button></div><div class="box checker"><img id="zoom-img" alt=""></div></div>

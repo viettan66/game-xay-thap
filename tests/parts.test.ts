@@ -93,8 +93,6 @@ describe('API trang /tools/parts', () => {
     const manifest = {
       version: 1,
       images: {},
-      background: { variant: 'A', variants: [], towerAnchor: { x: 540, y: 1215 }, skyOverlap: 150 },
-      tower: { spireScale: 1 },
       map: {
         width: 1728, height: 5575, scale: 1.836, rawWidth: 941, rawHeight: 1672, overlap: 308, source: 'lanczos',
         tiles: [{ file: 'map/bg_0.jpg', y: 0, h: 2048 }], reference: null,

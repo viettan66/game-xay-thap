@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { extractSprite, findSprites, opaqueBounds, packGroup } from '../scripts/slice-sheet.js';
 import { blank, type Img } from '../scripts/assets/image.js';
-import { bottomOf, headCenterX, measureEave } from '../scripts/assets/measure.js';
+import { bottomOf, headCenterX } from '../scripts/assets/measure.js';
 
 type RGBA = [number, number, number, number];
 function fill(img: Img, x: number, y: number, w: number, h: number, c: RGBA): void {
@@ -66,37 +66,7 @@ describe('cắt sprite sheet theo khoảng trống trong suốt (scripts/slice-s
   });
 });
 
-describe('đo điểm căn tầng tháp bằng phân tích điểm ảnh', () => {
-  // Tầng giả: dầm đỉnh, thân, dải ngói cam (rộng nhất), dầm đỡ đỏ sẫm, đèn lồng hẹp thòng xuống.
-  function fakeFloor(lanterns: boolean): Img {
-    const img = blank(220, 200);
-    fill(img, 30, 20, 160, 12, [180, 60, 40, 255]); // dầm đỉnh y 20..31
-    fill(img, 50, 32, 120, 78, [240, 210, 170, 255]); // thân
-    fill(img, 10, 110, 200, 30, [215, 110, 80, 255]); // ngói y 110..139
-    fill(img, 40, 140, 140, 20, [120, 30, 25, 255]); // dầm đỡ y 140..159
-    if (lanterns) {
-      fill(img, 14, 160, 12, 30, [230, 50, 40, 255]); // đèn lồng trái
-      fill(img, 194, 160, 12, 30, [230, 50, 40, 255]); // đèn lồng phải
-    }
-    return img;
-  }
-
-  it('eaveLineY ở mép dưới dải ngói (chỗ chuyển sang dầm đỡ), topY ở mép trên dầm đỉnh', () => {
-    const m = measureEave(fakeFloor(false));
-    expect(m.eaveLineY).toBe(140);
-    expect(m.topY).toBe(20);
-    expect(m.bottomY).toBe(160);
-    expect(m.eaveWidth).toBe(200);
-    expect(m.centerX).toBeCloseTo(109.5);
-  });
-
-  it('đèn lồng thòng xuống không làm lệch eaveLineY và topY (nên căn theo eaveLineY, không theo mép ảnh)', () => {
-    const plain = measureEave(fakeFloor(false));
-    const withLanterns = measureEave(fakeFloor(true));
-    expect(withLanterns.eaveLineY).toBe(plain.eaveLineY);
-    expect(withLanterns.topY).toBe(plain.topY);
-  });
-
+describe('đo ảnh nhân vật', () => {
   it('tâm đầu nhân vật', () => {
     const img = blank(100, 100);
     fill(img, 40, 0, 20, 20, RED); // đầu

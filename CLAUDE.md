@@ -15,7 +15,7 @@ Overlay game livestream dọc 1080×1920: người xem góp "công" (quà, tim, 
 - Làm **từng giai đoạn** theo mục 15 của SPEC (trước hết R1 → R4, sau đó 4 → 8). Xong một giai đoạn thì: chạy toàn bộ test, cập nhật README, tóm tắt đã làm gì và cần kiểm tra gì, commit, rồi **dừng lại**. Không tự chuyển giai đoạn.
 - Có điểm mơ hồ thì liệt kê, đánh số câu hỏi, chờ trả lời.
 - `assets/raw/` là ảnh gốc: KHÔNG sửa, KHÔNG xóa, KHÔNG đổi tên (ảnh tháp cũ nằm trong `assets/raw/_old/`).
-- Code hiển thị tháp cũ (`overlay/src/scene/tower.ts`, `scene/background.ts`, `towerLayout.ts`, phần tầng tháp trong `/tools/assets` và manifest): KHÔNG xóa cho tới khi xong R4 VÀ chủ dự án đồng ý.
+- Code hiển thị tháp cũ đã dọn sau R4 (chủ dự án đồng ý 2026-11-11). Bản cũ vẫn xem được ở tag `thap-100-tang`.
 - Không push lên GitHub khi chưa được đồng ý rõ ràng (repo đang công khai).
 
 ## Nguyên tắc nội dung (mục 0, bắt buộc)
@@ -92,7 +92,7 @@ scripts/  công cụ phụ (cắt sprite, backup, giả lập)
 - Camera + bố cục (R4): `overlay/src/camera.ts` (thuần, có test: tỉ lệ nhỏ nhất = bản đồ vừa bề ngang, lớn nhất ×maxZoom; site/overview/tour/ceremony; `CameraDirector` hẹn giờ theo chế độ độ đông, làm mượt theo tâm + log tỉ lệ, rung). `overlay/src/hudLayout.ts` (thuần, có test: khung giao diện trong vùng an toàn, 3 chỗ đặt bảng, `chooseBoardSlot` giữ chỗ cũ nếu không che). Khung vẽ: `ui/hud.ts` (ProgressPanel, CompactBoard, EventBox), `ui/minimap.ts` (ảnh thu nhỏ bằng createImageBitmap resizeQuality high), `ui/screenshot.ts` (phím D + kéo thả ảnh live để so). Server: `OverlayState` có `hud`, `camera` (đã chọn số giây theo `crowd`), `crowd` (tạm luôn "vua" tới giai đoạn 4, `currentCrowd` trong `server/overlay/state.ts`), `eventBox` (+`serverNow` để đếm ngược; `goldenHourEndsAt` trong `shared/events.ts`). Tin `camera` (POST `/api/camera`), tin `contribution` có `coins`. Chỉnh hiển thị: GET/POST `/api/display`. Lọc tên: `shared/names.ts` (`displayName`, NFKC, từ cấm so không dấu), áp dụng ở `overlayName` cho bảng và tin contribution. Mã `tam_quan` là điểm dừng của tour (`TOUR_TARGET_ID`).
 - Ảnh game: `scripts/assets/remove_bg.py` (rembg birefnet-general-lite, cắt từng vật rồi mới tách nền, khử viền trắng) → `assets/work/nobg`; `scripts/assets/build.ts` (sharp, dùng `scripts/slice-sheet.ts` + `scripts/assets/measure.ts`) → `assets/game` + `assets/manifest.json`. Kiểu manifest: `shared/manifest.ts`; kiểm tra/lưu: `server/assets/`. Giá trị chỉnh tay (`tuned: true`, …) được giữ khi chạy lại build.
 - Overlay R1 vẽ tạm bằng hình khối: `overlay/src/scene/site.ts` + `overlay/src/siteLayout.ts`; từ R2 chỉ dùng khi chưa có `manifest.map`.
-- (Tháp cũ, chờ dọn sau R4) Xếp chồng tầng: `overlay/src/towerLayout.ts`, `scene/tower.ts` (nhận `TowerSceneInput`), `scene/background.ts`; chỉ trang `/tools/assets` (`overlay/tools.html` + `overlay/src/tools/main.ts`) còn dùng.
+- Manifest/config của bản tháp cũ: `stripLegacyManifest` (server/assets/manifest.ts) bỏ `background`, `tower`, ảnh `tower/`, `bg/`, khóa căn tầng; `upgradeLegacyConfig` bỏ khóa tháp trong `overlay`. DB tháp cũ: `server/db/legacy.ts`.
 - Máy chủ dự án dùng bảng mã cp932 khi ghi log: script Python phải `reconfigure(encoding='utf-8')` cho stdout.
 - Tự kiểm tra hình overlay: chạy server với `GAME_NO_BROWSER=1`, chụp bằng Edge headless (`--headless=new --user-data-dir=<thư mục nháp> --use-angle=swiftshader --window-size=1080,1920`); nếu ảnh ra đen thì chụp qua CDP.
 

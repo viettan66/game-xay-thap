@@ -83,10 +83,6 @@ export function buildOverlayState(core: GameCore, badge: string | null): Overlay
     labels: { pointUnit: cfg.labels.pointUnitLabel, disclaimer: cfg.labels.disclaimer },
     layout: {
       safeArea: cfg.overlay.safeArea,
-      floor1WidthPx: cfg.overlay.floor1WidthPx,
-      towerTaper: cfg.overlay.towerTaper,
-      towerCenterX: cfg.overlay.towerCenterX,
-      towerBaseY: cfg.overlay.towerBaseY,
       boardRotateSec: cfg.overlay.boardRotateSec,
     },
     hud: {
