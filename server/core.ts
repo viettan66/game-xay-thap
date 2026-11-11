@@ -2,11 +2,13 @@
 // Dùng chung cho server thật (main.ts), script demo và test.
 
 import path from 'node:path';
+import { resolveProject, type ApplyResult, type ProjectFile, type ResolvedProject } from '../shared/project.js';
 import type { LiveEvent } from '../shared/types.js';
 import { createBackup, isDailyBackupDue, listBackups } from './backup.js';
 import type { GameConfig } from './config/schema.js';
-import { ConfigStore, type ConfigChange } from './config/store.js';
+import { ConfigError, ConfigStore, PROJECT_FILE, type ConfigChange } from './config/store.js';
 import { openDatabase, type DB } from './db/database.js';
+import { retireLegacyTowerDb } from './db/legacy.js';
 import { GameEngine, type ProcessResult, type RepricePreview } from './game/engine.js';
 import { silentLogger, type Logger } from './logger.js';
 import { ensureProfileDirs, profilePaths, type ProfileName, type ProfilePaths } from './profile.js';
@@ -21,8 +23,13 @@ export interface CoreOptions {
   logger?: Logger;
 }
 
-export type SaveConfigResult =
-  | { status: 'saved'; changes: ConfigChange[]; repriced: RepricePreview | null }
+export interface SaveConfigResult {
+  status: 'saved';
+  changes: ConfigChange[];
+}
+
+export type SaveProjectResult =
+  | { status: 'saved'; changes: ConfigChange[]; repriced: RepricePreview | null; progress: ApplyResult[] }
   | { status: 'needs_confirmation'; reprice: RepricePreview };
 
 export class GameCore {
@@ -37,6 +44,7 @@ export class GameCore {
   readonly now: () => number;
   private readonly log: Logger;
   private pendingBackups: Promise<unknown>[] = [];
+  private resolved: { file: ProjectFile; project: ResolvedProject } | null = null;
 
   private constructor(o: CoreOptions) {
     this.now = o.now ?? Date.now;
@@ -48,8 +56,13 @@ export class GameCore {
     // Đọc config trước: config lỗi thì dừng ngay, chưa đụng tới DB.
     this.configStore = new ConfigStore(this.configDir);
     this.createdConfigFiles = this.configStore.load();
+    if (this.configStore.upgradedKeys.length > 0) {
+      this.log.info(`Đã dọn khóa của bản tháp cũ khỏi config.json: ${this.configStore.upgradedKeys.join(', ')}`);
+    }
 
     ensureProfileDirs(this.paths);
+    const retired = retireLegacyTowerDb(this.paths.dbFile);
+    if (retired) this.log.info(`Dữ liệu bản tháp cũ được giữ lại ở ${retired}; bắt đầu dữ liệu quần thể chùa mới.`);
     this.db = openDatabase(this.paths.dbFile);
     this.sessions = new SessionManager(this.db, {
       now: this.now,
@@ -63,12 +76,19 @@ export class GameCore {
     this.engine = new GameEngine({
       db: this.db,
       config: () => this.config,
+      project: () => this.project,
       events: () => this.configStore.getEvents(),
       sessionId: () => this.sessions.currentId(),
       now: this.now,
     });
-    this.engine.init();
-    this.sessions.recoverOnBoot();
+    try {
+      this.engine.init();
+      this.sessions.recoverOnBoot();
+    } catch (e) {
+      // project.json không khớp với dữ liệu đã xây: đóng DB rồi báo lỗi (để file không bị giữ khóa).
+      this.db.close();
+      throw e;
+    }
   }
 
   static open(o: CoreOptions): GameCore {
@@ -79,6 +99,13 @@ export class GameCore {
     return this.configStore.get();
   }
 
+  /** Danh sách hạng mục đã ghép mẫu giai đoạn và tính giá (từ config/project.json). */
+  get project(): ResolvedProject {
+    const file = this.configStore.getProject();
+    if (this.resolved?.file !== file) this.resolved = { file, project: resolveProject(file) };
+    return this.resolved.project;
+  }
+
   get profile(): ProfileName {
     return this.paths.profile;
   }
@@ -87,25 +114,42 @@ export class GameCore {
     return this.engine.processEvent(ev);
   }
 
+  /** Lưu config.json mới (kiểm tra bằng zod, ghi nhật ký, áp dụng ngay). */
+  saveConfig(next: unknown, opts: { source: string }): SaveConfigResult {
+    const changes = this.configStore.saveConfig(next);
+    this.logChanges(changes, opts.source);
+    return { status: 'saved', changes };
+  }
+
   /**
-   * Lưu config mới (14.10). Nếu giá tầng ĐANG xây thay đổi mà chưa có xác nhận,
-   * trả về "needs_confirmation" và KHÔNG lưu gì. confirmReprice = false: lưu config,
-   * giữ giá cũ cho tầng đang xây (chỉ tầng sau dùng giá mới).
+   * Lưu danh sách hạng mục mới (14.10, 14.12).
+   * - Hạng mục đã bắt đầu không được xóa, đổi thứ tự, đổi số giai đoạn: báo lỗi, không lưu.
+   * - Giá giai đoạn ĐANG xây thay đổi mà chưa có xác nhận: trả về "needs_confirmation", không lưu gì.
+   *   confirmReprice = true: tính lại theo giá mới (đủ điểm thì xong ngay, dư chuyển tiếp).
+   *   confirmReprice = false: giai đoạn đang xây giữ giá cũ, các giai đoạn sau dùng giá mới.
+   * - Công trình đã xong mà danh sách có thêm hạng mục: mở hạng mục mới.
    */
-  saveConfig(next: unknown, opts: { source: string; confirmReprice?: boolean }): SaveConfigResult {
-    const valid = this.configStore.validateConfig(next);
-    const reprice = this.engine.previewReprice(valid.tower);
+  saveProject(next: unknown, opts: { source: string; confirmReprice?: boolean }): SaveProjectResult {
+    const valid = this.configStore.validateProject(next);
+    const project = resolveProject(valid);
+    const problems = this.engine.projectProblems(project);
+    if (problems.length > 0) throw new ConfigError(PROJECT_FILE, problems);
+    const reprice = this.engine.previewReprice(project);
     if (reprice && opts.confirmReprice === undefined) return { status: 'needs_confirmation', reprice };
 
-    const changes = this.configStore.saveConfig(valid);
+    const changes = this.configStore.saveProject(valid);
     this.logChanges(changes, opts.source);
+    const progress: ApplyResult[] = [];
     let repriced: RepricePreview | null = null;
     if (reprice && opts.confirmReprice) {
-      this.engine.applyReprice(valid.tower);
+      const r = this.engine.applyReprice(this.project);
+      if (r) progress.push(r);
       repriced = reprice;
-      this.log.info(`Đổi giá tầng ${reprice.floor}: ${reprice.oldCost} → ${reprice.newCost}`);
+      this.log.info(`Đổi giá giai đoạn ${reprice.stageIndex + 1} của "${reprice.itemName}": ${reprice.oldCost} → ${reprice.newCost}`);
     }
-    return { status: 'saved', changes, repriced };
+    const extended = this.engine.syncProject();
+    if (extended) progress.push(extended);
+    return { status: 'saved', changes, repriced, progress };
   }
 
   saveEvents(next: unknown, opts: { source: string }): ConfigChange[] {

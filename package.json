@@ -2,7 +2,7 @@
   "name": "bao-thap-thien-phuc",
   "version": "0.1.0",
   "private": true,
-  "description": "Bảo Tháp Thiên Phúc – overlay game livestream xây tháp 100 tầng",
+  "description": "Đại Danh Lam Thiên Phúc – overlay game livestream xây quần thể chùa",
   "type": "module",
   "engines": {
     "node": ">=22.12"

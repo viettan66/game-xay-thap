@@ -1,0 +1,189 @@
+{
+  "name": "Đại Danh Lam Thiên Phúc",
+  "baseUnit": 20000,
+  "costRoundTo": 100,
+  "stageTemplates": {
+    "lon": [
+      { "name": "Phát quang, cắm mốc", "ritual": "Lễ khởi công", "visual": { "kind": "markers" } },
+      { "name": "Đào móng", "visual": { "kind": "foundation" } },
+      { "name": "Đổ móng, kè đá", "visual": { "kind": "foundation" } },
+      { "name": "Xây bó nền, bậc thềm", "visual": { "kind": "foundation" } },
+      { "name": "Kê chân tảng", "visual": { "kind": "foundation" } },
+      { "name": "Dựng cột cái, cột quân", "ritual": "Lễ dựng cột", "visual": { "kind": "frame" } },
+      { "name": "Lắp xà, kèo, vì kèo", "visual": { "kind": "frame" } },
+      { "name": "Thượng lương", "ritual": "Lễ thượng lương", "visual": { "kind": "frame" } },
+      { "name": "Lắp hoành, rui, mè", "visual": { "kind": "frame" } },
+      { "name": "Lợp ngói", "visual": { "kind": "roof" } },
+      { "name": "Đắp bờ nóc, đầu đao", "visual": { "kind": "roof" } },
+      { "name": "Xây tường, lắp cửa bức bàn", "visual": { "kind": "build" } },
+      { "name": "Lát nền gạch", "visual": { "kind": "build" } },
+      { "name": "Chạm khắc, sơn son thếp vàng", "visual": { "kind": "decorate" } },
+      { "name": "Treo hoành phi, câu đối, đèn lồng", "visual": { "kind": "decorate" } },
+      { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+    ],
+    "vua": [
+      { "name": "Phát quang, cắm mốc", "visual": { "kind": "markers" } },
+      { "name": "Đào và đổ móng", "visual": { "kind": "foundation" } },
+      { "name": "Xây bó nền, bậc thềm", "visual": { "kind": "foundation" } },
+      { "name": "Kê chân tảng", "visual": { "kind": "foundation" } },
+      { "name": "Dựng cột", "ritual": "Lễ dựng cột", "visual": { "kind": "frame" } },
+      { "name": "Lắp khung xà kèo, thượng lương", "ritual": "Lễ thượng lương", "visual": { "kind": "frame" } },
+      { "name": "Lợp ngói", "visual": { "kind": "roof" } },
+      { "name": "Xây tường, lắp cửa", "visual": { "kind": "build" } },
+      { "name": "Trang trí, sơn son", "visual": { "kind": "decorate" } },
+      { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+    ],
+    "nho": [
+      { "name": "Cắm mốc, chuẩn bị", "visual": { "kind": "markers" } },
+      { "name": "Làm nền", "visual": { "kind": "foundation" } },
+      { "name": "Thi công", "visual": { "kind": "build" } },
+      { "name": "Trang trí", "visual": { "kind": "decorate" } },
+      { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+    ],
+    "thap_tang": [
+      { "name": "Tập kết gạch", "visual": { "kind": "markers" } },
+      { "name": "Xây thân tầng", "visual": { "kind": "build" } },
+      { "name": "Trổ cửa vòm", "visual": { "kind": "build" } },
+      { "name": "Lợp mái hiên", "visual": { "kind": "roof" } },
+      { "name": "Gắn đèn, chuông gió", "visual": { "kind": "decorate" } },
+      { "name": "Hoàn thành tầng", "visual": { "kind": "finish" } }
+    ]
+  },
+  "items": [
+    {
+      "id": "san_nen",
+      "name": "San nền công trường",
+      "cost": 40000,
+      "size": "nho",
+      "area": "toan_khu",
+      "stages": [
+        { "name": "Phát quang, cắm mốc", "ritual": "Lễ khởi công", "visual": { "kind": "markers" } },
+        { "name": "San ủi mặt bằng", "visual": { "kind": "foundation" } },
+        { "name": "Đầm nền", "visual": { "kind": "foundation" } },
+        { "name": "Đào rãnh thoát nước", "visual": { "kind": "build" } },
+        { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+      ]
+    },
+    {
+      "id": "be_bo_de",
+      "name": "Bệ cây bồ đề",
+      "cost": 40000,
+      "size": "nho",
+      "area": "san_giua",
+      "stages": [
+        { "name": "Dọn quanh gốc cây", "visual": { "kind": "markers" } },
+        { "name": "Đào móng bệ", "visual": { "kind": "foundation" } },
+        { "name": "Xếp đá bát giác", "visual": { "kind": "build" } },
+        { "name": "Lát mặt bệ", "visual": { "kind": "decorate" } },
+        { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+      ]
+    },
+    {
+      "id": "san_gach",
+      "name": "Sân gạch",
+      "cost": 60000,
+      "size": "nho",
+      "area": "san_giua",
+      "stages": [
+        { "name": "Cắm mốc, căng dây", "visual": { "kind": "markers" } },
+        { "name": "San phẳng, đầm nền", "visual": { "kind": "foundation" } },
+        { "name": "Rải cát lót", "visual": { "kind": "foundation" } },
+        { "name": "Lát gạch", "visual": { "kind": "build" } },
+        { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+      ]
+    },
+    { "id": "tam_quan", "name": "Cổng tam quan", "cost": 160000, "size": "vua", "area": "cong", "template": "vua" },
+    {
+      "id": "ho_sen",
+      "name": "Hồ sen",
+      "cost": 60000,
+      "size": "nho",
+      "area": "ho_sen",
+      "stages": [
+        { "name": "Đào hồ", "visual": { "kind": "foundation" } },
+        { "name": "Kè đá bờ hồ", "visual": { "kind": "build" } },
+        { "name": "Dẫn nước", "visual": { "kind": "build" } },
+        { "name": "Trồng sen", "visual": { "kind": "decorate" } },
+        { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+      ]
+    },
+    {
+      "id": "cau_da",
+      "name": "Cầu đá",
+      "cost": 40000,
+      "size": "nho",
+      "area": "ho_sen",
+      "stages": [
+        { "name": "Đóng cọc", "visual": { "kind": "markers" } },
+        { "name": "Xây trụ cầu", "visual": { "kind": "foundation" } },
+        { "name": "Bắc dầm đá", "visual": { "kind": "build" } },
+        { "name": "Lát mặt cầu, lan can", "visual": { "kind": "decorate" } },
+        { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+      ]
+    },
+    {
+      "id": "tuong_bao",
+      "name": "Tường bao",
+      "cost": 60000,
+      "size": "nho",
+      "area": "cong",
+      "stages": [
+        { "name": "Cắm mốc, đào móng", "visual": { "kind": "markers" } },
+        { "name": "Xây chân tường", "visual": { "kind": "foundation" } },
+        { "name": "Xây thân tường", "visual": { "kind": "build" } },
+        { "name": "Lợp mái tường, trổ hoa", "visual": { "kind": "roof" } },
+        { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+      ]
+    },
+    { "id": "gac_chuong", "name": "Gác chuông", "cost": 120000, "size": "vua", "area": "hai_gac", "template": "vua" },
+    { "id": "gac_trong", "name": "Gác trống", "cost": 120000, "size": "vua", "area": "hai_gac", "template": "vua" },
+    {
+      "id": "su_tu_da",
+      "name": "Đôi sư tử đá",
+      "cost": 40000,
+      "size": "nho",
+      "area": "san_giua",
+      "stages": [
+        { "name": "Chọn đá", "visual": { "kind": "markers" } },
+        { "name": "Đục phôi", "visual": { "kind": "frame" } },
+        { "name": "Chạm khắc", "visual": { "kind": "build" } },
+        { "name": "Dựng bệ, đặt tượng", "visual": { "kind": "decorate" } },
+        { "name": "Hoàn thiện", "visual": { "kind": "finish" } }
+      ]
+    },
+    { "id": "chinh_dien", "name": "Chính điện & Tiền đường", "cost": 800000, "size": "lon", "area": "chinh_dien", "template": "lon" },
+    { "id": "hanh_lang_tay", "name": "Hành lang Tây", "cost": 120000, "size": "vua", "area": "hanh_lang", "template": "vua" },
+    { "id": "hanh_lang_dong", "name": "Hành lang Đông", "cost": 120000, "size": "vua", "area": "hanh_lang", "template": "vua" },
+    { "id": "nha_to", "name": "Nhà tổ", "cost": 160000, "size": "vua", "area": "nha_to", "template": "vua" },
+    {
+      "id": "thap_tang_1",
+      "name": "Bảo tháp – Tầng 1",
+      "cost": 80000,
+      "size": "nho",
+      "area": "bao_thap",
+      "template": "thap_tang",
+      "stagesBefore": [
+        { "name": "Đắp nền tháp", "visual": { "kind": "foundation" } },
+        { "name": "Xây bậc đá", "visual": { "kind": "foundation" } }
+      ]
+    },
+    { "id": "thap_tang_2", "name": "Bảo tháp – Tầng 2", "cost": 80000, "size": "nho", "area": "bao_thap", "template": "thap_tang" },
+    { "id": "thap_tang_3", "name": "Bảo tháp – Tầng 3", "cost": 80000, "size": "nho", "area": "bao_thap", "template": "thap_tang" },
+    { "id": "thap_tang_4", "name": "Bảo tháp – Tầng 4", "cost": 80000, "size": "nho", "area": "bao_thap", "template": "thap_tang" },
+    { "id": "thap_tang_5", "name": "Bảo tháp – Tầng 5", "cost": 80000, "size": "nho", "area": "bao_thap", "template": "thap_tang" },
+    { "id": "thap_tang_6", "name": "Bảo tháp – Tầng 6", "cost": 80000, "size": "nho", "area": "bao_thap", "template": "thap_tang" },
+    { "id": "thap_tang_7", "name": "Bảo tháp – Tầng 7", "cost": 80000, "size": "nho", "area": "bao_thap", "template": "thap_tang" },
+    { "id": "thap_tang_8", "name": "Bảo tháp – Tầng 8", "cost": 80000, "size": "nho", "area": "bao_thap", "template": "thap_tang" },
+    {
+      "id": "thap_tang_9",
+      "name": "Bảo tháp – Tầng 9",
+      "cost": 80000,
+      "size": "lon",
+      "area": "bao_thap",
+      "template": "thap_tang",
+      "stagesAfter": [
+        { "name": "Đặt chóp tháp", "ritual": "Lễ đặt chóp tháp", "visual": { "kind": "finish" } }
+      ]
+    }
+  ]
+}

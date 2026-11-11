@@ -37,7 +37,7 @@ export async function createBackup(o: BackupOptions): Promise<string> {
   const folder = path.join(o.backupsDir, name);
   fs.mkdirSync(folder, { recursive: true });
   await o.db.backup(path.join(folder, 'game.db'));
-  for (const f of ['config.json', 'events.json']) {
+  for (const f of ['config.json', 'events.json', 'project.json']) {
     const src = path.join(o.configDir, f);
     if (fs.existsSync(src)) fs.copyFileSync(src, path.join(folder, f));
   }

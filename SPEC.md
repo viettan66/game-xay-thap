@@ -899,3 +899,35 @@ Sau đó tiếp tục:
 8. **Kiểm thử chịu tải:** simulator chạy 8 giờ, đo fps và bộ nhớ, sửa lỗi.
 
 Sau mỗi giai đoạn: chạy test, cập nhật `README.md`, commit git, tóm tắt cho chủ dự án những gì đã làm và cần kiểm tra gì.
+
+## 16. Nhật ký quyết định
+
+Các quyết định dưới đây được ưu tiên hơn chữ ở các mục trên nếu hai bên khác nhau.
+
+**2026-11-10 (bản tháp cũ, chủ dự án xác nhận giữ nguyên cho quần thể chùa ngày 2026-11-11):**
+1. Node.js 24 LTS (code cần tối thiểu 22.12, nên mục 1 ghi "Node.js 20+" không còn đúng).
+2. Hệ số nhân áp dụng cho mọi nguồn; trần tim + comment tính trên điểm gốc (mục 4).
+3. Làm tròn từng sự kiện, từ 0,5 trở lên làm tròn lên (mục 4).
+4. Giá làm tròn đến hàng trăm: nay là giá từng giai đoạn (`costRoundTo` trong `project.json`).
+5. Giữ cân đối điểm; quà rất lớn vẫn được vượt nhiều giai đoạn và hạng mục (14.4).
+6. "Giờ hoàng đạo" là khung giờ tự đặt; nhãn mặc định "Giờ vàng" (mục 4).
+7. Danh hiệu dùng từ công trường: Thợ phụ, Thợ cả, Đốc công, Đại đốc công, Tổng công trình sư (thay cho Thí chủ, Cư sĩ, Hộ pháp… ở mục 9, vì danh hiệu lên theo quà không được dùng từ nhà Phật). "Bia công đức" → "Bia ghi danh" (mục 9C, 10). Vẫn đổi được trong config.
+8. Dữ liệu tách theo hồ sơ `data/production/`, `data/test/`, mỗi hồ sơ có `backups/` riêng; config dùng chung; `start.bat` và `start-test.bat` (14.2).
+9. Không làm `start.sh` (14.1).
+10. Đổi giá giai đoạn đang xây (14.10): điểm đã góp giữ nguyên; giá mới ≤ điểm đã có thì giai đoạn xong ngay, phần dư chuyển sang giai đoạn sau; giá mới cao hơn thì phần trăm tụt. Không xác nhận thì giai đoạn đang xây giữ giá cũ, giai đoạn sau dùng giá mới.
+11. Tết tính từ ngày cuối tháng Chạp (có năm tháng Chạp chỉ có 29 ngày), không viết cứng "30 tháng Chạp" (14.11).
+12. Cộng điểm tay có ô "tính vào công trình"; trừ tay không làm công trình lùi (mục 11).
+13. Trụ trì hiển thị "Thầy trụ trì", không tên riêng (mục 9).
+14. Không có mục 13 (đánh số nhảy, không sót nội dung).
+- Mặc định khác: config mặc định trong `config/defaults/`; giữ 30 bản backup; comment lệnh tra cứu vẫn tính công; ngưỡng "quà rất lớn" ≥ 1.000 xu.
+
+**2026-11-11 (đổi hướng sang quần thể chùa, trước R1):**
+15. Tượng ghi danh cho quà ≥ 5.000 xu hiển thị là "tượng võ tướng đá" (ảnh `honor_statues` là 3 tượng võ tướng), không dùng "tượng hộ pháp" vì gắn với quà.
+16. `game_state` lưu hạng mục đang xây bằng `current_item_id` (không bằng số thứ tự), đúng tinh thần "nhận diện bằng id" của mục 6.
+17. Giá mặc định (đơn vị 20.000 công): San nền 2, Bệ cây bồ đề 2, Sân gạch 3, Cổng tam quan 8, Hồ sen 3, Cầu đá 2, Tường bao 3, Gác chuông 6, Gác trống 6, Đôi sư tử đá 2, Chính điện & Tiền đường 40, Hành lang Tây 6, Hành lang Đông 6, Nhà tổ 8, mỗi tầng bảo tháp 4. Tổng 133 đơn vị = 2.660.000 công, 168 giai đoạn.
+18. Tên 5 giai đoạn của từng hạng mục `nho` và `visual.kind` mặc định do Claude Code đặt (sửa được trong `project.json`). Tầng 9 bảo tháp dùng `size: lon` để lễ xong hạng mục dài 25 giây như mục 10.
+19. Chú tiểu (tu sĩ) chỉ dùng làm NPC không tên; nhân vật của người xem không dùng hình chú tiểu.
+20. Ảnh gốc giữ nguyên tên tiếng Việt trong `assets/raw/`; script dựng ảnh dùng bảng ánh xạ tên ở mục 7 → file thật. `tower_spire.png` còn ở thư mục gốc: bỏ qua, không dùng. `promo_ceremony.png` chỉ là ảnh tham khảo.
+21. Ghi chú "đã code tới giữa giai đoạn 4" ở đầu file không đúng: bản tháp mới xong giai đoạn 3 (tag `thap-100-tang`), không có phần giai đoạn 4 cũ để chuyển sang.
+22. R1: chưa có dữ liệu production thật nên DB tháp cũ được đổi tên thành `game.thap-cu.db` (giữ lại), game tạo DB mới; `config.json` cũ tự được dọn các khóa của tháp.
+23. Không đưa code lên GitHub khi chưa được chủ dự án đồng ý (repo đang công khai).

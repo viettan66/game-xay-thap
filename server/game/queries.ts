@@ -38,23 +38,49 @@ export function topSession(db: DB, sessionId: number, limit: number): LeaderRow[
   );
 }
 
-export function topFloor(db: DB, floor: number, limit: number): LeaderRow[] {
+/** Bia hạng mục: top người góp vào một hạng mục. */
+export function topItem(db: DB, itemId: string, limit: number): LeaderRow[] {
   return withRank(
     db
-      .prepare<[number, number], RawRow>(
-        `SELECT f.platform_id AS platformId, u.nickname, u.avatar_url AS avatarUrl, f.points
-         FROM floor_contributions f JOIN users u ON u.platform_id = f.platform_id
-         WHERE f.floor = ? AND f.points > 0
-         ORDER BY f.points DESC, f.reached_seq ASC LIMIT ?`,
+      .prepare<[string, number], RawRow>(
+        `SELECT c.platform_id AS platformId, u.nickname, u.avatar_url AS avatarUrl, c.points
+         FROM item_contributions c JOIN users u ON u.platform_id = c.platform_id
+         WHERE c.item_id = ? AND c.points > 0
+         ORDER BY c.points DESC, c.reached_seq ASC LIMIT ?`,
       )
-      .all(floor, limit),
+      .all(itemId, limit),
   );
 }
 
-export function floorContributorCount(db: DB, floor: number): number {
+/** Bia giai đoạn (cho giai đoạn có lễ): top người góp vào một giai đoạn. stageIndex đếm từ 0. */
+export function topStage(db: DB, itemId: string, stageIndex: number, limit: number): LeaderRow[] {
+  return withRank(
+    db
+      .prepare<[string, number, number], RawRow>(
+        `SELECT c.platform_id AS platformId, u.nickname, u.avatar_url AS avatarUrl, c.points
+         FROM stage_contributions c JOIN users u ON u.platform_id = c.platform_id
+         WHERE c.item_id = ? AND c.stage_index = ? AND c.points > 0
+         ORDER BY c.points DESC, c.reached_seq ASC LIMIT ?`,
+      )
+      .all(itemId, stageIndex, limit),
+  );
+}
+
+/** Số người đã góp vào hạng mục (dòng "…và N thiện hữu khác" trên bia). */
+export function itemContributorCount(db: DB, itemId: string): number {
   return (
     db
-      .prepare<[number], { n: number }>('SELECT COUNT(*) AS n FROM floor_contributions WHERE floor = ? AND points > 0')
-      .get(floor)?.n ?? 0
+      .prepare<[string], { n: number }>('SELECT COUNT(*) AS n FROM item_contributions WHERE item_id = ? AND points > 0')
+      .get(itemId)?.n ?? 0
+  );
+}
+
+export function stageContributorCount(db: DB, itemId: string, stageIndex: number): number {
+  return (
+    db
+      .prepare<[string, number], { n: number }>(
+        'SELECT COUNT(*) AS n FROM stage_contributions WHERE item_id = ? AND stage_index = ? AND points > 0',
+      )
+      .get(itemId, stageIndex)?.n ?? 0
   );
 }

@@ -2,7 +2,7 @@
 // để không phải tính lại bảng xếp hạng sau từng sự kiện một (mục 12 SPEC).
 
 import type { OverlayState, ServerMessage } from '../../shared/protocol.js';
-import type { TowerTransition } from '../../shared/tower.js';
+import type { ProgressTransition } from '../../shared/project.js';
 
 export class StateBroadcaster {
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -27,9 +27,9 @@ export class StateBroadcaster {
     this.timer = setTimeout(() => this.flush(), wait);
   }
 
-  /** Báo tầng/giai đoạn vừa xong (để overlay chớp sáng), gửi ngay. */
-  tower(transitions: TowerTransition[]): void {
-    if (transitions.length > 0) this.sendAll({ type: 'tower', transitions });
+  /** Báo giai đoạn / hạng mục vừa xong (để overlay chớp sáng), gửi ngay. */
+  progress(transitions: ProgressTransition[]): void {
+    if (transitions.length > 0) this.sendAll({ type: 'progress', transitions });
   }
 
   flush(): void {

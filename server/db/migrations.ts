@@ -1,5 +1,9 @@
 // Các bước nâng cấp cấu trúc DB (migration). Chỉ THÊM bước mới ở cuối, không sửa bước cũ,
 // vì DB của chủ dự án đã chạy các bước cũ rồi. Số phiên bản lưu trong PRAGMA user_version.
+//
+// Lịch sử: bản tháp 100 tầng (tag thap-100-tang) có cấu trúc khác (bảng floors…). Khi đổi sang quần thể chùa
+// (giai đoạn R1, 2026-11-11) chưa có dữ liệu production thật nên cấu trúc được viết lại từ đầu; DB tháp cũ
+// được đổi tên giữ lại, không nâng cấp (xem legacy.ts).
 
 export interface Migration {
   version: number;
@@ -10,7 +14,7 @@ export interface Migration {
 export const MIGRATIONS: Migration[] = [
   {
     version: 1,
-    name: 'Khởi tạo bảng (giai đoạn 1)',
+    name: 'Khởi tạo bảng quần thể chùa (giai đoạn R1)',
     sql: `
       CREATE TABLE users (
         platform_id             TEXT PRIMARY KEY,
@@ -37,6 +41,7 @@ export const MIGRATIONS: Migration[] = [
         end_reason   TEXT
       );
 
+      -- Nhật ký đầy đủ để tra soát. item_id, stage_index: hạng mục và giai đoạn đang xây lúc sự kiện đến.
       CREATE TABLE events (
         id              INTEGER PRIMARY KEY AUTOINCREMENT,
         ts              INTEGER NOT NULL,
@@ -48,28 +53,48 @@ export const MIGRATIONS: Migration[] = [
         base_points     INTEGER NOT NULL DEFAULT 0,
         multiplier      REAL NOT NULL DEFAULT 1,
         points          INTEGER NOT NULL DEFAULT 0,
-        floor           INTEGER,
-        stage           INTEGER,
+        item_id         TEXT,
+        stage_index     INTEGER,
         note            TEXT
       );
       CREATE INDEX events_user ON events (platform_id, ts);
       CREATE INDEX events_ts ON events (ts);
 
-      CREATE TABLE floors (
-        floor        INTEGER PRIMARY KEY,
-        cost         INTEGER NOT NULL,
+      -- Hạng mục và giai đoạn đã bắt đầu (thứ tự dòng = thứ tự xây), kèm giá đã chốt của từng giai đoạn.
+      CREATE TABLE items (
+        item_id      TEXT PRIMARY KEY,
+        stage_count  INTEGER NOT NULL,
         started_at   INTEGER NOT NULL,
         completed_at INTEGER
       );
+      CREATE TABLE stages (
+        item_id      TEXT NOT NULL,
+        stage_index  INTEGER NOT NULL,
+        cost         INTEGER NOT NULL,
+        started_at   INTEGER NOT NULL,
+        completed_at INTEGER,
+        PRIMARY KEY (item_id, stage_index)
+      );
 
-      CREATE TABLE floor_contributions (
-        floor       INTEGER NOT NULL,
+      CREATE TABLE item_contributions (
+        item_id     TEXT NOT NULL,
         platform_id TEXT NOT NULL,
         points      INTEGER NOT NULL DEFAULT 0,
         reached_seq INTEGER NOT NULL DEFAULT 0,
-        PRIMARY KEY (floor, platform_id)
+        PRIMARY KEY (item_id, platform_id)
       );
-      CREATE INDEX floor_contributions_rank ON floor_contributions (floor, points DESC, reached_seq ASC);
+      CREATE INDEX item_contributions_rank ON item_contributions (item_id, points DESC, reached_seq ASC);
+
+      -- Dùng cho bia của các giai đoạn có lễ (mục 10).
+      CREATE TABLE stage_contributions (
+        item_id     TEXT NOT NULL,
+        stage_index INTEGER NOT NULL,
+        platform_id TEXT NOT NULL,
+        points      INTEGER NOT NULL DEFAULT 0,
+        reached_seq INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (item_id, stage_index, platform_id)
+      );
+      CREATE INDEX stage_contributions_rank ON stage_contributions (item_id, stage_index, points DESC, reached_seq ASC);
 
       CREATE TABLE session_contributions (
         session_id  INTEGER NOT NULL REFERENCES sessions (id),
@@ -87,12 +112,13 @@ export const MIGRATIONS: Migration[] = [
         PRIMARY KEY (day, platform_id)
       );
 
+      -- Hạng mục đang xây lưu bằng id (không bằng số thứ tự) để đổi thứ tự hay chèn hạng mục không làm lệch.
       CREATE TABLE game_state (
         id                  INTEGER PRIMARY KEY CHECK (id = 1),
-        current_floor       INTEGER NOT NULL,
-        current_stage       INTEGER NOT NULL,
-        floor_points        INTEGER NOT NULL,
-        floor_cost          INTEGER NOT NULL,
+        current_item_id     TEXT NOT NULL,
+        current_stage_index INTEGER NOT NULL,
+        stage_points        INTEGER NOT NULL,
+        stage_cost          INTEGER NOT NULL,
         total_points        INTEGER NOT NULL,
         started_at          INTEGER NOT NULL,
         completed_at        INTEGER,
@@ -108,12 +134,7 @@ export const MIGRATIONS: Migration[] = [
         new_json TEXT,
         source   TEXT NOT NULL
       );
-    `,
-  },
-  {
-    version: 2,
-    name: 'Thiết lập riêng của từng hồ sơ (giai đoạn 2)',
-    sql: `
+
       CREATE TABLE settings (
         key        TEXT PRIMARY KEY,
         value_json TEXT NOT NULL

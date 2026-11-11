@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { GameCore } from '../server/core.js';
 import type { GameConfig } from '../server/config/schema.js';
+import type { ProjectFile } from '../shared/project.js';
 import type { LiveUser } from '../shared/types.js';
 
 export const REPO_ROOT = path.resolve(import.meta.dirname, '..');
@@ -36,6 +37,12 @@ export function openTestCore(root: string, clock: FakeClock, patch?: (c: GameCon
     fs.writeFileSync(path.join(root, 'config', 'config.json'), JSON.stringify(cfg));
   }
   return GameCore.open({ rootDir: root, profile: 'test', now: clock.now });
+}
+
+/** Ghi config/project.json (danh sách hạng mục) cho test. */
+export function writeProject(root: string, project: ProjectFile): void {
+  fs.mkdirSync(path.join(root, 'config'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'config', 'project.json'), JSON.stringify(project));
 }
 
 /** Tắt mọi sự kiện nhân điểm để test không phụ thuộc ngày âm lịch. */

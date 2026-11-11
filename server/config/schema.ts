@@ -2,6 +2,7 @@
 // Các giai đoạn sau sẽ bổ sung khóa mới; giá trị mặc định nằm trong config/defaults/.
 
 import { z } from 'zod';
+import { ITEM_SIZES, projectProblems, VISUAL_KINDS, type ProjectFile } from '../../shared/project.js';
 
 z.config(z.locales.vi());
 
@@ -35,21 +36,6 @@ export const configSchema = z.strictObject({
     multiplier: z.number().min(1).max(20),
     schedule: z.array(z.strictObject({ weekdays, from: hhmm, to: hhmm })),
   }),
-  tower: z
-    .strictObject({
-      totalFloors: int(1).max(1000),
-      foundationCost: int(1),
-      baseFloorCost: int(1),
-      tierSize: int(1),
-      tierIncreasePct: z.number().min(0).max(1000),
-      costRoundTo: int(1),
-      stageRatios: z.array(z.number().positive()).length(5),
-      floorCostOverrides: z.record(z.string().regex(/^\d+$/, 'Số tầng phải là số'), int(1)),
-    })
-    .refine(
-      (t) => Object.keys(t.floorCostOverrides).every((k) => Number(k) <= t.totalFloors),
-      { message: 'floorCostOverrides có tầng lớn hơn totalFloors', path: ['floorCostOverrides'] },
-    ),
   session: z.strictObject({
     autoEndOfflineMin: z.number().min(1).max(24 * 60),
   }),
@@ -59,6 +45,7 @@ export const configSchema = z.strictObject({
   }),
   overlay: z.strictObject({
     safeArea: z.strictObject({ top: int(0).max(960), bottom: int(0).max(960), right: int(0).max(540) }),
+    // Thông số tháp cũ: chỉ trang /tools/assets còn dùng; bỏ khi dọn code tháp sau R4.
     floor1WidthPx: int(100).max(1000),
     towerTaper: z.number().min(0.9).max(1),
     towerCenterX: int(0).max(1080),
@@ -74,14 +61,16 @@ export const configSchema = z.strictObject({
     anonymousName: z.string().min(1),
     testBadge: z.string().min(1),
     rehearsalBadge: z.string().min(1),
-    foundationName: z.string().min(1),
-    floorName: z.string().includes('{floor}', { message: 'Phải chứa {floor}' }),
-    foundationStages: z.array(z.string().min(1)).length(5),
-    floorStages: z.array(z.string().min(1)).length(5),
+    progress: z.strictObject({
+      item: z.string().min(1),
+      stage: z.string().min(1),
+      project: z.string().min(1),
+      completed: z.string().min(1),
+    }),
     boards: z.strictObject({
       sessionTop: z.string().min(1),
       totalTop: z.string().min(1),
-      floorTop: z.string().min(1),
+      itemTop: z.string().min(1),
     }),
   }),
 });
@@ -119,7 +108,47 @@ export const eventsFileSchema = z
 
 export type EventsFile = z.infer<typeof eventsFileSchema>;
 
-/** Đổi lỗi zod thành danh sách dòng dễ đọc: "tower.baseFloorCost: …". */
+// ---- config/project.json: danh sách hạng mục, mẫu giai đoạn, giá (mục 5) ----
+
+const slug = (what: string) => z.string().regex(/^[a-z0-9_]+$/, `${what} chỉ gồm chữ thường không dấu, số và dấu _`);
+
+const stageDefSchema = z.strictObject({
+  name: z.string().min(1),
+  weight: z.number().positive().optional(),
+  ritual: z.string().min(1).optional(),
+  visual: z.strictObject({ kind: z.enum(VISUAL_KINDS) }).optional(),
+});
+
+const itemDefSchema = z.strictObject({
+  id: slug('id hạng mục'),
+  name: z.string().min(1),
+  cost: int(1),
+  size: z.enum(ITEM_SIZES),
+  area: slug('area'),
+  template: z.string().min(1).optional(),
+  stages: z.array(stageDefSchema).min(1).optional(),
+  stagesBefore: z.array(stageDefSchema).optional(),
+  stagesAfter: z.array(stageDefSchema).optional(),
+});
+
+export const projectFileSchema = z
+  .strictObject({
+    name: z.string().min(1),
+    baseUnit: int(1),
+    costRoundTo: int(1),
+    stageTemplates: z.record(slug('Tên mẫu giai đoạn'), z.array(stageDefSchema).min(1)),
+    items: z.array(itemDefSchema).min(1),
+  })
+  .superRefine((p, ctx) => {
+    for (const message of projectProblems(p)) ctx.addIssue({ code: 'custom', message, path: ['items'] });
+  });
+
+// Kiểu suy ra từ zod phải khớp kiểu dùng trong shared/project.ts.
+export type ProjectFileInput = z.infer<typeof projectFileSchema>;
+const _projectTypeCheck = (p: ProjectFileInput): ProjectFile => p;
+void _projectTypeCheck;
+
+/** Đổi lỗi zod thành danh sách dòng dễ đọc: "points.likePoints: …". */
 export function formatZodError(err: z.ZodError): string[] {
   return err.issues.map((i) => {
     const path = i.path.map(String).join('.');

@@ -20,15 +20,20 @@ afterEach(async () => {
 });
 
 describe('trạng thái gửi xuống overlay', () => {
-  it('có tiến độ tháp, 3 bảng theo thứ tự, nhãn và bố cục lấy từ config', () => {
+  it('có tiến độ công trình, 3 bảng theo thứ tự, nhãn và bố cục lấy từ config', () => {
     disableEvents(root);
     core = openTestCore(root, clock);
     const s = buildOverlayState(core, 'CHẾ ĐỘ THỬ');
     expect(s.badge).toBe('CHẾ ĐỘ THỬ');
-    expect(s.tower).toMatchObject({ floor: 0, floorName: 'Nền móng', stageName: 'Dọn mặt bằng' });
-    expect(s.boards.map((b) => b.key)).toEqual(['session', 'total', 'floor']);
-    expect(s.boards.map((b) => b.title)).toEqual(['Top phiên này', 'Bảng góp công', 'Bia ghi danh – Nền móng']);
-    expect(s.labels).toEqual({ pointUnit: 'công', disclaimer: 'Trò chơi mô phỏng xây tháp – không phải quyên góp tôn giáo' });
+    expect(s.progress).toMatchObject({
+      item: { id: 'san_nen', number: 1, count: 23 },
+      stage: { number: 1, count: 5, name: 'Phát quang, cắm mốc' },
+      lines: { item: 'Hạng mục 1/23 · San nền công trường', stage: 'Giai đoạn 1/5: Phát quang, cắm mốc', project: 'Toàn công trình 0%' },
+    });
+    expect(s.progress.items).toHaveLength(23);
+    expect(s.boards.map((b) => b.key)).toEqual(['session', 'total', 'item']);
+    expect(s.boards.map((b) => b.title)).toEqual(['Top phiên này', 'Bảng góp công', 'Bia ghi danh – San nền công trường']);
+    expect(s.labels).toEqual({ pointUnit: 'công', disclaimer: 'Trò chơi mô phỏng xây chùa – không phải quyên góp tôn giáo' });
     expect(s.layout).toEqual({
       safeArea: { top: 180, bottom: 600, right: 150 },
       floor1WidthPx: 520,
@@ -60,10 +65,12 @@ describe('trạng thái gửi xuống overlay', () => {
     const next = structuredClone(core.config);
     next.labels.pointUnitLabel = 'công đức';
     next.labels.boards.totalTop = 'Bảng vàng';
+    next.labels.progress.item = '{item} ({number}/{count})';
     core.saveConfig(next, { source: 'test' });
     const s = buildOverlayState(core, null);
     expect(s.labels.pointUnit).toBe('công đức');
     expect(s.boards[1]!.title).toBe('Bảng vàng');
+    expect(s.progress.lines.item).toBe('San nền công trường (1/23)');
   });
 
   it('hiện hệ số đang áp dụng: giờ vàng, sự kiện', () => {
@@ -110,11 +117,11 @@ describe('gộp tin gửi xuống overlay', () => {
     b.close();
   });
 
-  it('báo tầng/giai đoạn vừa xong thì gửi ngay', () => {
+  it('báo giai đoạn / hạng mục vừa xong thì gửi ngay', () => {
     const sent: ServerMessage[] = [];
     const b = new StateBroadcaster(() => ({}) as OverlayState, (m) => sent.push(m));
-    b.tower([]);
-    b.tower([{ type: 'floor_complete', floor: 0 }]);
-    expect(sent).toEqual([{ type: 'tower', transitions: [{ type: 'floor_complete', floor: 0 }] }]);
+    b.progress([]);
+    b.progress([{ type: 'item_complete', itemId: 'san_nen', size: 'nho' }]);
+    expect(sent).toEqual([{ type: 'progress', transitions: [{ type: 'item_complete', itemId: 'san_nen', size: 'nho' }] }]);
   });
 });

@@ -1,16 +1,16 @@
 // Overlay game (PixiJS v8): một trang, vẽ ở khung 1080×1920, co giãn vừa cửa sổ.
 // Dùng làm Browser Source trong OBS: http://127.0.0.1:3000/overlay/ (1080×1920).
-// Phím D: bật/tắt khung debug vùng an toàn, vạch căn tầng (eaveLineY đỏ, topY xanh), số tầng.
+// Phím D: bật/tắt khung debug vùng an toàn.
+// Giai đoạn R1: công trường vẽ tạm bằng hình khối theo hạng mục (scene/site.ts). Cảnh tháp cũ (scene/tower.ts,
+// scene/background.ts) chỉ còn dùng ở trang /tools/assets, chờ dọn sau R4.
 
 import { Application, Container } from 'pixi.js';
 import type { OverlayState, ServerMessage } from '../../shared/protocol.js';
 import { destroyArt, EMPTY_ART, loadArt, type Art } from './art.js';
-import { lerpCamera, STAGE_H, STAGE_W, uiRects } from './layout.js';
+import { STAGE_H, STAGE_W, uiRects } from './layout.js';
 import { connectServer } from './net.js';
-import { Backdrop } from './scene/background.js';
-import { TowerView } from './scene/tower.js';
+import { SiteView } from './scene/site.js';
 import { loadFonts } from './theme.js';
-import { cameraTargetFor } from './towerLayout.js';
 import { Badge, ConnectionDot, Disclaimer, MultiplierChip } from './ui/chrome.js';
 import { Banner } from './ui/banner.js';
 import { BoardPanel } from './ui/board.js';
@@ -40,22 +40,17 @@ async function boot(): Promise<void> {
   fit();
   window.addEventListener('resize', fit);
 
-  // Lớp từ sau ra trước: trời (×0,25) → nền có bệ móng (×0,5) → tháp (theo camera) → giao diện → debug.
-  const backdrop = new Backdrop();
-  const world = new Container();
+  // Lớp từ sau ra trước: công trường (hình khối tạm) → giao diện → debug.
+  const site = new SiteView(uiRects({ top: 180, bottom: 600, right: 150 }).site);
   const uiLayer = new Container();
-  const tower = new TowerView();
   const safeDebug = new SafeAreaDebug();
   const dot = new ConnectionDot(STAGE_W - 170, 200);
-  world.addChild(tower.container);
-  app.stage.addChild(backdrop.sky, backdrop.land, world, uiLayer, safeDebug.container, dot.container);
+  app.stage.addChild(site.container, uiLayer, safeDebug.container, dot.container);
 
   let state: OverlayState | null = null;
   let ui: Ui | null = null;
   let art: Art = EMPTY_ART;
   let loadingVersion: string | null = null;
-  let camera = 0;
-  let cameraReady = false;
 
   const ensureUi = (s: OverlayState): Ui => {
     const key = JSON.stringify(s.layout.safeArea);
@@ -65,7 +60,7 @@ async function boot(): Promise<void> {
     const next: Ui = {
       key,
       root: new Container(),
-      banner: new Banner(r.banner, r.progress),
+      banner: new Banner(r.banner, r.progress, r.progressInfo),
       board: new BoardPanel(r.board),
       badge: new Badge(r.badge),
       chip: new MultiplierChip(r.chip),
@@ -82,8 +77,6 @@ async function boot(): Promise<void> {
   const applyArt = (a: Art) => {
     const old = art;
     art = a;
-    backdrop.build(a, state?.layout.towerBaseY ?? 1215);
-    tower.setArt(a);
     ui?.banner.setArt(a);
     ui?.board.setArt(a);
     if (old !== EMPTY_ART) destroyArt(old);
@@ -100,7 +93,8 @@ async function boot(): Promise<void> {
         if (state) apply(state);
       });
     }
-    tower.update(s);
+    site.setArea(uiRects(s.layout.safeArea).site);
+    site.update(s.progress);
     const u = ensureUi(s);
     u.banner.update(s);
     u.board.update(s);
@@ -112,10 +106,10 @@ async function boot(): Promise<void> {
 
   const onMessage = (m: ServerMessage) => {
     if (m.type === 'state') apply(m.state);
-    else if (m.type === 'tower') {
+    else if (m.type === 'progress') {
       for (const t of m.transitions) {
-        if (t.type === 'stage_complete') tower.flashFloor(t.floor, 0.4);
-        if (t.type === 'floor_complete') tower.flashFloor(t.floor, 0.75);
+        if (t.type === 'stage_complete') site.flash(t.itemId, 0.45);
+        if (t.type === 'item_complete') site.flash(t.itemId, 0.9);
       }
     }
   };
@@ -124,24 +118,14 @@ async function boot(): Promise<void> {
   window.addEventListener('keydown', (e) => {
     if (e.key !== 'd' && e.key !== 'D') return;
     safeDebug.visible = !safeDebug.visible;
-    tower.setDebug(safeDebug.visible);
   });
   // Mở overlay với ?debug=1 thì bật sẵn khung debug.
-  if (new URLSearchParams(location.search).has('debug')) {
-    safeDebug.visible = true;
-    tower.setDebug(true);
-  }
+  if (new URLSearchParams(location.search).has('debug')) safeDebug.visible = true;
 
   app.ticker.add((t) => {
     if (!state) return;
     const dt = Math.min(0.1, t.deltaMS / 1000);
-    const target = cameraTargetFor(tower.currentPlacement());
-    // Lần đầu mở overlay thì đặt camera đúng chỗ ngay, không lia từ dưới đất lên.
-    camera = cameraReady ? lerpCamera(camera, target, dt) : target;
-    cameraReady = true;
-    world.y = camera;
-    backdrop.update(camera);
-    tower.tick(dt);
+    site.tick(dt);
     ui?.banner.tick(dt);
     ui?.board.tick(dt);
   });

@@ -64,17 +64,18 @@ describe('WebSocket cho overlay', () => {
     const c = connect(`http://127.0.0.1:${srv.port}`);
     const first = (await c.waitFor((m) => m.type === 'state')) as Extract<ServerMessage, { type: 'state' }>;
     expect(first.state.badge).toBe('CHẾ ĐỘ THỬ');
-    expect(first.state.tower.floor).toBe(0);
+    expect(first.state.progress.item.number).toBe(1);
 
     const r = await post('/api/sim/fire', { kind: 'gift_large' }); // 100.000 công
     expect(r.status).toBe(200);
-    const tower = await c.waitFor((m) => m.type === 'tower');
-    expect(tower).toMatchObject({ type: 'tower' });
-    const updated = (await c.waitFor((m) => m.type === 'state' && m.state.tower.floor > 0)) as Extract<
+    const progress = await c.waitFor((m) => m.type === 'progress');
+    expect(progress).toMatchObject({ type: 'progress' });
+    const updated = (await c.waitFor((m) => m.type === 'state' && m.state.progress.item.number > 1)) as Extract<
       ServerMessage,
       { type: 'state' }
     >;
-    expect(updated.state.tower.floor).toBe(5); // 10.000 nền móng + 4 × 20.000 + 10.000 vào tầng 5
+    // 40.000 San nền + 40.000 Bệ bồ đề + 20.000 vào Sân gạch (12.000 xong giai đoạn 1, 8.000 vào giai đoạn 2)
+    expect(updated.state.progress).toMatchObject({ item: { id: 'san_gach', number: 3 }, stage: { number: 2 }, stagePoints: 8000 });
     expect(updated.state.boards[1]!.rows[0]!.points).toBe(100_000);
   });
 
@@ -86,7 +87,8 @@ describe('WebSocket cho overlay', () => {
     a.ws.terminate();
     const b = connect();
     const snap = (await b.waitFor((m) => m.type === 'state')) as Extract<ServerMessage, { type: 'state' }>;
-    expect(snap.state.tower).toMatchObject({ floor: 1, floorPoints: 0, totalPoints: 10_000 });
+    // 10.000 công: xong giai đoạn 1 (8.000) của San nền, 2.000 vào giai đoạn 2
+    expect(snap.state.progress).toMatchObject({ item: { id: 'san_nen' }, stage: { number: 2 }, stagePoints: 2000, totalPoints: 10_000 });
   });
 
   it('từ chối kết nối từ trang web lạ', async () => {

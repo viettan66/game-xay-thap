@@ -1,53 +1,57 @@
-// Lõi game: nhận sự kiện chuẩn hóa, tính công, cộng vào tháp, ghi DB.
+// Lõi game: nhận sự kiện chuẩn hóa, tính công, cộng vào công trình, ghi DB.
 // Mỗi sự kiện được xử lý trong MỘT transaction (user + contributions + state cùng lúc, mục 6).
-// Trạng thái tháp luôn đọc từ DB, nên tắt máy bật lại vẫn đúng tầng, đúng giai đoạn, đúng phần trăm.
+// Trạng thái công trình luôn đọc từ DB, nên tắt máy bật lại vẫn đúng hạng mục, đúng giai đoạn, đúng phần trăm.
 
 import { computeMultiplier, type GameEventDef, type MultiplierInfo } from '../../shared/events.js';
 import { scoreEvent, type ScoreResult } from '../../shared/points.js';
 import {
   applyPoints,
-  floorCost,
-  initialTowerState,
-  percentOf,
-  repriceCurrentFloor,
-  stageOf,
+  extendIfNeeded,
+  fillTemplate,
+  initialProgress,
+  itemIndexOf,
+  progressNumbers,
+  repriceCurrentStage,
+  startedItemProblems,
   type ApplyResult,
-  type TowerRules,
-  type TowerState,
-} from '../../shared/tower.js';
+  type ProgressState,
+  type ResolvedProject,
+} from '../../shared/project.js';
+import type { ProgressItem, ProgressView } from '../../shared/protocol.js';
 import { vnDayKey } from '../../shared/time.js';
-import type { TowerView } from '../../shared/protocol.js';
 import type { LiveEvent } from '../../shared/types.js';
 import type { GameConfig } from '../config/schema.js';
+import { ConfigError, PROJECT_FILE } from '../config/store.js';
 import type { DB } from '../db/database.js';
 
 export const POST_COMPLETION_NOTE = 'sau khánh thành';
+export const REPRICE_NOTE = 'Đổi giá giai đoạn đang xây';
 
 interface GameStateRow {
-  current_floor: number;
-  current_stage: number;
-  floor_points: number;
-  floor_cost: number;
+  current_item_id: string;
+  current_stage_index: number;
+  stage_points: number;
+  stage_cost: number;
   total_points: number;
   started_at: number;
   completed_at: number | null;
   golden_manual_until: number | null;
 }
 
-/** Trạng thái tháp để hiển thị (dùng chung với overlay). */
-export type TowerStatus = TowerView;
-
 export interface ProcessResult {
   status: 'counted' | 'zero' | 'duplicate' | 'ignored';
   eventRowId: number | null;
   score: ScoreResult | null;
   multiplier: MultiplierInfo | null;
-  /** Kết quả cộng vào tháp (null nếu không có điểm hoặc tháp đã xong). */
-  tower: ApplyResult | null;
+  /** Kết quả cộng vào công trình (null nếu không có điểm hoặc công trình đã xong). */
+  progress: ApplyResult | null;
 }
 
 export interface RepricePreview {
-  floor: number;
+  itemId: string;
+  itemName: string;
+  /** Giai đoạn đang xây, đếm từ 0. */
+  stageIndex: number;
   oldCost: number;
   newCost: number;
 }
@@ -55,6 +59,7 @@ export interface RepricePreview {
 export interface EngineDeps {
   db: DB;
   config: () => GameConfig;
+  project: () => ResolvedProject;
   events: () => GameEventDef[];
   sessionId: () => number | null;
   now?: () => number;
@@ -64,21 +69,30 @@ function prepareStatements(db: DB) {
   return {
     getState: db.prepare<[], GameStateRow>('SELECT * FROM game_state WHERE id = 1'),
     insertState: db.prepare(
-      `INSERT INTO game_state (id, current_floor, current_stage, floor_points, floor_cost, total_points, started_at)
-       VALUES (1, @floor, 1, 0, @cost, 0, @ts)`,
+      `INSERT INTO game_state (id, current_item_id, current_stage_index, stage_points, stage_cost, total_points, started_at)
+       VALUES (1, @itemId, 0, 0, @cost, 0, @ts)`,
     ),
     updateState: db.prepare(
-      `UPDATE game_state SET current_floor = @floor, current_stage = @stage, floor_points = @floorPoints,
-         floor_cost = @floorCost, total_points = total_points + @addTotal,
-         completed_at = COALESCE(completed_at, @completedAt)
+      `UPDATE game_state SET current_item_id = @itemId, current_stage_index = @stageIndex, stage_points = @stagePoints,
+         stage_cost = @stageCost, total_points = total_points + @addTotal,
+         completed_at = CASE WHEN @completed = 1 THEN COALESCE(completed_at, @ts) ELSE NULL END
        WHERE id = 1`,
     ),
     setGolden: db.prepare('UPDATE game_state SET golden_manual_until = ? WHERE id = 1'),
-    insertFloor: db.prepare(
-      'INSERT OR IGNORE INTO floors (floor, cost, started_at) VALUES (@floor, @cost, @ts)',
+    startedItems: db.prepare<[], { item_id: string; stage_count: number }>(
+      'SELECT item_id, stage_count FROM items ORDER BY rowid',
     ),
-    completeFloor: db.prepare('UPDATE floors SET completed_at = @ts WHERE floor = @floor AND completed_at IS NULL'),
-    setFloorCost: db.prepare('UPDATE floors SET cost = @cost WHERE floor = @floor'),
+    insertItem: db.prepare(
+      'INSERT OR IGNORE INTO items (item_id, stage_count, started_at) VALUES (@itemId, @stageCount, @ts)',
+    ),
+    completeItem: db.prepare('UPDATE items SET completed_at = @ts WHERE item_id = @itemId AND completed_at IS NULL'),
+    insertStage: db.prepare(
+      'INSERT OR IGNORE INTO stages (item_id, stage_index, cost, started_at) VALUES (@itemId, @stageIndex, @cost, @ts)',
+    ),
+    completeStage: db.prepare(
+      'UPDATE stages SET completed_at = @ts WHERE item_id = @itemId AND stage_index = @stageIndex AND completed_at IS NULL',
+    ),
+    setStageCost: db.prepare('UPDATE stages SET cost = @cost WHERE item_id = @itemId AND stage_index = @stageIndex'),
     findSource: db.prepare<[string], { id: number }>('SELECT id FROM events WHERE source_event_id = ?'),
     upsertUser: db.prepare(
       `INSERT INTO users (platform_id, unique_id, nickname, avatar_url, first_seen, last_seen)
@@ -105,17 +119,23 @@ function prepareStatements(db: DB) {
       `INSERT INTO daily_caps (day, platform_id, like_comment_points) VALUES (@day, @pid, @delta)
        ON CONFLICT (day, platform_id) DO UPDATE SET like_comment_points = like_comment_points + excluded.like_comment_points`,
     ),
-    addFloorContribution: db.prepare(
-      `INSERT INTO floor_contributions (floor, platform_id, points, reached_seq) VALUES (@floor, @pid, @points, @seq)
-       ON CONFLICT (floor, platform_id) DO UPDATE SET points = points + excluded.points, reached_seq = excluded.reached_seq`,
+    addItemContribution: db.prepare(
+      `INSERT INTO item_contributions (item_id, platform_id, points, reached_seq) VALUES (@itemId, @pid, @points, @seq)
+       ON CONFLICT (item_id, platform_id) DO UPDATE SET points = points + excluded.points, reached_seq = excluded.reached_seq`,
+    ),
+    addStageContribution: db.prepare(
+      `INSERT INTO stage_contributions (item_id, stage_index, platform_id, points, reached_seq)
+       VALUES (@itemId, @stageIndex, @pid, @points, @seq)
+       ON CONFLICT (item_id, stage_index, platform_id) DO UPDATE SET
+         points = points + excluded.points, reached_seq = excluded.reached_seq`,
     ),
     addSessionContribution: db.prepare(
       `INSERT INTO session_contributions (session_id, platform_id, points, reached_seq) VALUES (@sid, @pid, @points, @seq)
        ON CONFLICT (session_id, platform_id) DO UPDATE SET points = points + excluded.points, reached_seq = excluded.reached_seq`,
     ),
     insertEvent: db.prepare(
-      `INSERT INTO events (ts, session_id, platform_id, type, source_event_id, payload_json, base_points, multiplier, points, floor, stage, note)
-       VALUES (@ts, @sid, @pid, @type, @sourceId, @payload, @base, @mult, @points, @floor, @stage, @note)`,
+      `INSERT INTO events (ts, session_id, platform_id, type, source_event_id, payload_json, base_points, multiplier, points, item_id, stage_index, note)
+       VALUES (@ts, @sid, @pid, @type, @sourceId, @payload, @base, @mult, @points, @itemId, @stageIndex, @note)`,
     ),
   };
 }
@@ -133,15 +153,24 @@ export class GameEngine {
     this.q = prepareStatements(this.db);
   }
 
-  /** Tạo trạng thái ban đầu (tầng 0 = nền móng) nếu DB còn trống. */
+  /**
+   * Tạo trạng thái ban đầu (hạng mục đầu tiên, giai đoạn 1) nếu DB còn trống, rồi kiểm tra project.json
+   * còn khớp với những gì đã xây. Không khớp (ví dụ sửa tay xóa mất hạng mục đang xây) thì báo lỗi, không đoán.
+   */
   init(): void {
-    if (this.q.getState.get()) return;
-    const ts = this.now();
-    const s = initialTowerState(this.deps.config().tower);
-    this.db.transaction(() => {
-      this.q.insertState.run({ floor: s.floor, cost: s.floorCost, ts });
-      this.q.insertFloor.run({ floor: s.floor, cost: s.floorCost, ts });
-    })();
+    if (!this.q.getState.get()) {
+      const ts = this.now();
+      const p = this.deps.project();
+      const s = initialProgress(p);
+      this.db.transaction(() => {
+        this.q.insertState.run({ itemId: s.itemId, cost: s.stageCost, ts });
+        this.q.insertItem.run({ itemId: s.itemId, stageCount: p.items[0]!.stages.length, ts });
+        this.q.insertStage.run({ itemId: s.itemId, stageIndex: 0, cost: s.stageCost, ts });
+      })();
+    }
+    const problems = this.projectProblems(this.deps.project());
+    if (problems.length > 0) throw new ConfigError(PROJECT_FILE, problems);
+    this.syncProject();
   }
 
   private row(): GameStateRow {
@@ -150,33 +179,68 @@ export class GameEngine {
     return r;
   }
 
-  towerState(): TowerState {
+  progressState(): ProgressState {
     const r = this.row();
     return {
-      floor: r.current_floor,
-      floorPoints: r.floor_points,
-      floorCost: r.floor_cost,
+      itemId: r.current_item_id,
+      stageIndex: r.current_stage_index,
+      stagePoints: r.stage_points,
+      stageCost: r.stage_cost,
       completed: r.completed_at !== null,
     };
   }
 
-  status(): TowerStatus {
+  /** Những chỗ một danh sách hạng mục (mới) không khớp với những gì đã xây. Rỗng = dùng được. */
+  projectProblems(p: ResolvedProject): string[] {
+    const started = this.q.startedItems.all();
+    const problems = startedItemProblems(
+      started.map((r) => r.item_id),
+      new Map(started.map((r) => [r.item_id, r.stage_count])),
+      p,
+    );
+    const s = this.progressState();
+    if (itemIndexOf(p, s.itemId) < 0 && !problems.some((x) => x.includes(`"${s.itemId}"`))) {
+      problems.push(`Không có hạng mục đang xây "${s.itemId}" trong danh sách`);
+    }
+    return problems;
+  }
+
+  status(): ProgressView {
     const cfg = this.deps.config();
+    const p = this.deps.project();
     const r = this.row();
-    const s = this.towerState();
-    const stage = s.completed ? 5 : stageOf(s.floorPoints, s.floorCost, cfg.tower.stageRatios);
-    const names = s.floor === 0 ? cfg.labels.foundationStages : cfg.labels.floorStages;
+    const s = this.progressState();
+    const n = progressNumbers(s, p);
+    const item = p.items[n.itemNumber - 1]!;
+    const stage = item.stages[s.stageIndex]!;
+    const L = cfg.labels.progress;
+    const items: ProgressItem[] = p.items.map((it, i) => ({
+      id: it.id,
+      name: it.name,
+      area: it.area,
+      status: s.completed || i < n.itemNumber - 1 ? 'done' : i === n.itemNumber - 1 ? 'building' : 'todo',
+    }));
     return {
-      floor: s.floor,
-      totalFloors: cfg.tower.totalFloors,
-      floorName: s.floor === 0 ? cfg.labels.foundationName : cfg.labels.floorName.replace('{floor}', String(s.floor)),
-      stage,
-      stageName: names[stage - 1] ?? '',
-      floorPoints: s.floorPoints,
-      floorCost: s.floorCost,
-      percent: s.completed ? 100 : percentOf(s.floorPoints, s.floorCost),
+      projectName: p.name,
+      item: { id: item.id, name: item.name, number: n.itemNumber, count: n.itemCount, size: item.size, area: item.area },
+      stage: { number: s.stageIndex + 1, count: n.stageCount, name: stage.name, ritual: stage.ritual, visual: stage.visual },
+      stagePoints: s.stagePoints,
+      stageCost: s.stageCost,
+      percent: n.percent,
+      itemPercent: n.itemPercent,
+      projectPercent: n.projectPercent,
+      donePoints: n.donePoints,
+      projectCost: n.projectCost,
       totalPoints: r.total_points,
       completed: s.completed,
+      lines: s.completed
+        ? { item: fillTemplate(L.completed, { project: p.name }), stage: '', project: fillTemplate(L.project, { percent: 100 }) }
+        : {
+            item: fillTemplate(L.item, { number: n.itemNumber, count: n.itemCount, item: item.name }),
+            stage: fillTemplate(L.stage, { number: s.stageIndex + 1, count: n.stageCount, stage: stage.name }),
+            project: fillTemplate(L.project, { percent: n.projectPercent }),
+          },
+      items,
     };
   }
 
@@ -190,7 +254,7 @@ export class GameEngine {
   }
 
   processEvent(ev: LiveEvent): ProcessResult {
-    const empty = { eventRowId: null, score: null, multiplier: null, tower: null };
+    const empty = { eventRowId: null, score: null, multiplier: null, progress: null };
     if (ev.type === 'viewers') return { status: 'ignored', ...empty };
 
     return this.db.transaction((): ProcessResult => {
@@ -224,9 +288,9 @@ export class GameEngine {
         multiplier.total,
       );
 
-      const before = this.towerState();
-      const stageBefore = before.completed ? 5 : stageOf(before.floorPoints, before.floorCost, cfg.tower.stageRatios);
-      const tower = score.points > 0 && !before.completed ? applyPoints(before, score.points, cfg.tower) : null;
+      const before = this.progressState();
+      const progress =
+        score.points > 0 && !before.completed ? applyPoints(before, score.points, this.deps.project()) : null;
       const sid = this.deps.sessionId();
 
       const seq = Number(
@@ -240,8 +304,8 @@ export class GameEngine {
           base: score.basePoints,
           mult: multiplier.total,
           points: score.points,
-          floor: before.floor,
-          stage: stageBefore,
+          itemId: before.itemId,
+          stageIndex: before.stageIndex,
           note: before.completed ? POST_COMPLETION_NOTE : null,
         }).lastInsertRowid,
       );
@@ -255,69 +319,87 @@ export class GameEngine {
           like: score.source === 'like' ? score.points : 0,
           comment: score.source === 'comment' ? score.points : 0,
         });
-        for (const a of tower?.allocations ?? []) {
-          this.q.addFloorContribution.run({ floor: a.floor, pid, points: a.points, seq });
+        // Quà lớn vượt nhiều giai đoạn / hạng mục: ghi công cho TỪNG nơi theo phần điểm rơi vào đó (14.4).
+        for (const a of progress?.allocations ?? []) {
+          this.q.addStageContribution.run({ itemId: a.itemId, stageIndex: a.stageIndex, pid, points: a.points, seq });
+          this.q.addItemContribution.run({ itemId: a.itemId, pid, points: a.points, seq });
         }
         if (sid !== null) this.q.addSessionContribution.run({ sid, pid, points: score.points, seq });
       }
       if (score.capUsedDelta > 0) this.q.addCap.run({ day, pid, delta: score.capUsedDelta });
       if (score.commentCounted) this.q.setLastComment.run(ev.ts, pid);
 
-      this.persistTower(tower?.state ?? before, tower, ev.ts, score.points);
-      return { status: score.points > 0 ? 'counted' : 'zero', eventRowId: seq, score, multiplier, tower };
+      this.persist(progress?.state ?? before, progress, ev.ts, score.points);
+      return { status: score.points > 0 ? 'counted' : 'zero', eventRowId: seq, score, multiplier, progress };
     })();
   }
 
-  /** Giá tầng đang xây có khác nếu áp dụng bộ quy tắc mới không. */
-  previewReprice(rules: TowerRules): RepricePreview | null {
-    const s = this.towerState();
+  /** Giá giai đoạn đang xây có khác nếu dùng danh sách hạng mục mới không (14.10). */
+  previewReprice(p: ResolvedProject): RepricePreview | null {
+    const s = this.progressState();
     if (s.completed) return null;
-    const newCost = floorCost(s.floor, rules);
-    return newCost === s.floorCost ? null : { floor: s.floor, oldCost: s.floorCost, newCost };
+    const item = p.items.find((i) => i.id === s.itemId);
+    const newCost = item?.stages[s.stageIndex]?.cost;
+    if (!item || newCost === undefined || newCost === s.stageCost) return null;
+    return { itemId: item.id, itemName: item.name, stageIndex: s.stageIndex, oldCost: s.stageCost, newCost };
   }
 
-  /** Đổi giá tầng đang xây theo quy tắc mới (admin đã xác nhận, 14.10). */
-  applyReprice(rules: TowerRules): ApplyResult {
+  /** Đổi giá giai đoạn đang xây theo danh sách mới (admin đã xác nhận, 14.10). Gọi sau khi đã lưu project.json. */
+  applyReprice(p: ResolvedProject): ApplyResult | null {
+    const preview = this.previewReprice(p);
+    if (!preview) return null;
     const ts = this.now();
     return this.db.transaction(() => {
-      const before = this.towerState();
-      const newCost = floorCost(before.floor, rules);
-      const result = repriceCurrentFloor(before, newCost, rules);
-      this.q.setFloorCost.run({ floor: before.floor, cost: newCost });
+      const before = this.progressState();
+      const result = repriceCurrentStage(before, preview.newCost, p);
+      this.q.setStageCost.run({ itemId: before.itemId, stageIndex: before.stageIndex, cost: preview.newCost });
       this.q.insertEvent.run({
         ts,
         sid: this.deps.sessionId(),
         pid: null,
         type: 'reprice',
         sourceId: null,
-        payload: JSON.stringify({ floor: before.floor, oldCost: before.floorCost, newCost }),
+        payload: JSON.stringify(preview),
         base: 0,
         mult: 1,
         points: 0,
-        floor: before.floor,
-        stage: stageOf(before.floorPoints, before.floorCost, rules.stageRatios),
-        note: 'Đổi giá tầng đang xây',
+        itemId: before.itemId,
+        stageIndex: before.stageIndex,
+        note: REPRICE_NOTE,
       });
-      this.persistTower(result.state, result, ts, 0);
+      this.persist(result.state, result, ts, 0);
       return result;
     })();
   }
 
-  private persistTower(state: TowerState, result: ApplyResult | null, ts: number, addTotal: number): void {
-    const cfg = this.deps.config();
-    let completedAt: number | null = null;
+  /** Công trình đã xong mà danh sách vừa được nối thêm hạng mục: mở hạng mục mới (14.12). */
+  syncProject(): ApplyResult | null {
+    const result = extendIfNeeded(this.progressState(), this.deps.project());
+    if (!result) return null;
+    const ts = this.now();
+    this.db.transaction(() => this.persist(result.state, result, ts, 0))();
+    return result;
+  }
+
+  private persist(state: ProgressState, result: ApplyResult | null, ts: number, addTotal: number): void {
+    const p = this.deps.project();
     for (const t of result?.transitions ?? []) {
-      if (t.type === 'floor_complete') this.q.completeFloor.run({ floor: t.floor, ts });
-      else if (t.type === 'floor_start') this.q.insertFloor.run({ floor: t.floor, cost: t.cost, ts });
-      else if (t.type === 'tower_complete') completedAt = ts;
+      if (t.type === 'stage_complete') this.q.completeStage.run({ itemId: t.itemId, stageIndex: t.stageIndex, ts });
+      else if (t.type === 'stage_start') this.q.insertStage.run({ itemId: t.itemId, stageIndex: t.stageIndex, cost: t.cost, ts });
+      else if (t.type === 'item_complete') this.q.completeItem.run({ itemId: t.itemId, ts });
+      else if (t.type === 'item_start') {
+        const stageCount = p.items.find((i) => i.id === t.itemId)?.stages.length ?? 0;
+        this.q.insertItem.run({ itemId: t.itemId, stageCount, ts });
+      }
     }
     this.q.updateState.run({
-      floor: state.floor,
-      stage: state.completed ? 5 : stageOf(state.floorPoints, state.floorCost, cfg.tower.stageRatios),
-      floorPoints: state.floorPoints,
-      floorCost: state.floorCost,
+      itemId: state.itemId,
+      stageIndex: state.stageIndex,
+      stagePoints: state.stagePoints,
+      stageCost: state.stageCost,
       addTotal,
-      completedAt,
+      completed: state.completed ? 1 : 0,
+      ts,
     });
   }
 }

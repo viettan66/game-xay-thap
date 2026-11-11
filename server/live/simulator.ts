@@ -63,7 +63,7 @@ interface GiftDef {
   combo: boolean;
 }
 
-// Quà ngẫu nhiên tối đa 1.000 xu để tháp không nhảy quá xa khi thử. Quà rất lớn bắn bằng nút.
+// Quà ngẫu nhiên tối đa 1.000 xu để công trình không nhảy quá xa khi thử. Quà rất lớn bắn bằng nút.
 const GIFTS: GiftDef[] = [
   { id: 'rose', name: 'Rose', coins: 1, weight: 40, combo: true },
   { id: 'finger_heart', name: 'Finger Heart', coins: 5, weight: 20, combo: true },
@@ -77,11 +77,11 @@ const GIFTS: GiftDef[] = [
 const COMMENTS = [
   'Chào thầy ạ',
   'Xây nhanh lên nào!',
-  'Tầng mấy rồi mọi người?',
+  'Đang xây tới đâu rồi mọi người?',
   'Mình mới vào',
   'Đẹp quá',
   'Cố lên công trường ơi',
-  'Tháp cao rồi kìa',
+  'Chùa đẹp dần rồi kìa',
   'Góp một viên gạch nè',
   'Hello cả nhà',
   'hạng',

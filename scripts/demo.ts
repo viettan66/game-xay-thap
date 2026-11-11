@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { LiveEvent, LiveUser } from '../shared/types.js';
 import { GameCore } from '../server/core.js';
-import { topFloor, topSession, topTotal } from '../server/game/queries.js';
+import { topItem, topSession, topStage, topTotal } from '../server/game/queries.js';
 import { profilePaths } from '../server/profile.js';
 
 const rootDir = path.resolve(import.meta.dirname, '..');
@@ -34,9 +34,12 @@ const user = (n: number, name: string): LiveUser => ({
 
 function show(title: string): void {
   const s = core.engine.status();
-  console.log(`   → ${s.floorName}, giai đoạn ${s.stage}/5 "${s.stageName}", ${s.percent}% (${fmt(s.floorPoints)}/${fmt(s.floorCost)} ${unit})`);
+  if (title) console.log(title);
+  console.log(`   → ${s.lines.item} | ${s.lines.stage} | ${s.percent}% (${fmt(s.stagePoints)}/${fmt(s.stageCost)} ${unit}) | ${s.lines.project}`);
   if (title) console.log('');
 }
+
+const itemName = (id: string) => core.project.items.find((i) => i.id === id)?.name ?? id;
 
 function send(label: string, ev: LiveEvent): void {
   const r = core.processEvent(ev);
@@ -48,12 +51,14 @@ function send(label: string, ev: LiveEvent): void {
   const mult = r.multiplier && r.multiplier.total !== 1 ? ` ×${r.multiplier.total}` : '';
   if (r.status === 'duplicate') why = ' (trùng mã sự kiện đã nhận, bỏ qua)';
   console.log(`• ${label}: +${fmt(pts)} ${unit}${mult}${why}`);
-  const done = (r.tower?.transitions ?? []).flatMap((t) => (t.type === 'floor_complete' ? [t.floor] : []));
-  if (done.includes(0)) console.log('   ✔ Xong nền móng');
-  const floors = done.filter((f) => f > 0);
-  if (floors.length === 1) console.log(`   ✔ Xong tầng ${floors[0]}`);
-  if (floors.length > 1) console.log(`   ✔ Xong tầng ${floors[0]} đến ${floors.at(-1)} (${floors.length} tầng một lúc)`);
-  if (r.tower?.transitions.some((t) => t.type === 'tower_complete')) console.log('   ★ Tháp đã hoàn thành!');
+  for (const t of r.progress?.transitions ?? []) {
+    if (t.type === 'stage_complete') {
+      const st = core.project.items.find((i) => i.id === t.itemId)?.stages[t.stageIndex];
+      console.log(`   ✔ Xong giai đoạn ${t.stageIndex + 1} "${st?.name ?? ''}" của ${itemName(t.itemId)}${t.ritual ? ` (có ${t.ritual})` : ''}`);
+    }
+    if (t.type === 'item_complete') console.log(`   ★ Xong hạng mục ${itemName(t.itemId)}`);
+    if (t.type === 'project_complete') console.log('   ★★ Đã hoàn thành toàn công trình!');
+  }
   show('');
 }
 
@@ -81,7 +86,7 @@ const bigGift: LiveEvent = {
   type: 'gift', user: user(5, 'Tú'), giftId: 'g2000', giftName: 'Gift 2000', coinValueEach: 2000, count: 1, ts: sec(80),
   eventId: `demo-gift-${now}`,
 };
-send('Tú tặng quà 2.000 xu (vượt nhiều tầng một lúc)', bigGift);
+send('Tú tặng quà 2.000 xu (vượt nhiều giai đoạn và hạng mục một lúc)', bigGift);
 send('Mất mạng, kết nối lại, nền tảng gửi lại đúng quà đó', bigGift);
 
 const board = (title: string, rows: { rank: number; nickname: string; points: number }[]) => {
@@ -89,11 +94,13 @@ const board = (title: string, rows: { rank: number; nickname: string; points: nu
   if (rows.length === 0) console.log('   (chưa có ai)');
   for (const r of rows) console.log(`   ${r.rank}. ${r.nickname}: ${fmt(r.points)} ${unit}`);
 };
-const floor = core.engine.status().floor;
+const cur = core.engine.status();
+const first = core.project.items[0]!;
 board('Bảng tổng (top 5):', topTotal(core.db, 5));
 board(`Top phiên #${session.id}:`, topSession(core.db, session.id, 5));
-board('Bia ghi danh nền móng:', topFloor(core.db, 0, 5));
-board(`Bia ghi danh tầng ${floor} (đang xây):`, topFloor(core.db, floor, 5));
+board(`Bia ghi danh – ${first.name}:`, topItem(core.db, first.id, 5));
+board(`Bia giai đoạn 1 "${first.stages[0]!.name}" (${first.stages[0]!.ritual ?? 'không có lễ'}):`, topStage(core.db, first.id, 0, 5));
+board(`Bia ghi danh – ${cur.item.name} (đang xây):`, topItem(core.db, cur.item.id, 5));
 
 core.sessions.endManual();
 await core.close();

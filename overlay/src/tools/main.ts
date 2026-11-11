@@ -3,11 +3,10 @@
 
 import { Application, Container } from 'pixi.js';
 import { assetUrl, FLOOR_STAGE_KEYS, SPIRE_KEY, type Manifest, type ManifestEntry } from '../../../shared/manifest.js';
-import type { OverlayState } from '../../../shared/protocol.js';
 import { destroyArt, loadArt, type Art } from '../art.js';
 import { STAGE_H, STAGE_W } from '../layout.js';
 import { Backdrop } from '../scene/background.js';
-import { TowerView } from '../scene/tower.js';
+import { TowerView, type TowerSceneInput } from '../scene/tower.js';
 import { loadFonts } from '../theme.js';
 import { cameraTargetFor, towerArtFrom } from '../towerLayout.js';
 
@@ -215,27 +214,11 @@ const backdrop = new Backdrop();
 const world = new Container();
 const tower = new TowerView();
 
-function fakeState(e: Edit): OverlayState {
+function fakeState(e: Edit): TowerSceneInput {
   const floors = Number($<HTMLSelectElement>('floors').value);
   const spire = input('withSpire').checked && floors > 0;
   return {
-    profile: 'test',
-    badge: null,
-    tower: {
-      floor: floors,
-      totalFloors: floors,
-      floorName: '',
-      stage: Number($<HTMLSelectElement>('topStage').value),
-      stageName: '',
-      floorPoints: 0,
-      floorCost: 1,
-      percent: 0,
-      totalPoints: 0,
-      completed: spire,
-    },
-    boards: [],
-    multiplier: null,
-    labels: { pointUnit: '', disclaimer: '' },
+    tower: { floor: floors, totalFloors: floors, stage: Number($<HTMLSelectElement>('topStage').value), completed: spire },
     layout: {
       safeArea: { top: 180, bottom: 600, right: 150 },
       floor1WidthPx: e.w1,
@@ -244,7 +227,6 @@ function fakeState(e: Edit): OverlayState {
       towerBaseY: e.ay,
       boardRotateSec: 15,
     },
-    assetsVersion: art?.version ?? 'none',
   };
 }
 

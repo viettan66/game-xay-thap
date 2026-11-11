@@ -1,20 +1,36 @@
 // Dữ liệu server gửi xuống overlay qua WebSocket (đường /ws).
 // Khi overlay kết nối (hoặc kết nối lại), server gửi ngay toàn bộ trạng thái hiện tại (mục 12 SPEC).
 
-import type { TowerTransition } from './tower.js';
+import type { ItemSize, ProgressTransition, VisualKind } from './project.js';
 
-export interface TowerView {
-  floor: number;
-  totalFloors: number;
-  /** "Nền móng" hoặc "Tầng 5" (lấy từ config). */
-  floorName: string;
-  stage: number;
-  stageName: string;
-  floorPoints: number;
-  floorCost: number;
+export interface ProgressItem {
+  id: string;
+  name: string;
+  area: string;
+  status: 'done' | 'building' | 'todo';
+}
+
+/** Tiến độ công trình (mục 5, 8). Số thứ tự hạng mục và giai đoạn đếm từ 1. */
+export interface ProgressView {
+  projectName: string;
+  item: { id: string; name: string; number: number; count: number; size: ItemSize; area: string };
+  stage: { number: number; count: number; name: string; ritual: string | null; visual: VisualKind };
+  stagePoints: number;
+  stageCost: number;
+  /** Phần trăm của giai đoạn, hạng mục, toàn công trình (0–100). */
   percent: number;
+  itemPercent: number;
+  projectPercent: number;
+  /** Số công đã xây vào công trình và tổng công cần. */
+  donePoints: number;
+  projectCost: number;
+  /** Tổng công đã nhận (kể cả sau khánh thành). */
   totalPoints: number;
   completed: boolean;
+  /** Ba dòng chữ trên thanh tiến độ, đã điền từ mẫu trong config (labels.progress). */
+  lines: { item: string; stage: string; project: string };
+  /** Mọi hạng mục theo thứ tự xây, kèm trạng thái. */
+  items: ProgressItem[];
 }
 
 export interface BoardRow {
@@ -25,7 +41,7 @@ export interface BoardRow {
   points: number;
 }
 
-export type BoardKey = 'session' | 'total' | 'floor';
+export type BoardKey = 'session' | 'total' | 'item';
 
 export interface Board {
   key: BoardKey;
@@ -41,6 +57,7 @@ export interface SafeArea {
 
 export interface OverlayLayout {
   safeArea: SafeArea;
+  /** Thông số tháp cũ (chỉ /tools/assets còn dùng, bỏ sau R4). */
   floor1WidthPx: number;
   towerTaper: number;
   towerCenterX: number;
@@ -52,8 +69,8 @@ export interface OverlayState {
   profile: 'production' | 'test';
   /** "CHẾ ĐỘ THỬ" (giả lập), "DIỄN TẬP" (hồ sơ test với live thật), hoặc null (live thật). */
   badge: string | null;
-  tower: TowerView;
-  /** Luôn theo thứ tự: top phiên → top tổng → bia tầng hiện tại. */
+  progress: ProgressView;
+  /** Luôn theo thứ tự: top phiên → top tổng → bia hạng mục đang xây. */
   boards: Board[];
   /** Hệ số đang áp dụng (sự kiện, giờ vàng), null nếu ×1. */
   multiplier: { total: number; labels: string[] } | null;
@@ -68,4 +85,5 @@ export interface OverlayState {
 
 export type ServerMessage =
   | { type: 'state'; state: OverlayState }
-  | { type: 'tower'; transitions: TowerTransition[] };
+  /** Giai đoạn / hạng mục vừa xong hoặc vừa bắt đầu (để overlay chớp sáng, sau này là lễ). */
+  | { type: 'progress'; transitions: ProgressTransition[] };

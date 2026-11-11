@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ConfigError } from './config/store.js';
+import { LegacyDbError } from './db/legacy.js';
 import { createLogger } from './logger.js';
 import { profilePaths, resolveProfile, type ProfileName } from './profile.js';
 import { PortInUseError, startServer, type RunningServer } from './server.js';
@@ -42,6 +43,7 @@ try {
   if (e instanceof ConfigError) {
     fatal(`Config chưa đúng, game chưa chạy được.\n${e.message}\n\nSửa file trong thư mục config\\ rồi chạy lại.`);
   }
+  if (e instanceof LegacyDbError) fatal(e.message);
   if (e instanceof PortInUseError) {
     fatal(`Cổng ${e.message} đang bị chiếm. Có thể game đang chạy ở một cửa sổ khác, hãy đóng cửa sổ đó trước.`);
   }
@@ -51,7 +53,7 @@ try {
 const { core, live } = running;
 for (const f of core.createdConfigFiles) log.info(`Đã tạo config\\${f} từ bản mặc định`);
 const s = core.engine.status();
-log.info(`Hồ sơ: ${profile.toUpperCase()} | ${s.floorName} – ${s.stageName} – ${s.percent}%`);
+log.info(`Hồ sơ: ${profile.toUpperCase()} | ${s.lines.item} | ${s.lines.stage} – ${s.percent}% | ${s.lines.project}`);
 log.info(`Nguồn sự kiện: ${live.mode() === 'simulator' ? 'giả lập' : core.config.liveSource} (${live.status().text})`);
 log.info(`Trang trạng thái: ${running.url}/admin`);
 log.info(`Overlay (OBS Browser Source 1080×1920): ${running.url}/overlay/`);

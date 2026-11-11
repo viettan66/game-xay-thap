@@ -4,10 +4,16 @@
 // Thiếu ảnh nào thì vẽ hình chữ nhật màu kèm tên file, không crash.
 
 import { Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
-import type { OverlayState } from '../../../shared/protocol.js';
+import type { OverlayLayout } from '../../../shared/protocol.js';
 import type { Art } from '../art.js';
 import { C, FONT_BODY } from '../theme.js';
 import { placeTower, towerArtFrom, type FloorArt, type PlacedPiece, type TowerArt, type TowerParams, type TowerPlacement } from '../towerLayout.js';
+
+/** Dữ liệu tháp cũ cần để vẽ. Từ R1 chỉ trang /tools/assets còn dùng (overlay chính đã chuyển sang hạng mục). */
+export interface TowerSceneInput {
+  tower: { floor: number; totalFloors: number; stage: number; completed: boolean };
+  layout: OverlayLayout;
+}
 
 interface PieceNode {
   key: string;
@@ -46,7 +52,7 @@ export class TowerView {
     this.propsKey = '';
   }
 
-  params(state: OverlayState): TowerParams {
+  params(state: TowerSceneInput): TowerParams {
     const m = this.art?.manifest;
     return {
       floor1WidthPx: state.layout.floor1WidthPx,
@@ -61,7 +67,7 @@ export class TowerView {
   }
 
   /** Vẽ theo trạng thái overlay. `override` cho trang /tools/assets thử thông số mà chưa lưu. */
-  update(state: OverlayState, override?: Partial<TowerParams>): void {
+  update(state: TowerSceneInput, override?: Partial<TowerParams>): void {
     const p = { ...this.params(state), ...override };
     this.lastParams = p;
     this.placement = placeTower(this.towerArt, p, state.tower);
@@ -146,7 +152,7 @@ export class TowerView {
   }
 
   /** Đạo cụ tạm cho 5 giai đoạn nền móng, đặt trên mặt bệ móng. Xong nền móng thì còn lại một bệ đá thấp. */
-  private drawProps(state: OverlayState, p: TowerParams): void {
+  private drawProps(state: TowerSceneInput, p: TowerParams): void {
     const t = state.tower;
     const stage = t.floor === 0 && !t.completed ? t.stage : 6;
     const key = `${stage}|${p.anchor.x}|${p.anchor.y}|${p.floor1WidthPx}|${this.art?.version}`;

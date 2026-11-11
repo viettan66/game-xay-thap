@@ -65,7 +65,7 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
     logger: o.logger,
     onProcessed: (r) => {
       broadcaster.markDirty();
-      if (r.tower) broadcaster.tower(r.tower.transitions);
+      if (r.progress) broadcaster.progress(r.progress.transitions);
     },
     onStatus: () => broadcaster.markDirty(),
     ...(o.simulatorTimer !== undefined ? { simulatorTimer: o.simulatorTimer } : {}),

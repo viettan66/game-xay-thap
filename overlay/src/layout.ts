@@ -77,9 +77,13 @@ export interface UiRects {
   content: Rect;
   badge: Rect;
   banner: Rect;
-  /** Khung 5 bước (ui/progress_frame.png) ngay dưới banner. */
+  /** Thanh tiến độ giai đoạn (ui/progress_frame.png) ngay dưới banner. */
   progress: Rect;
+  /** Dòng "Toàn công trình …%" và hàng chấm các giai đoạn, dưới thanh tiến độ. */
+  progressInfo: Rect;
   chip: Rect;
+  /** Vùng vẽ công trường tạm bằng hình khối (giai đoạn R1), bên trái bảng xếp hạng. */
+  site: Rect;
   board: Rect;
   disclaimer: Rect;
 }
@@ -95,11 +99,13 @@ export function uiRects(safe: SafeArea): UiRects {
   const banner = { x: mid - 280, y: top + 12, w: 560, h: 164 };
   const badge = { x: 16, y: top + 12, w: banner.x - 16 - 8, h: 48 };
   const progress = { x: mid - 260, y: banner.y + banner.h + 4, w: 520, h: 74 };
-  const chip = { x: mid - 260, y: progress.y + progress.h + 6, w: 520, h: 44 };
+  const progressInfo = { x: mid - 260, y: progress.y + progress.h + 4, w: 520, h: 40 };
+  const chip = { x: mid - 260, y: progressInfo.y + progressInfo.h + 6, w: 520, h: 44 };
   const disclaimer = { x: 0, y: bottom - 52, w: right, h: 52 };
   const boardTop = chip.y + chip.h + 20;
   const board = { x: right - 330 - 12, y: boardTop, w: 330, h: Math.min(740, disclaimer.y - 12 - boardTop) };
-  return { content, badge, banner, progress, chip, board, disclaimer };
+  const site = { x: 16, y: boardTop, w: board.x - 16 - 16, h: disclaimer.y - 12 - boardTop };
+  return { content, badge, banner, progress, progressInfo, chip, board, site, disclaimer };
 }
 
 export function rectsOverlap(a: Rect, b: Rect): boolean {

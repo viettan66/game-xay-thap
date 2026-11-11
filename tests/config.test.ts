@@ -19,24 +19,25 @@ const readCfg = () => JSON.parse(fs.readFileSync(path.join(configDir(), 'config.
 describe('đọc config', () => {
   it('lần chạy đầu tạo config.json và events.json từ bản mặc định', () => {
     const store = new ConfigStore(configDir());
-    expect(store.load()).toEqual(['config.json', 'events.json']);
-    expect(store.get().tower.baseFloorCost).toBe(20_000);
+    expect(store.load()).toEqual(['config.json', 'events.json', 'project.json']);
+    expect(store.get().points.giftPointsPerCoin).toBe(100);
+    expect(store.getProject().items).toHaveLength(23);
     expect(store.getEvents().length).toBeGreaterThan(0);
     expect(new ConfigStore(configDir()).load()).toEqual([]);
   });
 
   it('config thiếu khóa thì lấy giá trị mặc định (để bản cập nhật sau thêm khóa mới không bị lỗi)', () => {
-    fs.writeFileSync(path.join(configDir(), 'config.json'), JSON.stringify({ tower: { baseFloorCost: 30_000 } }));
+    fs.writeFileSync(path.join(configDir(), 'config.json'), JSON.stringify({ points: { likePoints: 3 } }));
     const store = new ConfigStore(configDir());
     store.load();
-    expect(store.get().tower.baseFloorCost).toBe(30_000);
-    expect(store.get().tower.foundationCost).toBe(10_000);
+    expect(store.get().points.likePoints).toBe(3);
+    expect(store.get().points.commentPoints).toBe(5);
   });
 
   it('config sai thì báo lỗi tiếng Việt, chỉ rõ chỗ sai', () => {
     fs.writeFileSync(
       path.join(configDir(), 'config.json'),
-      JSON.stringify({ tower: { baseFloorCost: -5, stageRatios: [50, 50] }, khoaLa: 1 }),
+      JSON.stringify({ points: { likePoints: -5 }, labels: { progress: { item: '' } }, khoaLa: 1 }),
     );
     const store = new ConfigStore(configDir());
     let err: ConfigError | null = null;
@@ -47,14 +48,14 @@ describe('đọc config', () => {
     }
     expect(err).toBeInstanceOf(ConfigError);
     const text = err!.problems.join('\n');
-    expect(text).toContain('tower.baseFloorCost');
-    expect(text).toContain('tower.stageRatios');
+    expect(text).toContain('points.likePoints');
+    expect(text).toContain('labels.progress.item');
     expect(text).toContain('khoaLa');
     expect(text).toMatch(/không|phải/i);
   });
 
   it('file JSON sai cú pháp thì báo lỗi dễ hiểu', () => {
-    fs.writeFileSync(path.join(configDir(), 'config.json'), '{ "tower": ');
+    fs.writeFileSync(path.join(configDir(), 'config.json'), '{ "points": ');
     expect(() => new ConfigStore(configDir()).load()).toThrow(/Sai cú pháp JSON/);
   });
 
@@ -71,6 +72,87 @@ describe('đọc config', () => {
       }),
     );
     expect(() => new ConfigStore(configDir()).load()).toThrow(/đúng MỘT kiểu ngày/);
+  });
+});
+
+describe('config.json của bản tháp cũ', () => {
+  it('tự bỏ các khóa tháp không còn dùng, giữ phần mình đã chỉnh, đổi dải miễn trừ cũ sang câu mới', () => {
+    const old = {
+      tower: { totalFloors: 100, baseFloorCost: 20_000 },
+      points: { likePoints: 2 },
+      labels: {
+        disclaimer: 'Trò chơi mô phỏng xây tháp – không phải quyên góp tôn giáo',
+        foundationName: 'Nền móng',
+        floorName: 'Tầng {floor}',
+        foundationStages: ['a', 'b', 'c', 'd', 'e'],
+        floorStages: ['a', 'b', 'c', 'd', 'e'],
+        boards: { totalTop: 'Bảng vàng', floorTop: 'Bia ghi danh tầng {floor}' },
+      },
+    };
+    fs.writeFileSync(path.join(configDir(), 'config.json'), JSON.stringify(old));
+    const store = new ConfigStore(configDir());
+    store.load();
+    expect(store.upgradedKeys).toEqual([
+      'tower',
+      'labels.foundationName',
+      'labels.floorName',
+      'labels.foundationStages',
+      'labels.floorStages',
+      'labels.boards.floorTop',
+      'labels.disclaimer',
+    ]);
+    expect(store.get().points.likePoints).toBe(2);
+    expect(store.get().labels.boards).toEqual({ sessionTop: 'Top phiên này', totalTop: 'Bảng vàng', itemTop: 'Bia ghi danh – {item}' });
+    expect(store.get().labels.disclaimer).toBe('Trò chơi mô phỏng xây chùa – không phải quyên góp tôn giáo');
+    expect(readCfg()).toEqual({ points: { likePoints: 2 }, labels: { boards: { totalTop: 'Bảng vàng' } } });
+    // Lần đọc sau không còn gì phải dọn.
+    const again = new ConfigStore(configDir());
+    again.load();
+    expect(again.upgradedKeys).toEqual([]);
+  });
+
+  it('dải miễn trừ do mình tự viết thì giữ nguyên', () => {
+    fs.writeFileSync(path.join(configDir(), 'config.json'), JSON.stringify({ labels: { disclaimer: 'Game mô phỏng' } }));
+    const store = new ConfigStore(configDir());
+    store.load();
+    expect(store.get().labels.disclaimer).toBe('Game mô phỏng');
+  });
+});
+
+describe('project.json', () => {
+  const writeProject = (p: unknown) => fs.writeFileSync(path.join(configDir(), 'project.json'), JSON.stringify(p));
+  const defaults = () => JSON.parse(fs.readFileSync(path.join(configDir(), 'defaults', 'project.json'), 'utf8'));
+  const loadError = (): string => {
+    try {
+      new ConfigStore(configDir()).load();
+    } catch (e) {
+      return (e as ConfigError).problems.join('\n');
+    }
+    return '';
+  };
+
+  it('báo lỗi tiếng Việt khi hạng mục sai', () => {
+    const p = defaults();
+    p.items[1].id = 'san_nen';
+    p.items[3].template = 'khong_co';
+    writeProject(p);
+    const text = loadError();
+    expect(text).toContain('Có hai hạng mục trùng id "san_nen"');
+    expect(text).toContain('Hạng mục "tam_quan": không có mẫu giai đoạn "khong_co"');
+  });
+
+  it('chỉ rõ khóa sai kiểu', () => {
+    const p = defaults();
+    p.items[4].size = 'to';
+    writeProject(p);
+    expect(loadError()).toMatch(/items\.4\.size: .*"nho"\|"vua"\|"lon"/);
+  });
+
+  it('id phải là chữ không dấu', () => {
+    const p = defaults();
+    p.items[0].id = 'Sân nền';
+    writeProject(p);
+    expect(loadError()).toMatch(/items\.0\.id: id hạng mục chỉ gồm chữ thường không dấu/);
   });
 });
 

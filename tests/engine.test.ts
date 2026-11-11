@@ -1,9 +1,14 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import Database from 'better-sqlite3';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { ConfigError } from '../server/config/store.js';
 import type { GameCore } from '../server/core.js';
-import { floorContributorCount, topFloor, topSession, topTotal } from '../server/game/queries.js';
+import { itemContributorCount, topItem, topSession, topStage, topTotal } from '../server/game/queries.js';
+import type { ProjectFile } from '../shared/project.js';
 import { vnTs } from '../shared/time.js';
 import type { LiveEvent } from '../shared/types.js';
-import { disableEvents, FakeClock, makeTempRoot, openTestCore, removeTempRoot, viewer } from './helpers.js';
+import { disableEvents, FakeClock, makeTempRoot, openTestCore, removeTempRoot, viewer, writeProject } from './helpers.js';
 
 let root: string;
 let clock: FakeClock;
@@ -34,10 +39,27 @@ afterEach(async () => {
 });
 
 describe('bắt đầu', () => {
-  it('DB mới bắt đầu ở nền móng, giai đoạn 1, 0%', () => {
+  it('DB mới bắt đầu ở hạng mục đầu tiên, giai đoạn 1, 0%', () => {
     expect(core.engine.status()).toMatchObject({
-      floor: 0, floorName: 'Nền móng', stage: 1, stageName: 'Dọn mặt bằng', floorPoints: 0, floorCost: 10_000, percent: 0,
+      projectName: 'Đại Danh Lam Thiên Phúc',
+      item: { id: 'san_nen', name: 'San nền công trường', number: 1, count: 23, size: 'nho' },
+      stage: { number: 1, count: 5, name: 'Phát quang, cắm mốc', ritual: 'Lễ khởi công', visual: 'markers' },
+      stagePoints: 0,
+      stageCost: 8000,
+      percent: 0,
+      projectPercent: 0,
+      projectCost: 2_660_000,
+      completed: false,
+      lines: {
+        item: 'Hạng mục 1/23 · San nền công trường',
+        stage: 'Giai đoạn 1/5: Phát quang, cắm mốc',
+        project: 'Toàn công trình 0%',
+      },
     });
+    expect(core.engine.status().items.slice(0, 2)).toEqual([
+      { id: 'san_nen', name: 'San nền công trường', area: 'toan_khu', status: 'building' },
+      { id: 'be_bo_de', name: 'Bệ cây bồ đề', area: 'san_giua', status: 'todo' },
+    ]);
   });
 });
 
@@ -80,6 +102,15 @@ describe('ghi nhận sự kiện', () => {
     const ev = core.db.prepare('SELECT multiplier, base_points, points FROM events').get() as Record<string, number>;
     expect(ev).toEqual({ multiplier: 2, base_points: 10, points: 20 });
   });
+
+  it('nhật ký events ghi hạng mục và giai đoạn đang xây lúc sự kiện đến', () => {
+    core.processEvent(gift(1, 100)); // 10.000: xong giai đoạn 1, sang giai đoạn 2
+    core.processEvent(like(1, 10));
+    expect(core.db.prepare('SELECT item_id, stage_index FROM events ORDER BY id').all()).toEqual([
+      { item_id: 'san_nen', stage_index: 0 },
+      { item_id: 'san_nen', stage_index: 1 },
+    ]);
+  });
 });
 
 describe('trần ngày và cooldown comment (qua DB)', () => {
@@ -104,38 +135,66 @@ describe('trần ngày và cooldown comment (qua DB)', () => {
   });
 });
 
-describe('vượt nhiều tầng một lúc (14.4)', () => {
-  it('ghi nhận người tặng vào TỪNG tầng theo phần điểm rơi vào tầng đó', () => {
-    core.processEvent(gift(1, 50)); // 5.000 vào nền móng
-    core.processEvent(gift(2, 700)); // 70.000: 5.000 nền móng + 20.000 × 3 tầng + 5.000 tầng 4
-    const s = core.engine.status();
-    expect(s).toMatchObject({ floor: 4, floorPoints: 5000, floorCost: 20_000, stage: 2 });
+describe('vượt nhiều giai đoạn và hạng mục một lúc (14.4)', () => {
+  it('ghi nhận người tặng vào TỪNG giai đoạn và hạng mục theo phần điểm rơi vào đó', () => {
+    core.processEvent(gift(1, 50)); // 5.000 vào giai đoạn 1 của San nền (giá 8.000)
+    const r = core.processEvent(gift(2, 1000)); // 100.000
+    // San nền còn 35.000 → xong; Bệ bồ đề 40.000 → xong; Sân gạch (12.000/giai đoạn): 12.000 + 12.000 + 1.000
+    expect(core.engine.status()).toMatchObject({
+      item: { id: 'san_gach', number: 3 },
+      stage: { number: 3, name: 'Rải cát lót' },
+      stagePoints: 1000,
+      stageCost: 12_000,
+    });
+    const done = r.progress!.transitions.flatMap((t) => (t.type === 'item_complete' ? [t.itemId] : []));
+    expect(done).toEqual(['san_nen', 'be_bo_de']);
 
-    const contrib = core.db
-      .prepare("SELECT floor, points FROM floor_contributions WHERE platform_id = 'p2' ORDER BY floor")
+    const stages = core.db
+      .prepare("SELECT item_id, stage_index, points FROM stage_contributions WHERE platform_id = 'p2' ORDER BY rowid")
       .all();
-    expect(contrib).toEqual([
-      { floor: 0, points: 5000 },
-      { floor: 1, points: 20_000 },
-      { floor: 2, points: 20_000 },
-      { floor: 3, points: 20_000 },
-      { floor: 4, points: 5000 },
+    expect(stages).toEqual([
+      { item_id: 'san_nen', stage_index: 0, points: 3000 },
+      ...[1, 2, 3, 4].map((k) => ({ item_id: 'san_nen', stage_index: k, points: 8000 })),
+      ...[0, 1, 2, 3, 4].map((k) => ({ item_id: 'be_bo_de', stage_index: k, points: 8000 })),
+      { item_id: 'san_gach', stage_index: 0, points: 12_000 },
+      { item_id: 'san_gach', stage_index: 1, points: 12_000 },
+      { item_id: 'san_gach', stage_index: 2, points: 1000 },
     ]);
-    expect(topFloor(core.db, 0, 10).map((r) => [r.platformId, r.points])).toEqual([
+    const items = core.db.prepare("SELECT item_id, points FROM item_contributions WHERE platform_id = 'p2' ORDER BY rowid").all();
+    expect(items).toEqual([
+      { item_id: 'san_nen', points: 35_000 },
+      { item_id: 'be_bo_de', points: 40_000 },
+      { item_id: 'san_gach', points: 25_000 },
+    ]);
+    expect(topItem(core.db, 'san_nen', 10).map((x) => [x.platformId, x.points])).toEqual([
+      ['p2', 35_000],
       ['p1', 5000],
-      ['p2', 5000],
     ]);
-    expect(floorContributorCount(core.db, 0)).toBe(2);
+    expect(itemContributorCount(core.db, 'san_nen')).toBe(2);
   });
 
-  it('ghi thời điểm bắt đầu và xong của từng tầng, kèm giá đã chốt', () => {
-    core.processEvent(gift(1, 300)); // 30.000: xong nền móng + tầng 1
-    const floors = core.db.prepare('SELECT floor, cost, completed_at FROM floors ORDER BY floor').all();
-    expect(floors).toEqual([
-      { floor: 0, cost: 10_000, completed_at: T0 },
-      { floor: 1, cost: 20_000, completed_at: T0 },
-      { floor: 2, cost: 20_000, completed_at: null },
+  it('bia giai đoạn có lễ: top người góp vào đúng giai đoạn đó', () => {
+    core.processEvent(gift(1, 50)); // 5.000 vào "Phát quang, cắm mốc" (Lễ khởi công)
+    const r = core.processEvent(gift(2, 40)); // 4.000: 3.000 xong giai đoạn 1, 1.000 sang giai đoạn 2
+    expect(r.progress!.transitions[0]).toEqual({ type: 'stage_complete', itemId: 'san_nen', stageIndex: 0, ritual: 'Lễ khởi công' });
+    expect(topStage(core.db, 'san_nen', 0, 10).map((x) => [x.platformId, x.points])).toEqual([
+      ['p1', 5000],
+      ['p2', 3000],
     ]);
+    expect(topStage(core.db, 'san_nen', 1, 10).map((x) => [x.platformId, x.points])).toEqual([['p2', 1000]]);
+  });
+
+  it('ghi thời điểm bắt đầu và xong của từng hạng mục, từng giai đoạn, kèm giá đã chốt', () => {
+    clock.advance(1000);
+    core.processEvent(gift(1, 450)); // 45.000: xong San nền, Bệ bồ đề có 5.000
+    expect(core.db.prepare('SELECT item_id, stage_count, started_at, completed_at FROM items ORDER BY rowid').all()).toEqual([
+      { item_id: 'san_nen', stage_count: 5, started_at: T0, completed_at: T0 + 1000 },
+      { item_id: 'be_bo_de', stage_count: 5, started_at: T0 + 1000, completed_at: null },
+    ]);
+    const st = core.db.prepare('SELECT item_id, stage_index, cost, completed_at FROM stages ORDER BY rowid').all();
+    expect(st).toHaveLength(6);
+    expect(st[0]).toEqual({ item_id: 'san_nen', stage_index: 0, cost: 8000, completed_at: T0 + 1000 });
+    expect(st.at(-1)).toEqual({ item_id: 'be_bo_de', stage_index: 0, cost: 8000, completed_at: null });
   });
 });
 
@@ -158,12 +217,13 @@ describe('hòa điểm (14.5)', () => {
     expect(topTotal(core.db, 10).map((r) => r.platformId)).toEqual(['p2', 'p1']);
   });
 
-  it('áp dụng cả cho bia tầng và top phiên', () => {
+  it('áp dụng cả cho bia hạng mục, bia giai đoạn và top phiên', () => {
     const s = core.sessions.startManual();
     core.processEvent(like(1, 30));
     core.processEvent(like(2, 50));
     core.processEvent(like(1, 20));
-    expect(topFloor(core.db, 0, 10).map((r) => r.platformId)).toEqual(['p2', 'p1']);
+    expect(topItem(core.db, 'san_nen', 10).map((r) => r.platformId)).toEqual(['p2', 'p1']);
+    expect(topStage(core.db, 'san_nen', 0, 10).map((r) => r.platformId)).toEqual(['p2', 'p1']);
     expect(topSession(core.db, s.id, 10).map((r) => r.platformId)).toEqual(['p2', 'p1']);
   });
 });
@@ -182,75 +242,189 @@ describe('top phiên', () => {
 });
 
 describe('tắt máy rồi bật lại', () => {
-  it('tiếp tục đúng tầng, đúng giai đoạn, đúng phần trăm, đúng trần ngày', async () => {
-    core.processEvent(gift(1, 230)); // 23.000: xong nền móng, tầng 1 có 13.000 (giai đoạn 4)
+  it('tiếp tục đúng hạng mục, đúng giai đoạn, đúng phần trăm, đúng trần ngày', async () => {
+    core.processEvent(gift(1, 450)); // 45.000: xong San nền, Bệ bồ đề có 5.000 ở giai đoạn 1
     core.processEvent(like(2, 1990));
     const before = core.engine.status();
     await core.close();
 
     core = openTestCore(root, clock);
     expect(core.engine.status()).toEqual(before);
-    expect(before).toMatchObject({ floor: 1, floorPoints: 14_990, stage: 4, percent: 74 });
+    expect(before).toMatchObject({ item: { id: 'be_bo_de' }, stage: { number: 1 }, stagePoints: 6990, percent: 87 });
     expect(core.processEvent(like(2, 50)).score?.points).toBe(10); // trần ngày vẫn nhớ
   });
 });
 
-describe('đổi giá tầng giữa chừng (14.10)', () => {
-  const withBase = (base: number) => ({ ...core.config, tower: { ...core.config.tower, baseFloorCost: base } });
+describe('đổi giá giai đoạn giữa chừng (14.10)', () => {
+  const withCost = (id: string, cost: number): ProjectFile => {
+    const p = structuredClone(core.configStore.getProject());
+    p.items.find((i) => i.id === id)!.cost = cost;
+    return p;
+  };
 
   beforeEach(() => {
-    core.processEvent(gift(1, 190)); // xong nền móng, tầng 1 có 9.000/20.000 (giai đoạn 3)
+    core.processEvent(gift(1, 50)); // San nền, giai đoạn 1: 5.000/8.000
   });
 
   it('chưa xác nhận thì không lưu gì, chỉ báo cần xác nhận', () => {
-    const r = core.saveConfig(withBase(30_000), { source: 'test' });
-    expect(r).toEqual({ status: 'needs_confirmation', reprice: { floor: 1, oldCost: 20_000, newCost: 30_000 } });
-    expect(core.config.tower.baseFloorCost).toBe(20_000);
+    const r = core.saveProject(withCost('san_nen', 80_000), { source: 'test' });
+    expect(r).toEqual({
+      status: 'needs_confirmation',
+      reprice: { itemId: 'san_nen', itemName: 'San nền công trường', stageIndex: 0, oldCost: 8000, newCost: 16_000 },
+    });
+    expect(core.project.items[0]!.cost).toBe(40_000);
   });
 
-  it('không đồng ý đổi tầng đang xây: tầng này giữ giá cũ, tầng sau dùng giá mới', () => {
-    const r = core.saveConfig(withBase(30_000), { source: 'test', confirmReprice: false });
+  it('không đồng ý đổi giai đoạn đang xây: giai đoạn này giữ giá cũ, giai đoạn sau dùng giá mới', () => {
+    const r = core.saveProject(withCost('san_nen', 80_000), { source: 'test', confirmReprice: false });
     expect(r.status).toBe('saved');
-    expect(core.engine.status()).toMatchObject({ floor: 1, floorCost: 20_000, floorPoints: 9000 });
-    core.processEvent(gift(1, 110)); // 11.000: xong tầng 1, sang tầng 2
-    expect(core.engine.status()).toMatchObject({ floor: 2, floorCost: 30_000, floorPoints: 0 });
+    expect(core.engine.status()).toMatchObject({ stageCost: 8000, stagePoints: 5000 });
+    core.processEvent(gift(1, 30)); // 3.000: xong giai đoạn 1
+    expect(core.engine.status()).toMatchObject({ stage: { number: 2 }, stageCost: 16_000, stagePoints: 0 });
   });
 
-  it('giá cao hơn: phần trăm tính lại, giai đoạn lùi', () => {
-    core.saveConfig(withBase(40_000), { source: 'test', confirmReprice: true });
-    expect(core.engine.status()).toMatchObject({ floor: 1, floorCost: 40_000, floorPoints: 9000, stage: 2, percent: 22 });
-    const f = core.db.prepare('SELECT cost FROM floors WHERE floor = 1').get() as { cost: number };
-    expect(f.cost).toBe(40_000);
+  it('giá cao hơn: phần trăm tính lại theo giá mới', () => {
+    core.saveProject(withCost('san_nen', 80_000), { source: 'test', confirmReprice: true });
+    expect(core.engine.status()).toMatchObject({ stage: { number: 1 }, stageCost: 16_000, stagePoints: 5000, percent: 31 });
+    const st = core.db.prepare("SELECT cost FROM stages WHERE item_id = 'san_nen' AND stage_index = 0").get() as { cost: number };
+    expect(st.cost).toBe(16_000);
   });
 
-  it('giá thấp hơn số điểm đã góp: tầng xong ngay, điểm dư sang tầng sau', () => {
-    core.saveConfig(withBase(6000), { source: 'test', confirmReprice: true });
-    // tầng 1 giá mới 6.000 → xong, dư 3.000 sang tầng 2 (giá 6.000)
-    expect(core.engine.status()).toMatchObject({ floor: 2, floorCost: 6000, floorPoints: 3000 });
+  it('giá thấp hơn số điểm đã góp: giai đoạn xong ngay, điểm dư sang giai đoạn sau', () => {
+    const r = core.saveProject(withCost('san_nen', 20_000), { source: 'test', confirmReprice: true });
+    // giá mới mỗi giai đoạn 4.000 → giai đoạn 1 xong, dư 1.000 sang giai đoạn 2
+    expect(core.engine.status()).toMatchObject({ stage: { number: 2 }, stageCost: 4000, stagePoints: 1000 });
+    expect(r.status === 'saved' && r.progress[0]!.transitions[0]).toMatchObject({ type: 'stage_complete', stageIndex: 0 });
     const ev = core.db.prepare("SELECT note FROM events WHERE type = 'reprice'").get() as { note: string };
-    expect(ev.note).toBe('Đổi giá tầng đang xây');
+    expect(ev.note).toBe('Đổi giá giai đoạn đang xây');
+  });
+
+  it('đổi giá hạng mục chưa bắt đầu thì không cần xác nhận; có ghi nhật ký thay đổi', () => {
+    const r = core.saveProject(withCost('tam_quan', 200_000), { source: 'admin' });
+    expect(r.status).toBe('saved');
+    expect(core.project.items[3]!.cost).toBe(200_000);
+    const log = core.db.prepare("SELECT file, path, source FROM config_changes WHERE file = 'project.json'").all();
+    expect(log).toEqual([{ file: 'project.json', path: 'items', source: 'admin' }]);
   });
 
   it('đổi tỉ lệ quy đổi không tính lại điểm đã có', () => {
     core.saveConfig({ ...core.config, points: { ...core.config.points, giftPointsPerCoin: 200 } }, { source: 'test' });
-    expect(topTotal(core.db, 1)[0]!.points).toBe(19_000);
+    expect(topTotal(core.db, 1)[0]!.points).toBe(5000);
     core.processEvent(gift(1, 1));
-    expect(topTotal(core.db, 1)[0]!.points).toBe(19_200);
+    expect(topTotal(core.db, 1)[0]!.points).toBe(5200);
   });
 });
 
-describe('sau khi xong tháp (14.12)', () => {
-  it('sự kiện vẫn được ghi, kèm nhãn "sau khánh thành"', async () => {
-    await core.close();
-    core = openTestCore(root, clock, (c) => {
-      c.tower.totalFloors = 1;
+describe('sửa danh sách hạng mục khi đã xây (14.10)', () => {
+  const edit = (fn: (p: ProjectFile) => void): ProjectFile => {
+    const p = structuredClone(core.configStore.getProject());
+    fn(p);
+    return p;
+  };
+  const ids = () => core.project.items.map((i) => i.id);
+
+  beforeEach(() => {
+    core.processEvent(gift(1, 450)); // xong San nền, đang xây Bệ bồ đề
+  });
+
+  it('không được xóa, đổi thứ tự hay đổi số giai đoạn của hạng mục đã bắt đầu', () => {
+    const swap = edit((p) => p.items.splice(1, 2, p.items[2]!, p.items[1]!)); // Sân gạch lên trước Bệ bồ đề
+    expect(() => core.saveProject(swap, { source: 'test' })).toThrow(/đổi thứ tự hạng mục đã bắt đầu xây: "be_bo_de"/);
+    const drop = edit((p) => p.items.shift());
+    expect(() => core.saveProject(drop, { source: 'test' })).toThrow(/xóa hạng mục đã bắt đầu xây: "san_nen"/);
+    const more = edit((p) => p.items[1]!.stages!.push({ name: 'Thêm', visual: { kind: 'finish' } }));
+    expect(() => core.saveProject(more, { source: 'test' })).toThrow(ConfigError);
+    expect(ids().slice(0, 3)).toEqual(['san_nen', 'be_bo_de', 'san_gach']);
+  });
+
+  it('được đổi thứ tự và chèn hạng mục chưa bắt đầu', () => {
+    const next = edit((p) => {
+      p.items.splice(3, 2, p.items[4]!, p.items[3]!); // Hồ sen lên trước Tam quan
+      p.items.splice(2, 0, { id: 'gieng_nuoc', name: 'Giếng nước', cost: 40_000, size: 'nho', area: 'san_giua', template: 'nho' });
     });
-    core.processEvent(gift(1, 300)); // 30.000 = nền móng + tầng 1
-    expect(core.engine.status()).toMatchObject({ completed: true, percent: 100 });
+    expect(core.saveProject(next, { source: 'test' }).status).toBe('saved');
+    expect(ids().slice(0, 5)).toEqual(['san_nen', 'be_bo_de', 'gieng_nuoc', 'san_gach', 'ho_sen']);
+    core.processEvent(gift(1, 350)); // 35.000 = phần còn lại của Bệ bồ đề → sang Giếng nước
+    expect(core.engine.status()).toMatchObject({ item: { id: 'gieng_nuoc', number: 3, count: 24 }, stagePoints: 0 });
+  });
+});
+
+describe('sau khi xong công trình (14.12)', () => {
+  const one = { id: 'cong', name: 'Cổng', cost: 10_000, size: 'nho' as const, area: 'cong', template: 'nho' };
+  const tiny = (items: ProjectFile['items']): ProjectFile => {
+    const p = JSON.parse(fs.readFileSync(path.join(root, 'config', 'defaults', 'project.json'), 'utf8')) as ProjectFile;
+    return { ...p, items };
+  };
+
+  beforeEach(async () => {
+    await core.close();
+    fs.rmSync(path.join(root, 'data'), { recursive: true, force: true }); // bắt đầu lại với danh sách 1 hạng mục
+    writeProject(root, tiny([one]));
+    core = openTestCore(root, clock);
+    core.processEvent(gift(1, 300)); // 30.000 > 10.000
+  });
+
+  it('sự kiện vẫn được ghi, kèm nhãn "sau khánh thành"', () => {
+    expect(core.engine.status()).toMatchObject({
+      completed: true,
+      percent: 100,
+      projectPercent: 100,
+      lines: { item: 'Đại Danh Lam Thiên Phúc đã hoàn thành', stage: '', project: 'Toàn công trình 100%' },
+    });
     const r = core.processEvent(gift(2, 10));
     expect(r.score?.points).toBe(1000);
     const last = core.db.prepare('SELECT note FROM events ORDER BY id DESC LIMIT 1').get() as { note: string };
     expect(last.note).toBe('sau khánh thành');
     expect(topTotal(core.db, 5).map((x) => x.platformId)).toEqual(['p1', 'p2']);
+    expect(topItem(core.db, 'cong', 5).map((x) => [x.platformId, x.points])).toEqual([['p1', 10_000]]);
+  });
+
+  it('nối thêm hạng mục (mở rộng chùa): xây tiếp hạng mục mới, dữ liệu cũ giữ nguyên', () => {
+    const r = core.saveProject(tiny([one, { ...one, id: 'gac', name: 'Gác' }]), { source: 'admin' });
+    expect(r.status === 'saved' && r.progress[0]!.transitions[0]).toEqual({ type: 'item_start', itemId: 'gac' });
+    expect(core.engine.status()).toMatchObject({
+      completed: false,
+      item: { id: 'gac', number: 2, count: 2 },
+      stagePoints: 0,
+      projectPercent: 50,
+    });
+    core.processEvent(gift(2, 20)); // 2.000 = đúng giá giai đoạn 1
+    expect(core.engine.status()).toMatchObject({ stage: { number: 2 }, stagePoints: 0 });
+    expect(topItem(core.db, 'cong', 5).map((x) => x.platformId)).toEqual(['p1']);
+  });
+
+  it('sửa tay project.json lúc tắt máy thì bật lại cũng mở hạng mục nối thêm', async () => {
+    await core.close();
+    writeProject(root, tiny([one, { ...one, id: 'gac', name: 'Gác' }]));
+    core = openTestCore(root, clock);
+    expect(core.engine.status()).toMatchObject({ completed: false, item: { id: 'gac' } });
+  });
+});
+
+describe('project.json không khớp với những gì đã xây', () => {
+  it('sửa tay xóa mất hạng mục đang xây thì báo lỗi rõ ràng, không tự đoán', async () => {
+    core.processEvent(gift(1, 450)); // đang xây Bệ bồ đề
+    await core.close();
+    const p = JSON.parse(fs.readFileSync(path.join(root, 'config', 'project.json'), 'utf8')) as ProjectFile;
+    p.items.splice(1, 1);
+    writeProject(root, p);
+    expect(() => openTestCore(root, clock)).toThrow(/xóa hạng mục đã bắt đầu xây: "be_bo_de"/);
+  });
+});
+
+describe('dữ liệu của bản tháp cũ', () => {
+  it('DB tháp cũ được đổi tên giữ lại, game bắt đầu dữ liệu mới', async () => {
+    await core.close();
+    const dataDir = path.join(root, 'data', 'test');
+    for (const f of fs.readdirSync(dataDir).filter((f) => f.startsWith('game.db'))) fs.rmSync(path.join(dataDir, f));
+    const old = new Database(path.join(dataDir, 'game.db'));
+    old.exec('CREATE TABLE floors (floor INTEGER PRIMARY KEY); INSERT INTO floors VALUES (7);');
+    old.close();
+
+    core = openTestCore(root, clock);
+    expect(core.engine.status()).toMatchObject({ item: { id: 'san_nen' }, totalPoints: 0 });
+    const kept = new Database(path.join(dataDir, 'game.thap-cu.db'), { readonly: true });
+    expect(kept.prepare('SELECT floor FROM floors').get()).toEqual({ floor: 7 });
+    kept.close();
   });
 });

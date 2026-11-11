@@ -88,7 +88,16 @@ describe('giao diện không đặt vào vùng an toàn (mục 8)', () => {
     it(`vùng an toàn trên ${safe.top}, dưới ${safe.bottom}, phải ${safe.right}`, () => {
       const r = uiRects(safe);
       const content = { x: 0, y: safe.top, w: STAGE_W - safe.right, h: STAGE_H - safe.top - safe.bottom };
-      const parts = { badge: r.badge, banner: r.banner, progress: r.progress, chip: r.chip, board: r.board, disclaimer: r.disclaimer };
+      const parts = {
+        badge: r.badge,
+        banner: r.banner,
+        progress: r.progress,
+        progressInfo: r.progressInfo,
+        chip: r.chip,
+        board: r.board,
+        site: r.site,
+        disclaimer: r.disclaimer,
+      };
       for (const [name, rect] of Object.entries(parts)) {
         expect(rectInside(rect, content), name).toBe(true);
         expect(rect.w, name).toBeGreaterThan(0);
@@ -147,15 +156,15 @@ describe('luân phiên bảng xếp hạng', () => {
     rows: Array.from({ length: n }, (_, i) => ({ rank: i + 1, platformId: `p${i}`, nickname: 'x', avatarUrl: null, points: 1 })),
   });
 
-  it('lần lượt top phiên → top tổng → bia tầng, rồi quay lại', () => {
-    const boards = [b('session', 2), b('total', 3), b('floor', 1)];
+  it('lần lượt top phiên → top tổng → bia hạng mục, rồi quay lại', () => {
+    const boards = [b('session', 2), b('total', 3), b('item', 1)];
     expect(nextBoardIndex(boards, 0)).toBe(1);
     expect(nextBoardIndex(boards, 1)).toBe(2);
     expect(nextBoardIndex(boards, 2)).toBe(0);
   });
 
   it('bỏ qua bảng chưa có ai; tất cả trống thì hiện bảng tổng', () => {
-    expect(nextBoardIndex([b('session', 0), b('total', 3), b('floor', 2)], 2)).toBe(1);
-    expect(nextBoardIndex([b('session', 0), b('total', 0), b('floor', 0)], 2)).toBe(1);
+    expect(nextBoardIndex([b('session', 0), b('total', 3), b('item', 2)], 2)).toBe(1);
+    expect(nextBoardIndex([b('session', 0), b('total', 0), b('item', 0)], 2)).toBe(1);
   });
 });

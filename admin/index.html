@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bảo Tháp Thiên Phúc – Trạng thái</title>
+<title>Đại Danh Lam Thiên Phúc – Trạng thái</title>
 <style>
   :root {
     --bg: #f6f1e7; --card: #fffdf8; --ink: #2b2118; --muted: #7a6a58; --line: #e4d9c6;
@@ -34,6 +34,11 @@
   .steps span { flex: 1; height: 8px; border-radius: 4px; background: var(--line); }
   .steps span.done { background: var(--bar); }
   .steps span.cur { background: var(--accent); }
+  .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px 16px; }
+  .items div { font-size: 14px; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+  .items .done { color: var(--ok); }
+  .items .building { color: var(--accent); font-weight: 700; }
+  .items .todo { color: var(--muted); }
   .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
   label { font-size: 14px; display: flex; align-items: center; gap: 8px; margin-top: 8px; }
   select { font: inherit; padding: 5px; border-radius: 6px; border: 1px solid #c9b79a; }
@@ -49,7 +54,7 @@
 </head>
 <body>
 <header>
-  <h1>Bảo Tháp Thiên Phúc</h1>
+  <h1>Đại Danh Lam Thiên Phúc</h1>
   <span id="profile" class="badge">…</span>
   <a class="btn" href="/overlay/" target="_blank">Mở overlay ↗</a>
   <a class="btn" href="/tools/assets" target="_blank">Kiểm tra ảnh ↗</a>
@@ -58,17 +63,20 @@
 </header>
 <main>
   <section>
-    <h2>Tiến độ tháp</h2>
-    <div class="big" id="floor">…</div>
+    <h2>Tiến độ công trình</h2>
+    <div class="big" id="item">…</div>
     <div id="stage"></div>
     <div class="bar"><div id="bar"></div></div>
     <div class="row"><span id="pts"></span><span id="pct"></span></div>
     <div class="steps" id="steps"></div>
+    <div class="row" style="margin-top:10px"><span>Hạng mục này</span><span id="itempct"></span></div>
+    <div class="row"><span id="project-line"></span><span></span></div>
   </section>
   <section>
     <h2>Tổng quan</h2>
     <div class="row"><span>Tổng điểm đã góp</span><b id="total"></b></div>
-    <div class="row"><span>Cả tháp cần</span><span id="need"></span></div>
+    <div class="row"><span>Cả công trình cần</span><span id="need"></span></div>
+    <div class="row"><span>Còn lại</span><span id="left"></span></div>
     <div class="row"><span>Hệ số đang áp dụng</span><span id="mult"></span></div>
     <div class="row"><span>Nhãn trên overlay</span><span id="ovbadge"></span></div>
     <div class="row"><span>Node.js</span><span id="node"></span></div>
@@ -115,7 +123,11 @@
   </section>
   <section><h2 id="t-session"></h2><table id="b-session"></table></section>
   <section><h2 id="t-total"></h2><table id="b-total"></table></section>
-  <section><h2 id="t-floor"></h2><table id="b-floor"></table></section>
+  <section><h2 id="t-item"></h2><table id="b-item"></table></section>
+  <section class="wide">
+    <h2>Danh sách hạng mục (sửa trong file config\project.json; trang sửa trực tiếp có ở giai đoạn 7)</h2>
+    <div class="items" id="items"></div>
+  </section>
 </main>
 <script>
   const fmt = (n) => Number(n).toLocaleString('vi-VN');
@@ -131,18 +143,25 @@
   }
 
   function render(s) {
-    const t = s.tower;
+    const t = s.progress;
     $('profile').textContent = s.profile === 'production' ? 'DỮ LIỆU THẬT' : 'HỒ SƠ THỬ';
     $('profile').className = 'badge ' + s.profile;
-    $('floor').textContent = t.completed ? 'Tháp đã hoàn thành' : (t.floor === 0 ? t.floorName : `${t.floorName} / ${t.totalFloors}`);
-    $('stage').textContent = t.completed ? '' : `Giai đoạn ${t.stage}/5: ${t.stageName}`;
+    $('item').textContent = t.lines.item;
+    $('stage').textContent = t.lines.stage + (t.stage.ritual && !t.completed ? ` (có ${t.stage.ritual})` : '');
     $('bar').style.width = t.percent + '%';
-    $('pts').textContent = `${fmt(t.floorPoints)} / ${fmt(t.floorCost)} ${s.pointUnit}`;
+    $('pts').textContent = `${fmt(t.stagePoints)} / ${fmt(t.stageCost)} ${s.pointUnit}`;
     $('pct').textContent = t.percent + '%';
-    $('steps').innerHTML = [1, 2, 3, 4, 5]
-      .map((i) => `<span class="${t.completed || i < t.stage ? 'done' : i === t.stage ? 'cur' : ''}"></span>`).join('');
+    $('steps').innerHTML = Array.from({ length: t.stage.count }, (_, k) => k + 1)
+      .map((i) => `<span class="${t.completed || i < t.stage.number ? 'done' : i === t.stage.number ? 'cur' : ''}"></span>`).join('');
+    $('itempct').textContent = t.itemPercent + '%';
+    $('project-line').textContent = t.lines.project;
     $('total').textContent = `${fmt(t.totalPoints)} ${s.pointUnit}`;
-    $('need').textContent = `${fmt(s.totalTowerCost)} ${s.pointUnit}`;
+    $('need').textContent = `${fmt(t.projectCost)} ${s.pointUnit}`;
+    $('left').textContent = `${fmt(t.projectCost - t.donePoints)} ${s.pointUnit}`;
+    const mark = { done: '✓', building: '▶', todo: '○' };
+    $('items').innerHTML = t.items
+      .map((it, i) => `<div class="${it.status}">${mark[it.status]} ${i + 1}. ${esc(it.name)}${it.status === 'building' ? ` – ${t.itemPercent}%` : ''}</div>`)
+      .join('');
     $('mult').textContent = s.multiplier ? `${s.multiplier.labels.join(' + ')} ×${s.multiplier.total}` : '×1';
     $('ovbadge').textContent = s.badge || '(không có – live thật)';
     $('node').textContent = s.nodeVersion;

@@ -20,16 +20,6 @@
     "multiplier": 2,
     "schedule": []
   },
-  "tower": {
-    "totalFloors": 100,
-    "foundationCost": 10000,
-    "baseFloorCost": 20000,
-    "tierSize": 10,
-    "tierIncreasePct": 25,
-    "costRoundTo": 100,
-    "stageRatios": [20, 20, 20, 20, 20],
-    "floorCostOverrides": {}
-  },
   "session": {
     "autoEndOfflineMin": 15
   },
@@ -54,20 +44,22 @@
   ],
   "labels": {
     "pointUnitLabel": "công",
-    "disclaimer": "Trò chơi mô phỏng xây tháp – không phải quyên góp tôn giáo",
+    "disclaimer": "Trò chơi mô phỏng xây chùa – không phải quyên góp tôn giáo",
     "goldenHour": "Giờ vàng",
     "abbotName": "Thầy trụ trì",
     "anonymousName": "Thiện hữu ẩn danh",
     "testBadge": "CHẾ ĐỘ THỬ",
     "rehearsalBadge": "DIỄN TẬP",
-    "foundationName": "Nền móng",
-    "floorName": "Tầng {floor}",
-    "foundationStages": ["Dọn mặt bằng", "Đào móng", "Đóng cọc", "Xây bệ đá", "Hoàn thiện bệ"],
-    "floorStages": ["Sàn và mái hiên", "Dựng cột", "Xây tường", "Lắp cửa", "Hoàn thiện"],
+    "progress": {
+      "item": "Hạng mục {number}/{count} · {item}",
+      "stage": "Giai đoạn {number}/{count}: {stage}",
+      "project": "Toàn công trình {percent}%",
+      "completed": "{project} đã hoàn thành"
+    },
     "boards": {
       "sessionTop": "Top phiên này",
       "totalTop": "Bảng góp công",
-      "floorTop": "Bia ghi danh – {floorName}"
+      "itemTop": "Bia ghi danh – {item}"
     }
   }
 }

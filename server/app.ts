@@ -4,7 +4,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
-import { totalTowerCost } from '../shared/tower.js';
 import type { GameCore } from './core.js';
 import { SimulatorNotAllowed, type LiveService, type SourceMode } from './live/service.js';
 import { FIRE_KINDS, SCENARIO_KEYS, SCENARIOS, type FireKind, type ScenarioKey } from './live/simulator.js';
@@ -33,8 +32,7 @@ export function buildStatus({ core, live }: Pick<AppDeps, 'core' | 'live'>) {
   return {
     profile: core.profile,
     nodeVersion: process.versions.node,
-    tower: overlay.tower,
-    totalTowerCost: totalTowerCost(cfg.tower),
+    progress: overlay.progress,
     session: session ? { id: session.id, startedAt: session.started_at } : null,
     boards: overlay.boards,
     multiplier: overlay.multiplier,
