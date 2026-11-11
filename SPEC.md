@@ -118,9 +118,9 @@ Mặc định (đều sửa được trong config):
 |---|---|---|
 | Hạng mục | Vài tuần đến vài tháng | Công trình mới mọc lên trên bản đồ, lễ khánh thành |
 | Giai đoạn | Vài phiên live | Hình công trình đổi rõ rệt; giai đoạn đặc biệt có lễ |
-| Tiến độ liên tục | Vài phút | Tường cao dần, ngói lợp thêm, vật liệu chất lên rồi vơi đi |
+| Tiến độ liên tục | Mỗi lần có công | Từng viên gạch, viên ngói, thanh gỗ bay vào đúng chỗ; vật liệu chất lên rồi vơi đi (mục 7, "Xây từng mảnh") |
 
-**Nguyên tắc nhịp:** phiên live trung bình nào cũng phải có ít nhất một giai đoạn hoàn thành. Trong phiên, cứ khoảng 2% tiến độ của giai đoạn phải có một thay đổi nhìn thấy được trên hình. Admin cảnh báo khi giá một giai đoạn lớn hơn 1,5 lần số công trung bình của một phiên.
+**Nguyên tắc nhịp:** phiên live trung bình nào cũng phải có ít nhất một giai đoạn hoàn thành. Trong phiên, cứ khoảng 2% tiến độ của giai đoạn phải có một thay đổi nhìn thấy được trên hình. Mọi tương tác được tính công đều phải có phản hồi nhìn thấy được trên công trường: mảnh bay vào công trình, hoặc vật liệu được khiêng ra đống. Admin cảnh báo khi giá một giai đoạn lớn hơn 1,5 lần số công trung bình của một phiên.
 
 **Khai báo trong `config/project.json`** (sửa được qua admin):
 - `name`: tên quần thể, mặc định "Đại Danh Lam Thiên Phúc".
@@ -133,7 +133,12 @@ Mặc định (đều sửa được trong config):
   - `name`.
   - `weight`: tỉ trọng công trong hạng mục; mặc định chia đều.
   - `ritual` (tùy chọn): tên lễ nếu là giai đoạn đặc biệt, ví dụ "Lễ dựng cột".
-  - `visual`: cách hiển thị (mục 7).
+  - `build`: giai đoạn này xây vùng nào của công trình và hiện ra sao (mục 7, "Xây từng mảnh"):
+    - `part`: một vùng (`nen`, `cot`, `khung`, `mai`, `tuong`, `trangtri`, `nuoc`) hoặc danh sách vùng. Giai đoạn chỉ tác động mặt đất (cắm mốc, đào móng, đào hồ, tập kết vật liệu) dùng `matdat`.
+    - `look`: `full` (màu thật) hoặc `wood` (gỗ thô, cho giai đoạn dựng khung). Với `matdat`: `coc` (cọc, dây căng), `dao` (đất đào lõm, đống đất), `dong` (đống vật liệu cao dần).
+    - `band` (tùy chọn): `[từ, đến]` phần trăm chiều cao của vùng tính từ dưới lên, để chia một vùng cho nhiều giai đoạn (ví dụ mái `[0, 50]` rồi `[50, 100]`). Mặc định `[0, 100]`.
+    - Vùng đã xây `wood` ở giai đoạn trước, giai đoạn sau xây lại cùng vùng với `full`: từng mảnh gỗ được thay bằng màu thật.
+    - Claude Code đặt sẵn `build` mặc định cho mọi mẫu giai đoạn; chủ dự án sửa được trong admin.
 
 **Mẫu giai đoạn mặc định:**
 
@@ -257,24 +262,57 @@ Yêu cầu:
 **Ảnh giai đoạn (tùy chọn, làm dần):**
 - `buildings/<itemId>/key_<n>.png`: ảnh mốc, ví dụ "chỉ còn khung gỗ", "mái chưa trang trí". Cùng kích thước khung và căn khớp với `final.png`.
 - `buildings/<itemId>/stage_<k>.png`: ảnh riêng cho đúng giai đoạn k, ưu tiên cao nhất.
-- Thả file vào thư mục là game tự dùng, không phải sửa code.
+- Thả file vào thư mục là game tự dùng, không phải sửa code. Có ảnh này thì mảnh của giai đoạn lấy từ ảnh đó thay vì `final.png` (xem "Xây từng mảnh").
 
-**Hiển thị giai đoạn khi chưa có ảnh riêng** (mỗi giai đoạn trong config có `visual.kind`; Claude Code đặt mặc định hợp lý cho từng mẫu):
+**Xây từng mảnh** (cách hiển thị tiến độ giai đoạn; KHÔNG dùng kiểu hiện mờ dần hay lộ dần): mỗi lần người xem tặng quà, thả tim hoặc bình luận được tính công, công trình được thêm từng viên gạch, viên ngói, đoạn cột, thanh xà… vào đúng chỗ.
 
-| `kind` | Hiển thị (code tạo từ `final.png`) |
-|---|---|
-| `markers` | Cọc gỗ, dây căng quanh chân công trình; nét phác thảo mờ của công trình (lấy đường viền từ `final.png`) |
-| `foundation` | Vùng chân công trình đào xuống tối màu, đống đất, đá; nền lộ dần theo % |
-| `frame` | Hình công trình tô màu gỗ thô, bán trong suốt, lộ dần từ dưới lên theo % |
-| `build` | Màu thật lộ dần từ dưới lên theo %, giàn giáo phủ ngoài |
-| `roof` | Phần mái lộ dần từ trên xuống, từng hàng ngói theo %; giàn giáo |
-| `decorate` | Đủ màu, ánh vàng lấp lánh lan dần theo %, giàn giáo tháo dần |
-| `finish` | Hoàn chỉnh, đèn lồng sáng, không giàn giáo |
+1. **Vùng (parts).**
+   - Mỗi công trình có mặt nạ các vùng:
+     - `nen`: nền, móng, bậc;
+     - `cot`: cột;
+     - `khung`: xà, kèo;
+     - `mai`: mái ngói;
+     - `tuong`: tường, cửa;
+     - `trangtri`: bờ nóc, đầu đao, hoành phi, đèn;
+     - `nuoc`: mặt nước (hồ sen).
+   - Claude Code tự đề xuất vùng theo màu và vị trí (cột đỏ đứng, tường kem, mái ngói nâu đỏ phía trên).
+   - Chủ dự án chỉnh lại trên trang `/tools/parts` bằng cọ tô, tẩy, và xem từng vùng.
+   - Mặt nạ lưu vào `buildings/<mã công trình>/parts/<vùng>.png`. Vùng không có thì bỏ qua.
+2. **Mảnh (pieces).** Mỗi vùng tự cắt thành mảnh theo vật liệu (kích thước mảnh sửa trong config):
 
-- Có ảnh mốc thì chuyển tiếp giữa hai ảnh mốc theo cùng kiểu lộ dần, thay vì dùng màu gỗ hay màu thật.
-- **Giàn giáo tre** do code vẽ theo khung bao của công trình (không cần ảnh).
-- **Đống vật liệu** (gạch, gỗ, đá, ngói) dùng ảnh trong UI kit, thêm `props/*.png` nếu có. Đặt tự động quanh công trình đang xây, chất lên khi có quà, vơi dần khi tiến độ tăng.
-- Bảo tháp: mỗi tầng là một hạng mục, chỉ dải của tầng đó thay đổi; các tầng trên còn trống.
+   | Vùng | Mảnh | Thứ tự đặt |
+   |---|---|---|
+   | `nen` | Khối đá to xếp so le | Từng hàng từ dưới lên |
+   | `cot` | Đoạn cột | Từng cột một, từ chân lên đỉnh |
+   | `khung` | Thanh gỗ ngang, dọc, màu gỗ thô | Từng thanh |
+   | `tuong` | Viên gạch so le | Từng hàng từ dưới lên, trái sang phải, xen chút ngẫu nhiên |
+   | `mai` | Viên ngói theo hàng | Từ mép hiên lên nóc, như lợp ngói thật |
+   | `trangtri` | Mảng nhỏ | Rải dần, mỗi mảng lóe ánh vàng khi hiện |
+   | `nuoc` | Mảng nước | Lan dần từ mép bờ vào giữa |
+
+   - Thứ tự mảnh sinh cố định theo mã hạng mục (có seed), nên chỉ cần lưu tiến độ giai đoạn là dựng lại đúng hình. KHÔNG lưu từng mảnh vào DB.
+   - Đường cắt mảnh không cần trùng viên gạch vẽ trong tranh.
+3. **Giai đoạn gắn với vùng.**
+   - Mỗi giai đoạn có `build: { part, look }` (định dạng ở mục 5).
+   - Một vùng có thể chia cho nhiều giai đoạn theo dải chiều cao (`band`).
+   - Look `wood` dùng cho giai đoạn dựng khung; giai đoạn sau thay dần bằng màu thật theo từng mảnh.
+   - Giai đoạn không xây lên công trình (`part: matdat`) dùng hiệu ứng mặt đất: cọc và dây căng hiện từng cái, đất đào lõm dần từng mảng, đống đất cao dần.
+   - Có ảnh mốc hoặc ảnh giai đoạn riêng (`key_<n>.png`, `stage_<k>.png`) thì mảnh lấy từ ảnh đó thay vì `final.png`.
+4. **Quy đổi công → mảnh.**
+   - Số mảnh của giai đoạn tính từ diện tích vùng; công mỗi mảnh = giá giai đoạn ÷ số mảnh.
+   - Công lẻ cộng dồn, đủ thì đặt mảnh.
+5. **Hiệu ứng đặt mảnh.**
+   - Mảnh vật liệu tương ứng (gạch, ngói, gỗ, đá; lấy từ `props` đã chỉnh màu) bay theo đường vòng cung vào đúng vị trí, từ đống vật liệu gần nhất hoặc từ tay một dân phu đứng gần.
+   - Khi đặt: khớp vào, nảy nhẹ, bụi nhỏ, âm `brick_lay` / `tile_place` / `wood_hammer` theo giới hạn chống ồn hiện có (mục 10A).
+   - Thả tim, bình luận chưa đủ một mảnh: dân phu khiêng vật liệu ra đống, đống to dần.
+   - Quà: số mảnh tương ứng bay vào thành một đợt. Vùng vừa xây sáng viền khoảng 3 giây, kèm nhãn nhỏ lấy từ nhóm câu `piece_burst` (mục 9C).
+   - Tốc độ đặt tối đa `maxPiecesPerSec`, theo chế độ độ đông (mục 9A): `vang` 20, `vua` 20, `dong` 14, `ratdong` 10 mảnh/giây (sửa trong config). Hàng đợi quá dài thì đặt theo cụm 4–9 mảnh.
+   - Lễ chỉ bắt đầu khi mảnh cuối của giai đoạn đã đặt xong.
+6. **Hiệu năng.** Mảnh đã đặt vẽ dồn vào render texture của công trình; chỉ mảnh đang bay là sprite riêng. Công trình hàng nghìn mảnh vẫn giữ 60fps.
+7. **Ngoài mảnh.**
+   - **Giàn giáo tre** vẽ bằng code theo khung bao vùng đang xây, cao dần theo tiến độ, tháo dần ở giai đoạn cuối.
+   - **Đống vật liệu** dùng `props` (3 mức: to, vừa, nhỏ), đặt tự động quanh công trình đang xây. To lên khi có quà và tim, vơi đi khi mảnh được đặt.
+   - **Bảo tháp:** vùng và mảnh của mỗi tầng chỉ nằm trong dải của tầng đó.
 
 **Ảnh trong không gian màn hình (giữ như cũ):**
 ```
@@ -301,7 +339,7 @@ Trong lúc chưa có ảnh mới: dùng tạm bộ dân phu cũ, đi dọc thì 
 
 - Thiếu ảnh nào thì vẽ hình tạm kèm tên file, game không được crash.
 - Giữ `scripts/slice-sheet.ts` cho các sprite sheet.
-- Trang công cụ `/tools/assets` mở rộng thêm: xem bản đồ với từng công trình bật/tắt, kéo chỉnh khung cắt và `baseY`, xem thử mọi giai đoạn của một hạng mục bằng thanh trượt.
+- Trang công cụ `/tools/assets` mở rộng thêm: xem bản đồ với từng công trình bật/tắt, kéo chỉnh khung cắt và `baseY`. Trang `/tools/parts`: chia vùng của từng công trình (xem "Xây từng mảnh").
 
 ## 8. Bố cục overlay (1080×1920) và camera
 
@@ -443,6 +481,9 @@ Mục tiêu tim: khi bắt đầu phiên, lấy theo chế độ lúc đó. Nế
 KHÔNG có câu nói nào viết cứng trong code. Mọi câu chữ mà người xem đọc được đều nằm trong `config/dialogues.json` dưới dạng nhóm, mỗi nhóm chứa **danh sách câu không giới hạn số lượng**. Phạm vi gồm:
 - Thoại trụ trì (các nhóm liệt kê bên dưới).
 - Mẫu thông báo quà, ví dụ `toast_gift`: "{name} vừa góp {gift}".
+- Nhãn nhỏ trên công trường khi một đợt mảnh vừa bay vào công trình (không phải thoại trụ trì), nhóm `piece_burst`. Biến `{material}` là "viên gạch", "viên ngói", "thanh gỗ", "khối đá"… Giống nhóm `gift_*`: không chứa từ ngữ tôn giáo. Câu mặc định:
+  - "{name} vừa xây {n} {material}"
+  - "+{n} {material} từ {name}"
 - Chữ trong lễ hoàn thành, ví dụ `ceremony_title`: "Bia công đức – {item}", và `ceremony_others`: "…và {n} thiện hữu khác".
 - Chữ mục tiêu tim, ví dụ `goal_text`: "Đủ {target} tim mở khóa {reward}".
 - Bộ đếm đám đông `crowd_counter`, nhãn nghề của NPC `npc_labels`, dòng phụ của người góp công cũ `returning_subtitle`.
@@ -482,7 +523,7 @@ Quy tắc chọn:
 - `cooldownSec`: khoảng nghỉ tối thiểu giữa hai lần nói cùng nhóm.
 - Nhóm không còn câu hợp lệ: bỏ qua, ghi cảnh báo vào log, không crash.
 
-Biến trong câu: `{name}`, `{names}` (gộp nhiều tên), `{n}`, `{gift}`, `{item}` (tên hạng mục), `{stage}` (tên giai đoạn), `{ritual}` (tên lễ), `{itemIndex}`, `{itemTotal}`, `{percent}`, `{count}`, `{target}`, `{reward}`. Biến không hợp lệ phải bị báo lỗi ngay khi lưu trên admin.
+Biến trong câu: `{name}`, `{names}` (gộp nhiều tên), `{n}`, `{gift}`, `{material}` (tên vật liệu, nhóm `piece_burst`), `{item}` (tên hạng mục), `{stage}` (tên giai đoạn), `{ritual}` (tên lễ), `{itemIndex}`, `{itemTotal}`, `{percent}`, `{count}`, `{target}`, `{reward}`. Biến không hợp lệ phải bị báo lỗi ngay khi lưu trên admin.
 
 Mỗi người chỉ được chào bằng tên tối đa 1 lần/phiên.
 - Bong bóng thoại hiện 4–6 giây tùy độ dài. Có hàng đợi; thoại cảm ơn quà ưu tiên hơn thoại tự do. Thoại tự do bị bỏ nếu hàng đợi đang dài.
@@ -749,7 +790,7 @@ Chạy lặp liên tục, mỗi nhóm một thư mục trong `/assets/audio/ambi
 
 **14.4. Vượt nhiều giai đoạn hoặc nhiều hạng mục một lúc** (quà rất lớn).
 - Logic cộng điểm xử lý đúng ngay lập tức. Người tặng được ghi vào `item_contributions` và `stage_contributions` của TỪNG giai đoạn và hạng mục, theo phần điểm rơi vào đó.
-- Phần hiển thị phát lần lượt: mỗi giai đoạn thường khoảng 1 giây. Nếu hàng đợi có nhiều hơn 1 lễ, lễ `stage_ritual` và `item_complete` loại `nho` rút gọn còn khoảng 4 giây. Lễ hạng mục `vua`, `lon` luôn diễn đầy đủ.
+- Phần hiển thị phát lần lượt: mỗi giai đoạn thường khoảng 1 giây. Các giai đoạn bị vượt qua thì đặt mảnh theo cụm lớn để mỗi giai đoạn chỉ mất khoảng 1 giây (mục 7, "Xây từng mảnh"). Nếu hàng đợi có nhiều hơn 1 lễ, lễ `stage_ritual` và `item_complete` loại `nho` rút gọn còn khoảng 4 giây. Lễ hạng mục `vua`, `lon` luôn diễn đầy đủ.
 
 **14.5. Hòa điểm.** Trên mọi bảng và bia, người bằng điểm thì ai đạt mức điểm đó trước được xếp trên.
 
@@ -885,7 +926,10 @@ Quy tắc:
 **R. Chuyển hướng sang quần thể chùa** (làm NGAY, trước mọi việc khác):
 - **R1. Mô hình dữ liệu:** thay tầng bằng hạng mục và giai đoạn (mục 5, 6), `project.json` với mẫu giai đoạn và danh sách mặc định, migration DB. Nếu chưa có dữ liệu `production` thật thì được phép xóa và tạo lại DB; nếu đã có thì viết migration chuyển đổi. Cập nhật mọi unit test (vượt nhiều giai đoạn hoặc hạng mục, bia giai đoạn, đổi thứ tự hạng mục, nối thêm hạng mục). Cập nhật kho thoại và tên nhóm âm thanh theo thuật ngữ mới. Simulator và overlay tối giản (hình khối tạm) chạy được với mô hình mới.
 - **R2. Đồ họa bản đồ:** ghép bản đồ (chồng 308px), phóng to bằng AI, cắt công trình từ `map_built`, lớp tiền cảnh, manifest, trang `/tools/assets` mở rộng (mục 7). Dừng lại cho chủ dự án kiểm tra viền cắt và vị trí.
-- **R3. Hiển thị giai đoạn:** các `visual.kind`, giàn giáo vẽ bằng code, đống vật liệu, ảnh mốc tùy chọn. Trang thử cho phép kéo qua mọi giai đoạn của mọi hạng mục.
+- **R3. Xây từng mảnh** (mục 7):
+  - **R3a.** Trang `/tools/parts`: tự đề xuất vùng theo màu và vị trí, chỉnh bằng cọ tô, tẩy, xem từng vùng. Làm thử với Gác chuông trước, rồi dừng lại cho chủ dự án xem kết quả chia vùng.
+  - **R3b.** Sau khi chủ dự án đồng ý: cắt mảnh, gắn giai đoạn với vùng (`build`), mảnh bay vào, cộng dồn công lẻ, đống vật liệu, giàn giáo, hiệu ứng mặt đất. Thay hẳn cách hiện mờ dần của R2 (xóa code không còn dùng).
+  - **R3c.** Trang thử: chọn hạng mục và giai đoạn; nút "thả 10 tim", "tặng quà nhỏ", "tặng quà lớn", "tặng quà cực lớn"; hiện số FPS.
 - **R4. Camera và bố cục giao diện mới** (mục 8). Kiểm tra với ảnh chụp màn hình live thật.
 
 Sau đó tiếp tục:
@@ -925,9 +969,14 @@ Các quyết định dưới đây được ưu tiên hơn chữ ở các mục 
 15. Tượng ghi danh cho quà ≥ 5.000 xu hiển thị là "tượng võ tướng đá" (ảnh `honor_statues` là 3 tượng võ tướng), không dùng "tượng hộ pháp" vì gắn với quà.
 16. `game_state` lưu hạng mục đang xây bằng `current_item_id` (không bằng số thứ tự), đúng tinh thần "nhận diện bằng id" của mục 6.
 17. Giá mặc định (đơn vị 20.000 công): San nền 2, Bệ cây bồ đề 2, Sân gạch 3, Cổng tam quan 8, Hồ sen 3, Cầu đá 2, Tường bao 3, Gác chuông 6, Gác trống 6, Đôi sư tử đá 2, Chính điện & Tiền đường 40, Hành lang Tây 6, Hành lang Đông 6, Nhà tổ 8, mỗi tầng bảo tháp 4. Tổng 133 đơn vị = 2.660.000 công, 168 giai đoạn.
-18. Tên 5 giai đoạn của từng hạng mục `nho` và `visual.kind` mặc định do Claude Code đặt (sửa được trong `project.json`). Tầng 9 bảo tháp dùng `size: lon` để lễ xong hạng mục dài 25 giây như mục 10.
+18. Tên 5 giai đoạn của từng hạng mục `nho` và cách hiển thị mặc định của từng giai đoạn (nay là `build`, xem quyết định 24) do Claude Code đặt (sửa được trong `project.json`). Tầng 9 bảo tháp dùng `size: lon` để lễ xong hạng mục dài 25 giây như mục 10.
 19. Chú tiểu (tu sĩ) chỉ dùng làm NPC không tên; nhân vật của người xem không dùng hình chú tiểu.
 20. Ảnh gốc giữ nguyên tên tiếng Việt trong `assets/raw/`; script dựng ảnh dùng bảng ánh xạ tên ở mục 7 → file thật. `tower_spire.png` còn ở thư mục gốc: bỏ qua, không dùng. `promo_ceremony.png` chỉ là ảnh tham khảo.
 21. Ghi chú "đã code tới giữa giai đoạn 4" ở đầu file không đúng: bản tháp mới xong giai đoạn 3 (tag `thap-100-tang`), không có phần giai đoạn 4 cũ để chuyển sang.
 22. R1: chưa có dữ liệu production thật nên DB tháp cũ được đổi tên thành `game.thap-cu.db` (giữ lại), game tạo DB mới; `config.json` cũ tự được dọn các khóa của tháp.
 23. Không đưa code lên GitHub khi chưa được chủ dự án đồng ý (repo đang công khai).
+
+**2026-11-11 (sau R2):**
+24. Đổi cách hiển thị tiến độ giai đoạn: bỏ kiểu hiện mờ dần / lộ dần (`visual.kind`), chuyển sang **xây từng mảnh** (mục 7). Trường `visual` của giai đoạn thay bằng `build` (mục 5). Lộ trình R3 sửa theo (mục 15).
+25. `build` có thêm: `part` ghi được nhiều vùng; `part: matdat` với `look` = `coc` / `dao` / `dong`; `band` chia vùng theo chiều cao. Thêm vùng `nuoc` (mặt nước hồ sen). Quà rất lớn vượt nhiều giai đoạn: đặt mảnh theo cụm lớn, mỗi giai đoạn khoảng 1 giây (14.4). Tốc độ đặt mảnh: `vang` 20, `vua` 20, `dong` 14, `ratdong` 10 mảnh/giây.
+26. Trong R3 chưa có nhân vật: mảnh bay từ đống vật liệu; tim, bình luận chưa đủ một mảnh thì vật liệu bay từ mép công trường ra đống. Dân phu khiêng làm ở giai đoạn 4.

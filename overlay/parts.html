@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chia vùng công trình – Đại Danh Lam Thiên Phúc</title>
+<style>
+  :root { --bg: #f6f1e7; --card: #fffdf8; --ink: #2b2118; --muted: #7a6a58; --line: #e4d9c6; --accent: #b5462b; --ok: #2e7d32; --bad: #b3261e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+  header { position: sticky; top: 0; z-index: 5; padding: 10px 20px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); background: var(--card); }
+  header h1 { font-size: 19px; margin: 0; }
+  header a { color: var(--accent); font-size: 14px; }
+  main { display: grid; grid-template-columns: 1fr 380px; gap: 14px; padding: 14px 20px; }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+  .stagewrap { height: calc(100vh - 90px); overflow: auto; border-radius: 10px; border: 1px solid var(--line); }
+  .stagewrap.checker { background-color: #fff; background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%); background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0; }
+  .stagewrap.dark { background: #1d232b; }
+  .stagewrap.light { background: #f4f4f4; }
+  #canvas { display: block; image-rendering: pixelated; cursor: none; margin: 20px; touch-action: none; }
+  #cursor { position: fixed; pointer-events: none; border: 2px solid #fff; outline: 1px solid #000; border-radius: 50%; display: none; z-index: 10; }
+  aside { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; height: calc(100vh - 90px); overflow: auto; }
+  aside h2 { font-size: 15px; margin: 14px 0 6px; color: var(--accent); }
+  aside h2:first-child { margin-top: 0; }
+  .note { color: var(--muted); font-size: 13px; margin: 4px 0; }
+  .err { color: var(--bad); font-weight: 600; }
+  .ok { color: var(--ok); font-weight: 600; }
+  button, select { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid #c9b79a; background: #fff; color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+  label.rng { display: grid; grid-template-columns: 110px 1fr 46px; gap: 8px; align-items: center; font-size: 14px; margin: 4px 0; }
+  .part { display: grid; grid-template-columns: 22px 20px 1fr auto; gap: 6px; align-items: center; padding: 5px 6px; border-radius: 8px; cursor: pointer; font-size: 14px; border: 2px solid transparent; }
+  .part:hover { background: #f3eadb; }
+  .part.sel { border-color: var(--ink); background: #fff3d6; }
+  .part .sw { width: 18px; height: 18px; border-radius: 4px; border: 1px solid #0003; }
+  .part small { color: var(--muted); font-variant-numeric: tabular-nums; }
+  kbd { font: 12px monospace; border: 1px solid #ccc; border-radius: 4px; padding: 0 4px; background: #fff; color: var(--ink); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Chia vùng công trình</h1>
+  <a href="/admin">← Trang trạng thái</a>
+  <a href="/tools/assets">Kiểm tra ảnh, bản đồ ↗</a>
+  <select id="building"></select>
+  <span id="msg" class="note"></span>
+</header>
+<main>
+  <div class="stagewrap dark" id="wrap"><canvas id="canvas"></canvas></div>
+  <aside>
+    <h2>Lưu</h2>
+    <div class="row">
+      <button class="primary" id="save" disabled>Lưu</button>
+      <button id="revert" disabled>Bỏ thay đổi</button>
+      <button id="propose">Đề xuất tự động lại</button>
+    </div>
+    <p class="note" id="status"></p>
+
+    <h2>Công cụ</h2>
+    <div class="row">
+      <button id="tool-brush" class="on">Cọ tô <kbd>B</kbd></button>
+      <button id="tool-eraser">Tẩy <kbd>E</kbd></button>
+      <button id="undo" disabled>↶ Hoàn tác</button>
+      <button id="redo" disabled>↷ Làm lại</button>
+    </div>
+    <label class="rng">Cỡ cọ <input type="range" id="size" min="1" max="60" value="10"><span id="size-v">10</span></label>
+    <p class="note">Cọ tô gán vùng đang chọn (chỉ tô lên phần có hình). Tẩy bỏ vùng của điểm ảnh, chỗ bị tẩy hiện sọc đỏ.
+      Giữ <kbd>Alt</kbd> và bấm để lấy vùng tại chỗ đó. <kbd>[</kbd> <kbd>]</kbd> đổi cỡ cọ, <kbd>Ctrl+Z</kbd> hoàn tác.</p>
+
+    <h2>Vùng</h2>
+    <div id="parts"></div>
+    <p class="note" id="unassigned"></p>
+    <div class="row"><button id="fill-rest">Gán chỗ trống cho vùng gần nhất</button></div>
+
+    <h2>Xem</h2>
+    <div class="row">
+      <button id="view-color" class="on">Tô màu vùng</button>
+      <button id="view-solo">Chỉ vùng đang chọn</button>
+      <button id="view-plain">Ảnh gốc</button>
+    </div>
+    <label class="rng">Độ đậm màu <input type="range" id="opacity" min="0" max="100" value="55"><span id="opacity-v">55%</span></label>
+    <label class="rng">Phóng to <input type="range" id="zoom" min="1" max="6" step="0.5" value="2"><span id="zoom-v">×2</span></label>
+    <div class="row">Nền:
+      <button data-bg="dark" class="on">Tối</button><button data-bg="checker">Ô caro</button><button data-bg="light">Sáng</button>
+    </div>
+  </aside>
+</main>
+<div id="cursor"></div>
+<script type="module" src="./src/tools/parts.ts"></script>
+</body>
+</html>

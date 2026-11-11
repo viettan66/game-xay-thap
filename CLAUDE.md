@@ -85,6 +85,7 @@ scripts/  công cụ phụ (cắt sprite, backup, giả lập)
 - Bản đồ (R2): `npm run assets:upscale` (Real-ESRGAN ×4 → `assets/work/esrgan`) → `assets:segment` (`scripts/assets/map_segment.py`, rembg từng khung object → `assets/work/map/rembg`) → `assets:map` (`server/assets/mapCut.ts`: nền ghép + dải .jpg, công trình `buildings/<id>/final.png`, tiền cảnh `fg/<id>.png`, `manifest.map`). Khung cắt (tọa độ ảnh gốc 941×1672) ở `assets/map-cuts.json`; tọa độ manifest theo hệ bản đồ rộng 1728. Mặt nạ thuần + test: `server/assets/mask.ts`. Kiểu + hàm thuần: `shared/map.ts`. Trang công cụ: `overlay/src/tools/map.ts` + API `/api/tools/map*` (`server/assets/mapTools.ts`, cắt lại tuần tự, lỗi thì trả file khung về cũ).
 - Cắt object = mặt nạ rembg trừ cụm "giống hệt ảnh đồi trống" chạm mép hình (cây đứng trước → fg) + lấp lỗ kín + viền chân APRON 10px (chỗ khác biệt chưa thuộc ai). Ground = khác biệt mềm trong vùng, trừ object và ground đứng trước trong danh sách; `san_nen` cuối cùng = phần còn lại.
 - sharp: ảnh xám vẫn có thể ra 3 kênh (`greyscale()` không đổi số kênh) → dùng `extractChannel(0)`; ghép lớp có alpha xong ảnh thành 4 kênh → `removeAlpha()` trước `.raw()`; `resize` chạy TRƯỚC `composite` trong cùng pipeline.
+- Vùng xây từng mảnh (R3a): định nghĩa `shared/parts.ts` (nhãn 1..7: nen, cot, khung, mai, tuong, trangtri, nuoc); đề xuất + lưu/đọc `server/assets/parts.ts` (mái = màu ngói CÓ RÃNH hai chiều vì cột/xà cùng màu nhưng trơn; dùng ảnh loại điểm `assets/work/map/kinds/<id>.png` do assets:map ghi: viền chân, lỗ lấp → nền). Lưu `assets/game/buildings/<id>/parts/<vùng>.png` + `parts.json` (vị trí bản đồ để dời theo khi cắt lại; assets:map không xóa thư mục parts). Trang `overlay/parts.html` + `overlay/src/tools/parts.ts`, API `/api/tools/parts*` (giới hạn JSON 25MB riêng).
 - Overlay R2: `overlay/src/scene/map.ts` (bản đồ, dải tầng tháp, chớp sáng) + `overlay/src/mapLayout.ts` (camera tạm co vừa bề ngang, lia dọc, có test). Banner/bảng tự mờ khi che hạng mục đang xây (tạm tới R4).
 - Ảnh game: `scripts/assets/remove_bg.py` (rembg birefnet-general-lite, cắt từng vật rồi mới tách nền, khử viền trắng) → `assets/work/nobg`; `scripts/assets/build.ts` (sharp, dùng `scripts/slice-sheet.ts` + `scripts/assets/measure.ts`) → `assets/game` + `assets/manifest.json`. Kiểu manifest: `shared/manifest.ts`; kiểm tra/lưu: `server/assets/`. Giá trị chỉnh tay (`tuned: true`, …) được giữ khi chạy lại build.
 - Overlay R1 vẽ tạm bằng hình khối: `overlay/src/scene/site.ts` + `overlay/src/siteLayout.ts`; từ R2 chỉ dùng khi chưa có `manifest.map`.
@@ -101,6 +102,9 @@ Bản tháp cũ (tag `thap-100-tang`):
 Quần thể chùa (nhánh `quan-the-chua`):
 - [x] R1: mô hình dữ liệu hạng mục + giai đoạn, `project.json`, DB mới, simulator + overlay hình khối tạm (2026-11-11)
 - [x] R2: ghép bản đồ, phóng to, cắt công trình, lớp tiền cảnh, manifest, `/tools/assets` mở rộng (2026-11-11)
-- [ ] R3: hiển thị giai đoạn (`visual.kind`), giàn giáo, đống vật liệu, ảnh mốc
+- [ ] R3: xây từng mảnh (SPEC mục 7; thay cách hiện mờ dần)
+  - [x] R3a: trang `/tools/parts` chia vùng, thử với Gác chuông (2026-11-11), chờ chủ dự án xem
+  - [ ] R3b: cắt mảnh, `build` của giai đoạn, mảnh bay vào, công lẻ, đống vật liệu, giàn giáo, hiệu ứng mặt đất; xóa code mờ dần
+  - [ ] R3c: trang thử (chọn hạng mục, giai đoạn, nút tim/quà, FPS)
 - [ ] R4: camera và bố cục giao diện mới
 - [ ] Giai đoạn 4 → 8 (mục 15)

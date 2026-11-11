@@ -9,6 +9,8 @@ import { SimulatorNotAllowed, type LiveService, type SourceMode } from './live/s
 import { FIRE_KINDS, SCENARIO_KEYS, SCENARIOS, type FireKind, type ScenarioKey } from './live/simulator.js';
 import { chooseBackground, gameAssetsDir, loadManifest, ManifestError, missingFiles, saveManifest } from './assets/manifest.js';
 import { loadCuts, MapCutError, missingSegments } from './assets/mapCut.js';
+import { partsForEditing, partsStatus, proposeForBuilding, saveParts, validateLabels } from './assets/parts.js';
+import { PARTS } from '../shared/parts.js';
 import { MapCutQueue, updateBuildingCut, type MapTools } from './assets/mapTools.js';
 import { applyToManifest, parseToolUpdate } from './assets/tools.js';
 import { ConfigError } from './config/store.js';
@@ -62,6 +64,8 @@ export function createApp(deps: AppDeps): express.Express {
     if (!deps.isAllowedOrigin(req.headers.origin)) return res.status(403).json({ error: 'Không cho phép' });
     next();
   });
+  // Trang chia vùng gửi cả mảng vùng của công trình (công trình lớn vài MB).
+  app.use('/api/tools/parts', express.json({ limit: '25mb' }));
   app.use(express.json({ limit: '1mb' }));
 
   const ok = (res: Response) => {
@@ -181,6 +185,54 @@ export function createApp(deps: AppDeps): express.Express {
     const map = await mapQueue.run(() => deps.mapTools.build());
     broadcaster.markDirty();
     res.json({ ok: true, cuts: loadCuts(rootDir), map });
+  });
+
+  // ---- Chia vùng công trình cho "xây từng mảnh" (R3a) ----
+  const buildingById = (id: string) => {
+    const b = loadManifest(rootDir)?.map?.buildings.find((x) => x.id === id);
+    if (!b) throw new BadRequest(`Không có công trình "${id}" trên bản đồ (chạy npm run assets:map)`);
+    return b;
+  };
+  const buildingName = (b: { id: string; items: string[] }) => {
+    const names = new Map(core.project.items.map((i) => [i.id, i.name]));
+    return b.items.length === 1 ? (names.get(b.items[0]!) ?? b.id) : `Bảo tháp (${b.items.length} tầng)`;
+  };
+  const partsReply = (b: ReturnType<typeof buildingById>, labels: Uint8Array, source: string) => ({
+    building: { id: b.id, name: buildingName(b), w: b.w, h: b.h, file: b.file, layer: b.layer },
+    labels: Buffer.from(labels).toString('base64'),
+    source,
+  });
+  app.get('/api/tools/parts', (_req, res) => {
+    const map = loadManifest(rootDir)?.map;
+    res.json({
+      parts: PARTS,
+      buildings: (map?.buildings ?? []).map((b) => ({ id: b.id, name: buildingName(b), w: b.w, h: b.h, layer: b.layer, ...partsStatus(rootDir, b.id) })),
+    });
+  });
+  app.get('/api/tools/parts/:id', async (req, res) => {
+    const b = buildingById(req.params.id);
+    const r = await partsForEditing(rootDir, b);
+    res.json(partsReply(b, r.labels, r.source));
+  });
+  app.post('/api/tools/parts/:id/propose', async (req, res) => {
+    const b = buildingById(req.params.id);
+    res.json(partsReply(b, await proposeForBuilding(rootDir, b), 'unsaved'));
+  });
+  app.post('/api/tools/parts/:id', async (req, res) => {
+    const b = buildingById(req.params.id);
+    const raw = body(req).labels;
+    if (typeof raw !== 'string') throw new BadRequest('Thiếu mảng vùng (labels)');
+    const labels = new Uint8Array(Buffer.from(raw, 'base64'));
+    const problem = validateLabels(labels, b.w, b.h);
+    if (problem) throw new BadRequest(problem);
+    const source = body(req).edited === false ? 'auto' : 'edited';
+    await saveParts(rootDir, b, labels, source);
+    res.json({ ok: true, ...partsStatus(rootDir, b.id) });
+  });
+  app.get('/tools/parts', (_req, res) => {
+    const page = path.join(overlayDir(rootDir), 'parts.html');
+    if (!fs.existsSync(page)) return res.status(503).type('html').send('<meta charset="utf-8"><p>Chưa đóng gói. Chạy <code>npm run build</code>.</p>');
+    res.sendFile(page);
   });
 
   app.get('/tools/assets', (_req, res) => {

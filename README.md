@@ -5,8 +5,9 @@ trên khu đồi. Công trình gồm 23 hạng mục (San nền, Bệ cây bồ 
 mỗi hạng mục qua nhiều giai đoạn thi công.
 Đặc tả đầy đủ: [SPEC.md](SPEC.md). Bản cũ "tháp 100 tầng" được lưu ở git tag `thap-100-tang` và file [SPEC_old.md](SPEC_old.md).
 
-> **Tiến độ:** đã xong **R1** (mô hình hạng mục và giai đoạn) và **R2** (bản đồ chùa thật: ghép nền, phóng to bằng AI,
-> cắt từng công trình từ ảnh, lớp tiền cảnh, trang chỉnh khung cắt). Sắp tới: R3 hiển thị từng giai đoạn thi công, R4 camera và bố cục mới.
+> **Tiến độ:** đã xong **R1** (mô hình hạng mục và giai đoạn), **R2** (bản đồ chùa thật: ghép nền, phóng to bằng AI,
+> cắt từng công trình từ ảnh, lớp tiền cảnh, trang chỉnh khung cắt) và **R3a** (trang chia vùng `/tools/parts`, thử với Gác chuông).
+> Đang làm: R3 "xây từng mảnh" (mỗi lần có công, từng viên gạch, viên ngói, thanh gỗ bay vào đúng chỗ). Sau đó R4 camera và bố cục mới.
 > Chưa có nhân vật và trụ trì (giai đoạn 4), chưa kết nối TikTok (giai đoạn 6).
 
 ---
@@ -108,6 +109,36 @@ Mở trang kiểm tra: trên trang trạng thái bấm **Kiểm tra ảnh ↗**,
   - bấm **Cắt lại công trình này**. Đổi khung xanh thì máy tách hình lại (10–60 giây), rồi dựng lại cả bản đồ; overlay đang mở tự cập nhật.
 - Khung cắt lưu trong `assets\map-cuts.json` (tọa độ theo ảnh gốc 941×1672).
 
+### Chia vùng công trình: trang `/tools/parts` (R3a)
+Để "xây từng mảnh", mỗi công trình được chia thành các vùng. Mỗi vùng được xây bằng một loại mảnh:
+
+| Vùng | Gồm | Mảnh |
+|---|---|---|
+| Nền | nền, móng, bậc, sân quanh chân | khối đá |
+| Cột | cột | đoạn cột |
+| Khung | xà, kèo | thanh gỗ |
+| Mái | mái ngói | viên ngói |
+| Tường | tường, cửa | viên gạch |
+| Trang trí | bờ nóc, đầu đao, hoành phi, đèn, chuông | mảng nhỏ lóe vàng |
+| Mặt nước | mặt nước (hồ sen) | mảng nước |
+
+Mở trang: trên trang trạng thái bấm **Chia vùng ↗**, hoặc vào `http://127.0.0.1:3000/tools/parts`.
+- Chọn công trình ở ô trên cùng.
+- Chưa chia bao giờ thì máy **tự đề xuất**, nhận vùng theo màu, vân bề mặt và vị trí:
+  - mái ngói có rãnh, cột đỏ đứng, xà đỏ nằm ngang;
+  - viền mái màu kem, chuông và chóp màu vàng đồng;
+  - phần thấp là bệ đá.
+- **Cọ tô**: bấm vào một vùng ở bảng bên phải (hoặc phím `1`–`7`) rồi tô lên hình. Cọ chỉ tô lên phần có hình, không tô ra nền trống.
+- **Tẩy**: bỏ vùng của điểm ảnh. Chỗ chưa thuộc vùng nào hiện **sọc đỏ**, vì những chỗ đó sẽ không bao giờ được xây.
+  Nút **Gán chỗ trống cho vùng gần nhất** lấp hết sọc đỏ.
+- Mẹo: giữ `Alt` + bấm để lấy vùng tại chỗ đó; `[` `]` đổi cỡ cọ; `Ctrl+Z` hoàn tác, `Ctrl+Y` làm lại.
+- **Xem**:
+  - "Tô màu vùng" (kéo thanh độ đậm, bỏ dấu tích để ẩn màu một vùng);
+  - "Chỉ vùng đang chọn" (các vùng khác tối đi);
+  - "Ảnh gốc". Đổi nền tối / ô caro / sáng, phóng to tới ×6.
+- Bấm **Lưu** để ghi vào `assets\game\buildings\<mã>\parts\<vùng>.png`.
+  Cắt lại công trình ở `/tools/assets` sau đó thì vùng đã tô vẫn được giữ (dời theo vị trí trên bản đồ).
+
 ### Làm lại bản đồ từ ảnh gốc (chỉ khi thay ảnh bản đồ trong `assets\raw\`)
 Cần Python + rembg và Real-ESRGAN như bên dưới. Mở cửa sổ lệnh tại thư mục dự án rồi gõ lần lượt:
 1. `npm run assets:upscale`: phóng ×4 ba ảnh bản đồ bằng Real-ESRGAN (vài phút; ảnh đã phóng thì bỏ qua).
@@ -183,7 +214,17 @@ Mở cửa sổ lệnh **tại thư mục dự án**: mở thư mục `game-xay-
    - công trình hiện dần lên đúng chỗ trên bản đồ, camera lia theo hạng mục đang xây;
    - tới bảo tháp thì từng tầng hiện lên, banner tự mờ đi để thấy tháp.
 
-**d) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
+**d) R3a: chia vùng Gác chuông**
+1. Nhấp đúp `start-test.bat`, trên trang trạng thái bấm **Chia vùng ↗**. Trang mở sẵn **Gác chuông** với bản máy đề xuất.
+2. Xem màu từng vùng:
+   - mái **tím**, viền mái và chuông **vàng**;
+   - 4 cột **đỏ**, xà dưới mái và khung quanh chân chuông **cam**;
+   - bệ, bậc, lan can, sân quanh chân **nâu**.
+3. Bấm **Chỉ vùng đang chọn** rồi bấm lần lượt từng vùng ở bảng bên phải: mỗi lần chỉ vùng đó sáng, các vùng khác tối đi.
+4. Chỗ nào máy chia chưa đúng (ví dụ chóp mái lẫn màu mái, vài vệt xanh "tường" ở mép): chọn vùng đúng, tô lại bằng cọ.
+5. Bấm **Lưu**. Ô chọn công trình đổi thành "Gác chuông – đã chỉnh tay". Tải lại trang: vẫn đúng như vừa lưu.
+
+**e) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
 Lệnh này xóa dữ liệu thử và chạy một chuỗi sự kiện mẫu. Màn hình in từng giai đoạn, từng hạng mục vừa xong, kèm các bảng xếp hạng.
 
 ---

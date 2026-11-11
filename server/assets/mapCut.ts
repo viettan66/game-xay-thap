@@ -226,7 +226,15 @@ export interface BuildingMask {
   alpha: Uint8Array;
   fg: Uint8Array | null;
   layer: 'ground' | 'object';
+  /** Loại từng điểm ảnh (KIND_*), dùng để gợi ý chia vùng xây từng mảnh (R3). */
+  kinds: Uint8Array;
 }
+
+/** Loại điểm ảnh của công trình: thân (rembg), lỗ kín được lấp, viền chân, phần nền. */
+export const KIND_CORE = 1;
+export const KIND_HOLE = 2;
+export const KIND_APRON = 3;
+export const KIND_GROUND = 4;
 
 /** Đọc mặt nạ rembg của một phần object, đặt vào khung (tọa độ trong khung). */
 async function rembgInBox(root: string, key: string, b: [number, number, number, number]): Promise<Uint8Array> {
@@ -252,7 +260,12 @@ async function rembgInBox(root: string, key: string, b: [number, number, number,
  * Một phần object: mặt nạ rembg, bỏ các cụm "giống hệt ảnh đồi trống" chạm mép hình (cây có sẵn đứng trước),
  * lấp lỗ kín bên trong. Trả về alpha công trình và alpha tiền cảnh, cùng kích thước khung.
  */
-export function objectMask(rem: Uint8Array, diffInBox: Uint8Array, bw: number, bh: number): { alpha: Uint8Array; fg: Uint8Array } {
+export function objectMask(
+  rem: Uint8Array,
+  diffInBox: Uint8Array,
+  bw: number,
+  bh: number,
+): { alpha: Uint8Array; fg: Uint8Array; core: Uint8Array; holes: Uint8Array } {
   const n = bw * bh;
   const R = new Uint8Array(n);
   for (let i = 0; i < n; i++) R[i] = rem[i]! > 128 ? 1 : 0;
@@ -284,10 +297,16 @@ export function objectMask(rem: Uint8Array, diffInBox: Uint8Array, bw: number, b
   const B = new Uint8Array(n);
   for (let i = 0; i < n; i++) B[i] = alpha[i]! > 128 ? 1 : 0;
   const filled = fillHoles(B, bw, bh);
-  for (let i = 0; i < n; i++) if (filled[i] && !B[i] && !occ[i]) alpha[i] = 255;
+  const holes = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    if (filled[i] && !B[i] && !occ[i]) {
+      alpha[i] = 255;
+      holes[i] = 1;
+    }
+  }
   const fg = new Uint8Array(n);
   for (let i = 0; i < n; i++) fg[i] = Math.round((occSoft[i]! * rem[i]!) / 255);
-  return { alpha, fg };
+  return { alpha, fg, core: B, holes };
 }
 
 /** Tính mặt nạ mọi công trình trên ảnh gốc (mỗi mặt nạ cùng kích thước ảnh gốc). */
@@ -317,15 +336,17 @@ export async function computeMasks(root: string, cuts: MapCuts, src: Pick<Source
     if (objParts.length === 0) continue;
     const alpha = new Uint8Array(W * H);
     const fg = new Uint8Array(W * H);
+    const kinds = new Uint8Array(W * H);
     for (const { p, k } of objParts) {
       const [x0, y0, x1, y1] = p.box;
       const rem = await rembgInBox(root, `${b.id}_${k}`, p.box);
       const m = objectMask(rem, diffBox(p.box), x1 - x0, y1 - y0);
       put(alpha, m.alpha, p.box);
       put(fg, m.fg, p.box);
+      put(kinds, m.core.map((v, i) => (v ? KIND_CORE : m.holes[i] ? KIND_HOLE : 0)), p.box);
     }
     for (let i = 0; i < W * H; i++) if (alpha[i]! > 128) occupied[i] = 1;
-    masks.set(b.id, { alpha, fg, layer: 'object' });
+    masks.set(b.id, { alpha, fg, layer: 'object', kinds });
   }
   // Viền chân công trình: rembg hay bỏ sót phần trông giống mặt đất (sàn hành lang, bậc, hoa văn đỉnh mái).
   // Chỗ khác hẳn ảnh đồi trống, chưa thuộc công trình nào, nằm trong vòng APRON điểm ảnh quanh công trình
@@ -352,7 +373,10 @@ export async function computeMasks(root: string, cuts: MapCuts, src: Pick<Source
         const gi = (y0 + y) * W + x0 + x;
         const v = soft[y * bw + x]!;
         if (v > m.alpha[gi]!) m.alpha[gi] = v;
-        if (v > 128) occupied[gi] = 1;
+        if (v > 128) {
+          occupied[gi] = 1;
+          if (!m.kinds[gi]) m.kinds[gi] = KIND_APRON;
+        }
       }
     }
   }
@@ -386,9 +410,12 @@ export async function computeMasks(root: string, cuts: MapCuts, src: Pick<Source
     for (let i = 0; i < W * H; i++) if (g[i]! > taken[i]!) taken[i] = g[i]!;
     const prev = masks.get(b.id);
     if (prev) {
-      for (let i = 0; i < W * H; i++) if (g[i]! > prev.alpha[i]!) prev.alpha[i] = g[i]!;
+      for (let i = 0; i < W * H; i++) {
+        if (g[i]! > prev.alpha[i]!) prev.alpha[i] = g[i]!;
+        if (g[i]! > 128 && !prev.kinds[i]) prev.kinds[i] = KIND_GROUND;
+      }
     } else {
-      masks.set(b.id, { alpha: g, fg: null, layer: 'ground' });
+      masks.set(b.id, { alpha: g, fg: null, layer: 'ground', kinds: g.map((v) => (v > 128 ? KIND_GROUND : 0)) });
     }
   }
   return masks;
@@ -434,6 +461,25 @@ async function writeCut(
   fs.mkdirSync(path.dirname(file), { recursive: true });
   await sharp(rgba, { raw: { width: w, height: h, channels: 4 } }).png({ compressionLevel: 9, adaptiveFiltering: true }).toFile(file);
   return { x: X, y: Y, w, h, rawBox: bb };
+}
+
+/** Ảnh loại điểm ảnh, cùng khung với final.png (phóng kiểu "gần nhất" để giữ đúng giá trị loại). */
+async function writeKinds(
+  file: string,
+  kinds: Uint8Array,
+  W: number,
+  placed: { w: number; h: number; rawBox: { x0: number; y0: number; x1: number; y1: number } },
+): Promise<void> {
+  const { x0, y0, x1, y1 } = placed.rawBox;
+  const rw = x1 - x0;
+  const rh = y1 - y0;
+  const crop = new Uint8Array(rw * rh);
+  for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) crop[y * rw + x] = kinds[(y0 + y) * W + x0 + x]!;
+  await sharp(Buffer.from(crop), { raw: { width: rw, height: rh, channels: 1 } })
+    .resize({ width: placed.w, height: placed.h, fit: 'fill', kernel: 'nearest' })
+    .extractChannel(0)
+    .png()
+    .toFile(file);
 }
 
 /** Đáy phần đặc (alpha > 128) của công trình, tọa độ ảnh gốc. */
@@ -527,7 +573,19 @@ export async function buildMap(root: string, opts: BuildMapOptions = {}): Promis
   log('- Cắt công trình');
   const masks = await computeMasks(root, cuts, src);
   const gameDir = gameAssetsDir(root);
-  for (const d of ['buildings', 'fg']) fs.rmSync(path.join(gameDir, d), { recursive: true, force: true });
+  fs.rmSync(path.join(gameDir, 'fg'), { recursive: true, force: true });
+  // Xóa ảnh công trình cũ nhưng GIỮ thư mục parts/ (vùng chủ dự án đã tô tay trên /tools/parts).
+  const bDir = path.join(gameDir, 'buildings');
+  if (fs.existsSync(bDir)) {
+    for (const d of fs.readdirSync(bDir)) {
+      const dir = path.join(bDir, d);
+      fs.rmSync(path.join(dir, 'final.png'), { force: true });
+      if (!fs.existsSync(path.join(dir, 'parts'))) fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  const kindsDir = path.join(root, 'assets', 'work', 'map', 'kinds');
+  fs.rmSync(kindsDir, { recursive: true, force: true });
+  fs.mkdirSync(kindsDir, { recursive: true });
   const buildings: MapBuilding[] = [];
   for (const c of cuts.buildings) {
     const m = masks.get(c.id);
@@ -538,6 +596,7 @@ export async function buildMap(root: string, opts: BuildMapOptions = {}): Promis
       log(`  ! ${c.id}: không có điểm ảnh nào (khung trống?)`);
       continue;
     }
+    await writeKinds(path.join(kindsDir, `${c.id}.png`), m.kinds, src.W, placed);
     const bottomRaw = c.baseY ?? solidBottom(m.alpha, src.W, src.H) ?? placed.rawBox.y1;
     let fg: MapBuilding['fg'] = null;
     if (m.fg && m.fg.some((v) => v > 128)) {
