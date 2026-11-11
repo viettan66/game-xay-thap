@@ -58,12 +58,12 @@ export class Sandbox {
     return this.state;
   }
 
-  give(name: string, source: Contribution['source'], points: number): Contribution | null {
+  give(name: string, source: Contribution['source'], points: number, coins = 0): Contribution | null {
     if (points <= 0) return null;
     const r = applyPoints(this.state, points, this.project);
     this.state = r.state;
     this.total += points;
-    return { type: 'contribution', name, source, points, allocations: r.allocations };
+    return { type: 'contribution', name, source, points, coins, allocations: r.allocations };
   }
 
   view(): ProgressView {

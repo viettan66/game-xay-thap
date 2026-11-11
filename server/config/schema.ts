@@ -14,6 +14,9 @@ const lunarBound = z
   .regex(/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|30|last)$/, 'Ngày âm lịch phải có dạng MM-DD hoặc MM-last');
 const int = (min = 0) => z.number().int().min(min);
 const weekdays = z.array(z.number().int().min(0).max(6)).min(1);
+/** Một số theo từng chế độ độ đông (mục 9A); 0 = không tự động. */
+const perCrowd = (max: number) =>
+  z.strictObject({ vang: z.number().min(0).max(max), vua: z.number().min(0).max(max), dong: z.number().min(0).max(max), ratdong: z.number().min(0).max(max) });
 
 export const configSchema = z.strictObject({
   liveSource: z.enum(['tiktok-connector', 'simulator', 'euler-ws', 'tikfinity']),
@@ -52,6 +55,31 @@ export const configSchema = z.strictObject({
     towerCenterX: int(0).max(1080),
     towerBaseY: int(0).max(1920),
     boardRotateSec: z.number().min(3).max(300),
+    // Bố cục giao diện (mục 8, 14.13): vị trí bảng xếp hạng, bản đồ thu nhỏ, độ đậm nền từng khung.
+    boardPosition: z.enum(['auto', 'leftMiddle', 'rightMiddle', 'leftTop']),
+    minimap: z.enum(['overview', 'always', 'off']),
+    opacity: z.strictObject({
+      progress: z.number().min(0).max(1),
+      board: z.number().min(0).max(1),
+      events: z.number().min(0).max(1),
+      disclaimer: z.number().min(0).max(1),
+    }),
+  }),
+  // Camera (mục 8): zoom tối đa, tỉ lệ công trình trong khung, các chế độ overview / tour / ceremony, rung khi quà lớn.
+  camera: z.strictObject({
+    maxZoom: z.number().min(1).max(3),
+    siteWidth: z.number().min(0.2).max(0.9),
+    overviewEverySec: perCrowd(24 * 3600),
+    overviewSec: z.number().min(3).max(60),
+    tourEverySec: perCrowd(24 * 3600),
+    tourSec: z.number().min(5).max(120),
+    ceremonySec: z.number().min(1).max(60),
+    ceremonyZoom: z.number().min(1).max(2),
+    shakeMinCoins: int(1),
+  }),
+  // Lọc tên (mục 8): tên chứa từ cấm hiện labels.anonymousName.
+  nameFilter: z.strictObject({
+    bannedWords: z.array(z.string().min(1)),
   }),
   // Xây từng mảnh (mục 7): cỡ mảnh theo vùng, tốc độ theo chế độ độ đông, tên vật liệu trong nhãn piece_burst.
   pieces: z.strictObject({
@@ -79,6 +107,12 @@ export const configSchema = z.strictObject({
       sessionTop: z.string().min(1),
       totalTop: z.string().min(1),
       itemTop: z.string().min(1),
+    }),
+    // Ô sự kiện (mục 8): {name}, {multiplier}; {time} là đồng hồ đếm ngược giờ vàng.
+    events: z.strictObject({
+      goldenHour: z.string().min(1),
+      event: z.string().min(1),
+      total: z.string().min(1),
     }),
   }),
 });

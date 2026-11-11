@@ -1,15 +1,30 @@
-// Bản đồ quần thể chùa: nền ghép + công trình cắt từ ảnh + lớp tiền cảnh, lia dọc theo hạng mục đang xây.
+// Bản đồ quần thể chùa: nền ghép + công trình cắt từ ảnh + lớp tiền cảnh.
 // Lớp từ sau ra trước (mục 8): nền → công trình nền (sân, hồ, tường) → công trình theo baseY → tiền cảnh → hiệu ứng.
 // Hạng mục đã xong hiện đủ ảnh; hạng mục đang xây được XÂY TỪNG MẢNH (build/builder.ts, mục 7); chưa xây thì ẩn.
-// R4 làm camera đầy đủ. Thiếu ảnh nào thì bỏ qua, không crash.
+// Camera (camera.ts, R4): site / overview / tour / ceremony, chuyển mượt, rung khi quà lớn.
+// Thiếu ảnh nào thì bỏ qua, không crash.
 
 import { Container, Rectangle, Sprite, Texture, type Renderer } from 'pixi.js';
-import { drawOrder, floorBand, itemRect, textureKey, type MapBuilding, type MapManifest } from '../../../shared/map.js';
-import type { PiecesConfig, ProgressView, ServerMessage } from '../../../shared/protocol.js';
+import { drawOrder, floorBand, itemRect, textureKey, type MapBuilding, type MapManifest, type MapRect } from '../../../shared/map.js';
+import type { CameraConfig, CameraMode, PiecesConfig, ProgressView, ServerMessage } from '../../../shared/protocol.js';
 import type { Art } from '../art.js';
 import { Builder, type BuilderStats, type BuildSite } from '../build/builder.js';
-import { lerpCamera } from '../layout.js';
-import { mapCamera, type ViewBand } from '../mapLayout.js';
+import { CameraDirector, type CamView } from '../camera.js';
+
+/** Mã hạng mục cổng tam quan: điểm dừng của camera tour (mục 8). */
+const TOUR_TARGET_ID = 'tam_quan';
+
+export const DEFAULT_CAMERA: CameraConfig = {
+  maxZoom: 1.6,
+  siteWidth: 0.52,
+  overviewEverySec: 0,
+  overviewSec: 9,
+  tourEverySec: 0,
+  tourSec: 20,
+  ceremonySec: 5,
+  ceremonyZoom: 1.15,
+  shakeMinCoins: 1000,
+};
 
 interface Piece {
   itemId: string;
@@ -26,20 +41,25 @@ export class MapView {
   private map: MapManifest | null = null;
   private pieces: Piece[] = [];
   private progress: ProgressView | null = null;
-  private camY = 0;
-  private hasCam = false;
+  private readonly director = new CameraDirector();
+  private cameraCfg: CameraConfig = DEFAULT_CAMERA;
+  private complex: MapRect = { x: 0, y: 0, w: 1, h: 1 };
   /** Gọi khi mảnh cuối của một giai đoạn đã đặt xong (sau này mở lễ, giai đoạn 5). */
   onStageDone: (itemId: string, stageIndex: number, itemDone: boolean) => void = () => {};
 
   constructor(
-    private view: ViewBand,
+    private view: CamView,
     renderer: Renderer,
   ) {
     this.builder = new Builder(
       renderer,
       {
         onDisplay: () => this.refreshVisibility(),
-        onStageDone: (itemId, stage, itemDone) => this.onStageDone(itemId, stage, itemDone),
+        onStageDone: (itemId, stage, itemDone) => {
+          // Xong hạng mục: camera đẩy chậm vào công trình (lễ đầy đủ làm ở giai đoạn 5).
+          if (itemDone && this.map) this.director.request('ceremony', itemRect(this.map, itemId));
+          this.onStageDone(itemId, stage, itemDone);
+        },
         attach: (site) => this.attach(site),
       },
       () => this.world.scale.x,
@@ -52,8 +72,50 @@ export class MapView {
     return this.map !== null;
   }
 
-  setView(view: ViewBand): void {
+  setView(view: CamView): void {
     this.view = view;
+  }
+
+  setCameraConfig(cfg: CameraConfig): void {
+    this.cameraCfg = cfg;
+  }
+
+  /** Admin bấm "Toàn cảnh" / "Lia giới thiệu", hoặc thử lễ. */
+  requestCamera(mode: Exclude<CameraMode, 'site'>): void {
+    const focusId = this.builder.displayItemId ?? this.progress?.item.id;
+    this.director.request(mode, this.map && focusId ? itemRect(this.map, focusId) : null);
+  }
+
+  get cameraMode(): CameraMode {
+    return this.director.mode;
+  }
+
+  /** Quà lớn: rung nhẹ (mục 8). */
+  shake(): void {
+    this.director.shake();
+  }
+
+  /** Khung bao toàn quần thể (tọa độ bản đồ). */
+  get complexRect(): MapRect {
+    return this.complex;
+  }
+
+  get manifest(): MapManifest | null {
+    return this.map;
+  }
+
+  /** Trạng thái từng hạng mục theo những gì đang hiện trên bản đồ (cho bản đồ thu nhỏ). */
+  displayStatus(): Map<string, 'done' | 'building' | 'todo'> {
+    const out = new Map<string, 'done' | 'building' | 'todo'>();
+    const p = this.progress;
+    if (!p) return out;
+    const done = this.builder.doneCount();
+    const building = this.builder.displayItemId ?? (p.completed ? null : p.item.id);
+    p.items.forEach((it, i) => {
+      const finished = done >= 0 ? i < done : it.status === 'done';
+      out.set(it.id, finished ? 'done' : it.id === building ? 'building' : 'todo');
+    });
+    return out;
   }
 
   setArt(art: Art): void {
@@ -63,6 +125,13 @@ export class MapView {
     const map = this.map;
     this.builder.setArt(map, art);
     if (!map) return;
+    // Khung bao quần thể: mọi công trình, thêm chút trời phía trên đỉnh tháp.
+    const x0 = Math.min(...map.buildings.map((b) => b.x));
+    const y0 = Math.min(...map.buildings.map((b) => b.y));
+    const x1 = Math.max(...map.buildings.map((b) => b.x + b.w));
+    const y1 = Math.max(...map.buildings.map((b) => b.y + b.h));
+    this.complex = { x: x0, y: Math.max(0, y0 - 40), w: x1 - x0, h: y1 - Math.max(0, y0 - 40) };
+    this.director.snap();
     const tex = (file: string) => art.textures.get(textureKey(file)) ?? null;
     for (const t of map.tiles) {
       const tx = tex(t.file);
@@ -140,7 +209,7 @@ export class MapView {
   /** Dựng lại ngay theo tiến độ hiện có, camera đặt thẳng vào chỗ (trang thử /tools/build). */
   resync(): void {
     this.builder.resync();
-    this.hasCam = false;
+    this.director.snap();
   }
 
   stats(): BuilderStats {
@@ -161,12 +230,15 @@ export class MapView {
     if (!map) return;
     this.builder.tick(dtSec, pieces, texts);
     const focusId = this.builder.displayItemId ?? this.progress?.item.id;
-    const focus = focusId ? itemRect(map, focusId) : null;
-    const cam = mapCamera(map, focus, this.view);
-    // Lần đầu mở overlay thì đặt camera đúng chỗ ngay, không lia từ đầu bản đồ.
-    this.camY = this.hasCam ? lerpCamera(this.camY, cam.y, dtSec, 1.5) : cam.y;
-    this.hasCam = true;
+    const cam = this.director.update(dtSec, {
+      map,
+      view: this.view,
+      cfg: this.cameraCfg,
+      focus: focusId ? itemRect(map, focusId) : null,
+      complex: this.complex,
+      tourTarget: itemRect(map, TOUR_TARGET_ID),
+    });
     this.world.scale.set(cam.scale);
-    this.world.position.set(cam.x, this.camY);
+    this.world.position.set(cam.x, cam.y);
   }
 }

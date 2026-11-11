@@ -33,7 +33,24 @@
     "towerTaper": 0.995,
     "towerCenterX": 510,
     "towerBaseY": 1215,
-    "boardRotateSec": 15
+    "boardRotateSec": 15,
+    "boardPosition": "auto",
+    "minimap": "overview",
+    "opacity": { "progress": 0.78, "board": 0.7, "events": 0.78, "disclaimer": 0.55 }
+  },
+  "camera": {
+    "maxZoom": 1.6,
+    "siteWidth": 0.52,
+    "overviewEverySec": { "vang": 180, "vua": 360, "dong": 0, "ratdong": 0 },
+    "overviewSec": 9,
+    "tourEverySec": { "vang": 600, "vua": 0, "dong": 0, "ratdong": 0 },
+    "tourSec": 20,
+    "ceremonySec": 5,
+    "ceremonyZoom": 1.15,
+    "shakeMinCoins": 1000
+  },
+  "nameFilter": {
+    "bannedWords": []
   },
   "pieces": {
     "size": { "nen": [22, 12], "cot": [0, 14], "khung": [24, 8], "mai": [12, 8], "tuong": [12, 6], "trangtri": [10, 10], "nuoc": [16, 16] },
@@ -69,6 +86,11 @@
       "sessionTop": "Top phiên này",
       "totalTop": "Bảng góp công",
       "itemTop": "Bia ghi danh – {item}"
+    },
+    "events": {
+      "goldenHour": "{name} ×{multiplier} · còn {time}",
+      "event": "{name} ×{multiplier}",
+      "total": "Tổng hệ số ×{multiplier}"
     }
   }
 }

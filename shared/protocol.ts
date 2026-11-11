@@ -86,6 +86,46 @@ export interface PiecesConfig {
   burstSec: number;
 }
 
+/** Chế độ độ đông (mục 9A). Giai đoạn 4 mới tự tính; trước đó server luôn gửi "vua". */
+export type CrowdTier = 'vang' | 'vua' | 'dong' | 'ratdong';
+
+/** Chế độ camera bấm từ admin hoặc do game gọi (mục 8). `site` là chế độ thường. */
+export type CameraMode = 'site' | 'overview' | 'tour' | 'ceremony';
+
+/** Thông số camera (config.json camera), số giây tự động đã chọn theo chế độ độ đông hiện tại. */
+export interface CameraConfig {
+  maxZoom: number;
+  /** Công trình chiếm bao nhiêu phần bề ngang khung hình ở chế độ site (0,45–0,6). */
+  siteWidth: number;
+  /** Mỗi bao nhiêu giây tự thu toàn cảnh / lia giới thiệu (0 = không tự động). */
+  overviewEverySec: number;
+  overviewSec: number;
+  tourEverySec: number;
+  tourSec: number;
+  ceremonySec: number;
+  ceremonyZoom: number;
+  /** Quà từ bao nhiêu xu thì camera rung nhẹ. */
+  shakeMinCoins: number;
+}
+
+export type BoardPosition = 'auto' | 'leftMiddle' | 'rightMiddle' | 'leftTop';
+
+/** Bố cục giao diện (mục 8, 14.13). */
+export interface HudConfig {
+  boardPosition: BoardPosition;
+  minimap: 'overview' | 'always' | 'off';
+  /** Độ đậm nền từng khung (0–1). */
+  opacity: { progress: number; board: number; events: number; disclaimer: number };
+  boardRotateSec: number;
+}
+
+/** Một dòng trong ô sự kiện. Chữ đã điền sẵn, riêng {time} overlay tự đếm ngược tới endsAt. */
+export interface EventLine {
+  kind: 'golden' | 'event' | 'total';
+  text: string;
+  endsAt: number | null;
+}
+
 export interface OverlayState {
   profile: 'production' | 'test';
   /** "CHẾ ĐỘ THỬ" (giả lập), "DIỄN TẬP" (hồ sơ test với live thật), hoặc null (live thật). */
@@ -100,6 +140,13 @@ export interface OverlayState {
     disclaimer: string;
   };
   layout: OverlayLayout;
+  hud: HudConfig;
+  camera: CameraConfig;
+  crowd: CrowdTier;
+  /** Ô sự kiện: giờ vàng (đếm ngược), sự kiện lịch, tổng hệ số. Rỗng thì ẩn ô. */
+  eventBox: EventLine[];
+  /** Giờ của server lúc gửi (ms), để overlay đếm ngược đúng dù đồng hồ máy lệch. */
+  serverNow: number;
   pieces: PiecesConfig;
   /** Câu lấy từ kho thoại (config/dialogues.json) mà overlay tự hiện. */
   texts: { pieceBurst: string[] };
@@ -112,4 +159,15 @@ export type ServerMessage =
   /** Giai đoạn / hạng mục vừa xong hoặc vừa bắt đầu (để overlay chớp sáng, sau này là lễ). */
   | { type: 'progress'; transitions: ProgressTransition[] }
   /** Một lần có công (quà, tim, bình luận): overlay cho mảnh bay vào đúng giai đoạn, ghi tên người góp. */
-  | { type: 'contribution'; name: string; source: 'gift' | 'like' | 'comment'; points: number; allocations: Allocation[] };
+  | {
+      type: 'contribution';
+      /** Tên đã lọc (từ cấm → tên ẩn danh). */
+      name: string;
+      source: 'gift' | 'like' | 'comment';
+      points: number;
+      /** Tổng số xu của quà (0 với tim, bình luận): quà lớn thì camera rung nhẹ. */
+      coins: number;
+      allocations: Allocation[];
+    }
+  /** Admin bấm "Toàn cảnh" / "Lia giới thiệu" (mục 8). */
+  | { type: 'camera'; mode: Exclude<CameraMode, 'site'> };

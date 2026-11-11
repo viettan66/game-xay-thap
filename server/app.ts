@@ -13,6 +13,7 @@ import { partsForEditing, partsStatus, proposeForBuilding, saveParts, syncManife
 import { PARTS } from '../shared/parts.js';
 import { MapCutQueue, updateBuildingCut, type MapTools } from './assets/mapTools.js';
 import { applyToManifest, parseToolUpdate } from './assets/tools.js';
+import type { GameConfig } from './config/schema.js';
 import { ConfigError } from './config/store.js';
 import type { StateBroadcaster } from './overlay/broadcaster.js';
 import { buildOverlayState, dialogueLines } from './overlay/state.js';
@@ -51,6 +52,36 @@ export function buildStatus({ core, live }: Pick<AppDeps, 'core' | 'live'>) {
 }
 
 class BadRequest extends Error {}
+
+/** Các thông số hiển thị chỉnh bằng thanh trượt trên trang trạng thái (mục 14.13). */
+export function displaySettings(cfg: GameConfig) {
+  return {
+    maxZoom: cfg.camera.maxZoom,
+    siteWidth: cfg.camera.siteWidth,
+    boardPosition: cfg.overlay.boardPosition,
+    minimap: cfg.overlay.minimap,
+    opacity: { ...cfg.overlay.opacity },
+  };
+}
+
+/** Ghép thông số hiển thị gửi lên vào config (kiểm tra kỹ bằng zod khi lưu). */
+function applyDisplay(next: GameConfig, b: Record<string, unknown>): void {
+  const num = (v: unknown, name: string) => {
+    if (typeof v !== 'number' || !Number.isFinite(v)) throw new BadRequest(`${name} phải là số`);
+    return v;
+  };
+  if (b.maxZoom !== undefined) next.camera.maxZoom = num(b.maxZoom, 'maxZoom');
+  if (b.siteWidth !== undefined) next.camera.siteWidth = num(b.siteWidth, 'siteWidth');
+  if (b.boardPosition !== undefined) next.overlay.boardPosition = b.boardPosition as GameConfig['overlay']['boardPosition'];
+  if (b.minimap !== undefined) next.overlay.minimap = b.minimap as GameConfig['overlay']['minimap'];
+  if (b.opacity !== undefined) {
+    if (typeof b.opacity !== 'object' || b.opacity === null) throw new BadRequest('opacity không hợp lệ');
+    for (const [k, v] of Object.entries(b.opacity)) {
+      if (!(k in next.overlay.opacity)) throw new BadRequest(`Không có khung "${k}"`);
+      next.overlay.opacity[k as keyof GameConfig['overlay']['opacity']] = num(v, `opacity.${k}`);
+    }
+  }
+}
 
 export function createApp(deps: AppDeps): express.Express {
   const { core, live, broadcaster, rootDir } = deps;
@@ -114,6 +145,24 @@ export function createApp(deps: AppDeps): express.Express {
     live.simFire(kind);
     ok(res);
   });
+  // ---- Camera và chỉnh hiển thị (mục 8, 14.13) ----
+  app.post('/api/camera', (req, res) => {
+    const mode = body(req).mode;
+    if (mode !== 'overview' && mode !== 'tour' && mode !== 'ceremony') throw new BadRequest('Chế độ camera không hợp lệ');
+    broadcaster.camera(mode);
+    res.json({ ok: true });
+  });
+  app.get('/api/display', (_req, res) => {
+    res.json(displaySettings(core.config));
+  });
+  app.post('/api/display', (req, res) => {
+    const next = structuredClone(core.config);
+    applyDisplay(next, body(req));
+    core.saveConfig(next, { source: 'admin/display' });
+    broadcaster.markDirty();
+    res.json(displaySettings(core.config));
+  });
+
   app.post('/api/session/start', (_req, res) => {
     core.sessions.startManual();
     ok(res);
@@ -245,6 +294,7 @@ export function createApp(deps: AppDeps): express.Express {
       texts: { pieceBurst: dialogueLines(core, 'piece_burst', false) },
       labels: { badge: cfg.labels.testBadge, disclaimer: cfg.labels.disclaimer, pointUnit: cfg.labels.pointUnitLabel },
       safeArea: cfg.overlay.safeArea,
+      camera: cfg.camera,
       assetsVersion: assetsVersion(rootDir),
     });
   });

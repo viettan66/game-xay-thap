@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
 import { silentLogger } from '../server/logger.js';
 import { startServer, type RunningServer } from '../server/server.js';
+import { buildOverlayState, overlayName } from '../server/overlay/state.js';
 import type { ServerMessage } from '../shared/protocol.js';
 import { vnTs } from '../shared/time.js';
 import { disableEvents, FakeClock, makeTempRoot, removeTempRoot } from './helpers.js';
@@ -79,7 +80,7 @@ describe('WebSocket cho overlay', () => {
     expect(updated.state.boards[1]!.rows[0]!.points).toBe(100_000);
     // Tin "có công" để overlay cho mảnh bay vào đúng giai đoạn, kèm tên người góp (mục 7).
     const contrib = (await c.waitFor((m) => m.type === 'contribution')) as Extract<ServerMessage, { type: 'contribution' }>;
-    expect(contrib).toMatchObject({ source: 'gift', points: 100_000 });
+    expect(contrib).toMatchObject({ source: 'gift', points: 100_000, coins: 1000 });
     expect(contrib.name.length).toBeGreaterThan(0);
     expect(contrib.allocations[0]).toMatchObject({ itemId: 'san_nen', stageIndex: 0, from: 0, cost: 8000 });
     expect(contrib.allocations.reduce((a, x) => a + x.points, 0)).toBe(100_000);
@@ -165,6 +166,63 @@ describe('API điều khiển', () => {
     const r = await fetch(`${srv.url}/overlay/`);
     expect(r.status).toBe(200);
     expect(await r.text()).toContain('<title>ok</title>');
+  });
+});
+
+describe('camera và giao diện mới (R4)', () => {
+  it('trạng thái gửi overlay có camera, bố cục, ô sự kiện; bảng tổng chỉ top 5', async () => {
+    await start();
+    for (let i = 0; i < 8; i++) await post('/api/sim/fire', { kind: 'gift_small' });
+    const s = buildOverlayState(srv.core, null);
+    expect(s.crowd).toBe('vua');
+    expect(s.camera).toMatchObject({ maxZoom: 1.6, siteWidth: 0.52, overviewEverySec: 360, tourEverySec: 0, shakeMinCoins: 1000 });
+    expect(s.hud).toMatchObject({ boardPosition: 'auto', minimap: 'overview', boardRotateSec: 15 });
+    expect(s.eventBox).toEqual([]);
+    expect(s.serverNow).toBe(clock.now());
+    for (const b of s.boards) expect(b.rows.length).toBeLessThanOrEqual(5);
+  });
+
+  it('giờ vàng bật tay: ô sự kiện có dòng đếm ngược tới lúc tắt', async () => {
+    await start();
+    const until = clock.now() + 15 * 60_000;
+    srv.core.engine.setGoldenManualUntil(until);
+    const s = buildOverlayState(srv.core, null);
+    expect(s.eventBox).toEqual([{ kind: 'golden', text: 'Giờ vàng ×2 · còn {time}', endsAt: until }]);
+  });
+
+  it('tên chứa từ cấm hiện "Thiện hữu ẩn danh" trên bảng xếp hạng', async () => {
+    await start();
+    await post('/api/sim/fire', { kind: 'gift_large' });
+    const name = buildOverlayState(srv.core, null).boards[1]!.rows[0]!.nickname;
+    const next = structuredClone(srv.core.config);
+    next.nameFilter.bannedWords = [name.slice(0, 4)];
+    srv.core.saveConfig(next, { source: 'test' });
+    expect(buildOverlayState(srv.core, null).boards[1]!.rows[0]!.nickname).toBe('Thiện hữu ẩn danh');
+    expect(overlayName(srv.core, name)).toBe('Thiện hữu ẩn danh');
+  });
+
+  it('nút Toàn cảnh / Lia giới thiệu gửi lệnh camera xuống overlay', async () => {
+    await start();
+    const c = connect(`http://127.0.0.1:${srv.port}`);
+    await c.waitFor((m) => m.type === 'state');
+    expect((await post('/api/camera', { mode: 'overview' })).status).toBe(200);
+    expect(await c.waitFor((m) => m.type === 'camera')).toEqual({ type: 'camera', mode: 'overview' });
+    expect((await post('/api/camera', { mode: 'bay' })).status).toBe(400);
+  });
+
+  it('chỉnh hiển thị: lưu vào config, sai thì báo lỗi, không đổi', async () => {
+    await start();
+    const r = await post('/api/display', { maxZoom: 1.4, siteWidth: 0.5, boardPosition: 'leftTop', minimap: 'always', opacity: { board: 0.5 } });
+    expect(r.status).toBe(200);
+    expect(await r.json()).toMatchObject({ maxZoom: 1.4, siteWidth: 0.5, boardPosition: 'leftTop', minimap: 'always', opacity: { board: 0.5, progress: 0.78 } });
+    const saved = JSON.parse(fs.readFileSync(path.join(root, 'config', 'config.json'), 'utf8'));
+    expect(saved.camera.maxZoom).toBe(1.4);
+    expect(saved.overlay.boardPosition).toBe('leftTop');
+    expect((await post('/api/display', { maxZoom: 9 })).status).toBe(400);
+    expect((await post('/api/display', { boardPosition: 'giua' })).status).toBe(400);
+    expect((await post('/api/display', { opacity: { khung: 1 } })).status).toBe(400);
+    expect(srv.core.config.camera.maxZoom).toBe(1.4);
+    expect(((await (await fetch(`${srv.url}/api/display`)).json()) as { boardPosition: string }).boardPosition).toBe('leftTop');
   });
 });
 

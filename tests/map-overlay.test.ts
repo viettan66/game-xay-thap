@@ -1,36 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { STAGE_H } from '../overlay/src/layout.js';
-import { mapCamera } from '../overlay/src/mapLayout.js';
 import type { MapTools } from '../server/assets/mapTools.js';
 import { loadCuts } from '../server/assets/mapCut.js';
 import { startServer, type RunningServer } from '../server/server.js';
 import { silentLogger } from '../server/logger.js';
 import type { MapManifest } from '../shared/map.js';
 import { disableEvents, makeTempRoot, REPO_ROOT, removeTempRoot } from './helpers.js';
-
-describe('camera tạm trên bản đồ (R2)', () => {
-  const map = { width: 1728, height: 5575 };
-  const view = { top: 530, bottom: 1270 };
-
-  it('co bản đồ vừa bề ngang 1080, đặt hạng mục đang xây giữa vùng nhìn thấy', () => {
-    const cam = mapCamera(map, { x: 455, y: 1705, w: 803, h: 528 }, view); // Tam quan
-    expect(cam.scale).toBeCloseTo(1080 / 1728);
-    const centerOnScreen = cam.y + (1705 + 264) * cam.scale;
-    expect(centerOnScreen).toBeCloseTo((view.top + view.bottom) / 2);
-  });
-
-  it('không bao giờ lộ ra ngoài mép bản đồ', () => {
-    const top = mapCamera(map, { x: 448, y: 260, w: 247, h: 486 }, view); // bảo tháp ở đỉnh bản đồ
-    expect(top.y).toBe(0);
-    const bottom = mapCamera(map, { x: 0, y: 5400, w: 100, h: 100 }, view);
-    expect(bottom.y).toBeCloseTo(STAGE_H - map.height * bottom.scale);
-    const none = mapCamera(map, null, view);
-    expect(none.y).toBeLessThanOrEqual(0);
-    expect(none.y).toBeGreaterThanOrEqual(STAGE_H - map.height * none.scale);
-  });
-});
 
 describe('API bản đồ của trang /tools/assets', () => {
   let root: string;

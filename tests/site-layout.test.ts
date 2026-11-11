@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { rectInside, rectsOverlap, uiRects } from '../overlay/src/layout.js';
+import { hudRects } from '../overlay/src/hudLayout.js';
+import { rectInside, rectsOverlap } from '../overlay/src/layout.js';
 import { siteBlocks } from '../overlay/src/siteLayout.js';
 import { resolveProject, type ProjectFile } from '../shared/project.js';
 import { REPO_ROOT } from './helpers.js';
@@ -9,7 +10,7 @@ import { REPO_ROOT } from './helpers.js';
 const project = resolveProject(
   JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config', 'defaults', 'project.json'), 'utf8')) as ProjectFile,
 );
-const area = uiRects({ top: 180, bottom: 600, right: 150 }).site;
+const area = hudRects({ top: 180, bottom: 600, right: 150 }).site;
 
 describe('công trường tạm bằng hình khối (R1)', () => {
   const blocks = siteBlocks(project.items, area);

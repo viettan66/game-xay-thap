@@ -47,6 +47,8 @@
   td.n { width: 28px; color: var(--muted); }
   td.p { text-align: right; white-space: nowrap; }
   .empty { color: var(--muted); font-style: italic; }
+  label.rng { display: grid; grid-template-columns: 150px 1fr 54px; gap: 8px; align-items: center; margin-top: 6px; }
+  label.rng span { font-variant-numeric: tabular-nums; text-align: right; }
   .err { color: var(--prod); font-weight: 600; min-height: 1em; }
   .state-ok { color: var(--ok); font-weight: 600; }
   .state-bad { color: var(--prod); font-weight: 600; }
@@ -98,6 +100,36 @@
       <button data-post="/api/session/start">Bắt đầu phiên</button>
       <button data-post="/api/session/end">Kết thúc phiên</button>
     </div>
+  </section>
+  <section>
+    <h2>Camera và hiển thị</h2>
+    <div class="buttons">
+      <button data-camera="overview">Toàn cảnh</button>
+      <button data-camera="tour">Lia giới thiệu</button>
+    </div>
+    <label class="rng">Zoom tối đa <input type="range" id="d-maxZoom" min="1" max="2.5" step="0.05"><span id="v-maxZoom"></span></label>
+    <label class="rng">Công trình chiếm <input type="range" id="d-siteWidth" min="0.3" max="0.8" step="0.01"><span id="v-siteWidth"></span></label>
+    <label>Bảng xếp hạng
+      <select id="d-boardPosition">
+        <option value="auto">Tự chọn chỗ không che công trình</option>
+        <option value="leftMiddle">Trái giữa</option>
+        <option value="rightMiddle">Phải giữa</option>
+        <option value="leftTop">Trái trên</option>
+      </select>
+    </label>
+    <label>Bản đồ thu nhỏ
+      <select id="d-minimap">
+        <option value="overview">Chỉ khi thu toàn cảnh</option>
+        <option value="always">Luôn hiện</option>
+        <option value="off">Tắt</option>
+      </select>
+    </label>
+    <p class="note" style="margin:10px 0 0">Độ đậm nền các khung:</p>
+    <label class="rng">Thanh tiến độ <input type="range" id="o-progress" min="0" max="1" step="0.05"><span id="vo-progress"></span></label>
+    <label class="rng">Bảng xếp hạng <input type="range" id="o-board" min="0" max="1" step="0.05"><span id="vo-board"></span></label>
+    <label class="rng">Ô sự kiện <input type="range" id="o-events" min="0" max="1" step="0.05"><span id="vo-events"></span></label>
+    <label class="rng">Dải miễn trừ <input type="range" id="o-disclaimer" min="0" max="1" step="0.05"><span id="vo-disclaimer"></span></label>
+    <p class="note">Kéo là overlay đổi ngay (lưu vào config\config.json).</p>
   </section>
   <section id="sim" class="wide" hidden>
     <h2>Giả lập (chỉ hồ sơ thử) – overlay hiện nhãn “CHẾ ĐỘ THỬ”</h2>
@@ -235,6 +267,46 @@
     $(id).addEventListener('blur', () => { editing = false; });
     $(id).addEventListener('change', () => { post('/api/sim/settings', simSettings()); });
   }
+  // ---- Camera và hiển thị (mục 8, 14.13) ----
+  const pct = (x) => `${Math.round(x * 100)}%`;
+  const OPACITY = ['progress', 'board', 'events', 'disclaimer'];
+  function showDisplay(d) {
+    $('d-maxZoom').value = d.maxZoom; $('v-maxZoom').textContent = `×${String(d.maxZoom).replace('.', ',')}`;
+    $('d-siteWidth').value = d.siteWidth; $('v-siteWidth').textContent = pct(d.siteWidth);
+    $('d-boardPosition').value = d.boardPosition;
+    $('d-minimap').value = d.minimap;
+    for (const k of OPACITY) { $(`o-${k}`).value = d.opacity[k]; $(`vo-${k}`).textContent = pct(d.opacity[k]); }
+  }
+  async function saveDisplay(body) {
+    try {
+      const r = await fetch('/api/display', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const j = await r.json();
+      if (!r.ok) { $('error').textContent = j.error || 'Lỗi'; return; }
+      showDisplay(j);
+    } catch {
+      $('error').textContent = 'Không gửi được lệnh tới server.';
+    }
+  }
+  for (const k of ['maxZoom', 'siteWidth']) {
+    $(`d-${k}`).addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      $(`v-${k}`).textContent = k === 'maxZoom' ? `×${String(v).replace('.', ',')}` : pct(v);
+    });
+    $(`d-${k}`).addEventListener('change', (e) => saveDisplay({ [k]: Number(e.target.value) }));
+  }
+  for (const k of ['boardPosition', 'minimap']) $(`d-${k}`).addEventListener('change', (e) => saveDisplay({ [k]: e.target.value }));
+  for (const k of OPACITY) {
+    $(`o-${k}`).addEventListener('input', (e) => { $(`vo-${k}`).textContent = pct(Number(e.target.value)); });
+    $(`o-${k}`).addEventListener('change', (e) => saveDisplay({ opacity: { [k]: Number(e.target.value) } }));
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-camera]');
+    if (!b) return;
+    fetch('/api/camera', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: b.dataset.camera }) })
+      .catch(() => { $('error').textContent = 'Không gửi được lệnh tới server.'; });
+  });
+  fetch('/api/display').then((r) => r.json()).then(showDisplay).catch(() => {});
+
   refresh();
   setInterval(refresh, 2000);
 </script>

@@ -1,7 +1,7 @@
 // Tính toán bố cục overlay (thuần, không đụng trình duyệt) để test được.
 // Toạ độ theo khung 1080×1920, trục y hướng xuống.
 
-import type { Board, OverlayLayout, SafeArea } from '../../shared/protocol.js';
+import type { Board, OverlayLayout } from '../../shared/protocol.js';
 
 export const STAGE_W = 1080;
 export const STAGE_H = 1920;
@@ -73,41 +73,6 @@ export function lerpCamera(current: number, target: number, dtSec: number, speed
   return current + (target - current) * (1 - Math.exp(-dtSec * speed));
 }
 
-export interface UiRects {
-  content: Rect;
-  badge: Rect;
-  banner: Rect;
-  /** Thanh tiến độ giai đoạn (ui/progress_frame.png) ngay dưới banner. */
-  progress: Rect;
-  /** Dòng "Toàn công trình …%" và hàng chấm các giai đoạn, dưới thanh tiến độ. */
-  progressInfo: Rect;
-  chip: Rect;
-  /** Vùng vẽ công trường tạm bằng hình khối (giai đoạn R1), bên trái bảng xếp hạng. */
-  site: Rect;
-  board: Rect;
-  disclaimer: Rect;
-}
-
-/** Vị trí các khối giao diện, tránh các vùng an toàn mà nền tảng tự vẽ (mục 8). */
-export function uiRects(safe: SafeArea): UiRects {
-  const right = STAGE_W - safe.right;
-  const top = safe.top;
-  const bottom = STAGE_H - safe.bottom;
-  const content = { x: 0, y: top, w: right, h: bottom - top };
-  const mid = right / 2;
-  // Kích thước theo tỉ lệ ảnh ui/banner.png (736×216) và ui/progress_frame.png (728×104).
-  const banner = { x: mid - 280, y: top + 12, w: 560, h: 164 };
-  const badge = { x: 16, y: top + 12, w: banner.x - 16 - 8, h: 48 };
-  const progress = { x: mid - 260, y: banner.y + banner.h + 4, w: 520, h: 74 };
-  const progressInfo = { x: mid - 260, y: progress.y + progress.h + 4, w: 520, h: 40 };
-  const chip = { x: mid - 260, y: progressInfo.y + progressInfo.h + 6, w: 520, h: 44 };
-  const disclaimer = { x: 0, y: bottom - 52, w: right, h: 52 };
-  const boardTop = chip.y + chip.h + 20;
-  const board = { x: right - 330 - 12, y: boardTop, w: 330, h: Math.min(740, disclaimer.y - 12 - boardTop) };
-  const site = { x: 16, y: boardTop, w: board.x - 16 - 16, h: disclaimer.y - 12 - boardTop };
-  return { content, badge, banner, progress, progressInfo, chip, board, site, disclaimer };
-}
-
 export function rectsOverlap(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 }
@@ -159,8 +124,3 @@ export function bannerTitle(floor: number, floorName: string, totalFloors: numbe
 }
 
 /** Màu ổn định cho avatar tạm theo mã người xem. */
-export function avatarHue(platformId: string): number {
-  let h = 0;
-  for (const ch of platformId) h = (h * 31 + ch.codePointAt(0)!) >>> 0;
-  return h % 360;
-}

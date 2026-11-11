@@ -1,39 +1,41 @@
 // Overlay game (PixiJS v8): một trang, vẽ ở khung 1080×1920, co giãn vừa cửa sổ.
 // Dùng làm Browser Source trong OBS: http://127.0.0.1:3000/overlay/ (1080×1920).
-// Phím D: bật/tắt khung debug vùng an toàn.
-// Giai đoạn R2: bản đồ quần thể chùa thật (scene/map.ts). Chưa dựng bản đồ (thiếu manifest.map) thì vẽ tạm bằng
-// hình khối theo hạng mục (scene/site.ts). Cảnh tháp cũ (scene/tower.ts,
-// scene/background.ts) chỉ còn dùng ở trang /tools/assets, chờ dọn sau R4.
+// Phím D: bật/tắt khung debug vùng an toàn; khi bật, kéo thả ảnh chụp màn hình live vào để so (ui/screenshot.ts).
+//
+// R4 (mục 8 SPEC): camera site / overview / tour / ceremony (camera.ts, trong scene/map.ts) và giao diện mới
+// (hudLayout.ts + ui/hud.ts): thanh tiến độ góc trên phải, bảng xếp hạng thu gọn tự dời chỗ không che công trình,
+// ô sự kiện, bản đồ thu nhỏ (mặc định chỉ khi thu toàn cảnh), dải miễn trừ nhỏ.
+// Chưa dựng bản đồ (thiếu manifest.map) thì vẽ tạm bằng hình khối theo hạng mục (scene/site.ts).
+// Cảnh tháp cũ (scene/tower.ts, scene/background.ts) chỉ còn dùng ở trang /tools/assets.
 
 import { Application, Container } from 'pixi.js';
-import type { OverlayState, SafeArea, ServerMessage } from '../../shared/protocol.js';
+import type { OverlayState, ServerMessage } from '../../shared/protocol.js';
 import { destroyArt, EMPTY_ART, loadArt, type Art } from './art.js';
-import { rectsOverlap, STAGE_H, STAGE_W, uiRects, type Rect } from './layout.js';
+import { chooseBoardSlot, hudRects, type BoardSlot, type HudRects } from './hudLayout.js';
+import { STAGE_H, STAGE_W } from './layout.js';
 import { connectServer } from './net.js';
-import type { ViewBand } from './mapLayout.js';
 import { MapView } from './scene/map.js';
 import { SiteView } from './scene/site.js';
 import { loadFonts } from './theme.js';
-import { Badge, ConnectionDot, Disclaimer, MultiplierChip } from './ui/chrome.js';
-import { Banner } from './ui/banner.js';
-import { BoardPanel } from './ui/board.js';
+import { Badge, ConnectionDot, Disclaimer } from './ui/chrome.js';
 import { SafeAreaDebug } from './ui/debug.js';
+import { CompactBoard, EventBox, ProgressPanel } from './ui/hud.js';
+import { Minimap } from './ui/minimap.js';
+import { ScreenshotCompare } from './ui/screenshot.js';
 
-interface Ui {
+interface Hud {
   key: string;
+  rects: HudRects;
   root: Container;
-  banner: Banner;
-  board: BoardPanel;
+  progress: ProgressPanel;
+  board: CompactBoard;
+  events: EventBox;
   badge: Badge;
-  chip: MultiplierChip;
   disclaimer: Disclaimer;
+  slot: BoardSlot | null;
 }
 
-/** Vùng màn hình còn thấy bản đồ: dưới khối giao diện phía trên, trên dải miễn trừ. */
-function mapViewBand(safe: SafeArea): ViewBand {
-  const r = uiRects(safe);
-  return { top: r.chip.y + r.chip.h, bottom: r.disclaimer.y };
-}
+const DEFAULT_SAFE = { top: 180, bottom: 600, right: 150 };
 
 async function boot(): Promise<void> {
   await loadFonts();
@@ -49,13 +51,16 @@ async function boot(): Promise<void> {
   fit();
   window.addEventListener('resize', fit);
 
-  // Lớp từ sau ra trước: công trường (hình khối tạm) → giao diện → debug.
-  const site = new SiteView(uiRects({ top: 180, bottom: 600, right: 150 }).site);
-  const mapView = new MapView(mapViewBand({ top: 180, bottom: 600, right: 150 }), app.renderer);
+  // Lớp từ sau ra trước: bản đồ (hoặc hình khối tạm) → giao diện → bản đồ thu nhỏ → debug.
+  const initial = hudRects(DEFAULT_SAFE);
+  const site = new SiteView(initial.site);
+  const mapView = new MapView(initial.view, app.renderer);
   const uiLayer = new Container();
+  const minimap = new Minimap();
   const safeDebug = new SafeAreaDebug();
+  const shots = new ScreenshotCompare(app.canvas);
   const dot = new ConnectionDot(STAGE_W - 170, 200);
-  app.stage.addChild(site.container, mapView.container, uiLayer, safeDebug.container, dot.container);
+  app.stage.addChild(site.container, mapView.container, uiLayer, minimap.container, safeDebug.container, dot.container);
   const showMap = () => {
     mapView.container.visible = mapView.ready;
     site.container.visible = !mapView.ready;
@@ -63,39 +68,48 @@ async function boot(): Promise<void> {
   showMap();
 
   let state: OverlayState | null = null;
-  let ui: Ui | null = null;
+  let hud: Hud | null = null;
   let art: Art = EMPTY_ART;
   let loadingVersion: string | null = null;
 
-  const ensureUi = (s: OverlayState): Ui => {
+  const ensureHud = (s: OverlayState): Hud => {
     const key = JSON.stringify(s.layout.safeArea);
-    if (ui && ui.key === key) return ui;
-    ui?.root.destroy({ children: true });
-    const r = uiRects(s.layout.safeArea);
-    const next: Ui = {
+    if (hud && hud.key === key) return hud;
+    hud?.root.destroy({ children: true });
+    const r = hudRects(s.layout.safeArea);
+    const slot: BoardSlot = s.hud.boardPosition === 'auto' ? 'leftMiddle' : s.hud.boardPosition;
+    const next: Hud = {
       key,
+      rects: r,
       root: new Container(),
-      banner: new Banner(r.banner, r.progress, r.progressInfo),
-      board: new BoardPanel(r.board),
+      progress: new ProgressPanel(r.progress),
+      board: new CompactBoard(r.boards[slot]),
+      events: new EventBox(r.events),
       badge: new Badge(r.badge),
-      chip: new MultiplierChip(r.chip),
       disclaimer: new Disclaimer(r.disclaimer),
+      slot,
     };
-    next.banner.setArt(art);
     next.board.setArt(art);
-    next.root.addChild(next.disclaimer.container, next.board.container, next.banner.container, next.chip.container, next.badge.container);
+    next.root.addChild(next.disclaimer.container, next.board.container, next.events.container, next.progress.container, next.badge.container);
     uiLayer.addChild(next.root);
-    ui = next;
+    hud = next;
+    loadMinimap();
     return next;
+  };
+
+  const loadMinimap = () => {
+    const map = art.manifest?.map;
+    if (!map || !hud) return;
+    void minimap.load(map, art.version, mapView.complexRect, hud.rects.minimap);
   };
 
   const applyArt = (a: Art) => {
     const old = art;
     art = a;
-    ui?.banner.setArt(a);
-    ui?.board.setArt(a);
+    hud?.board.setArt(a);
     mapView.setArt(a);
     showMap();
+    loadMinimap();
     if (old !== EMPTY_ART) destroyArt(old);
   };
 
@@ -110,22 +124,27 @@ async function boot(): Promise<void> {
         if (state) apply(state);
       });
     }
-    site.setArea(uiRects(s.layout.safeArea).site);
+    const h = ensureHud(s);
+    site.setArea(h.rects.site);
     site.update(s.progress);
-    mapView.setView(mapViewBand(s.layout.safeArea));
+    mapView.setView(h.rects.view);
+    mapView.setCameraConfig(s.camera);
     mapView.update(s.progress);
-    const u = ensureUi(s);
-    u.banner.update(s);
-    u.board.update(s);
-    u.badge.update(s.badge);
-    u.chip.update(s.multiplier);
-    u.disclaimer.update(s.labels.disclaimer);
+    h.progress.update(s.progress, s.hud.opacity.progress);
+    h.board.update(s.boards, s.labels.pointUnit, s.hud.opacity.board, s.hud.boardRotateSec);
+    h.events.update(s.eventBox, s.serverNow, s.hud.opacity.events);
+    h.badge.update(s.badge);
+    h.disclaimer.update(s.labels.disclaimer, s.hud.opacity.disclaimer);
     safeDebug.update(s.layout.safeArea);
   };
 
   const onMessage = (m: ServerMessage) => {
     if (m.type === 'state') apply(m.state);
-    else if (m.type === 'contribution') mapView.contribution(m);
+    else if (m.type === 'contribution') {
+      mapView.contribution(m);
+      // Quà lớn: camera rung nhẹ (mục 8).
+      if (state && m.coins >= state.camera.shakeMinCoins) mapView.shake();
+    } else if (m.type === 'camera') mapView.requestCamera(m.mode);
     else if (m.type === 'progress' && !mapView.ready) {
       // Hình khối tạm (chưa có bản đồ): chớp sáng ngay. Trên bản đồ thì chớp khi mảnh cuối của giai đoạn đã đặt xong.
       for (const t of m.transitions) {
@@ -136,32 +155,50 @@ async function boot(): Promise<void> {
   };
   connectServer(onMessage, (ok) => dot.set(ok));
 
+  const setDebug = (v: boolean) => {
+    safeDebug.visible = v;
+    shots.enabled = v;
+  };
   window.addEventListener('keydown', (e) => {
     if (e.key !== 'd' && e.key !== 'D') return;
-    safeDebug.visible = !safeDebug.visible;
+    setDebug(!safeDebug.visible);
   });
   // Mở overlay với ?debug=1 thì bật sẵn khung debug.
-  if (new URLSearchParams(location.search).has('debug')) safeDebug.visible = true;
+  if (new URLSearchParams(location.search).has('debug')) setDebug(true);
 
+  let slow = 0;
+  let dim = 1;
   app.ticker.add((t) => {
     if (!state) return;
     const dt = Math.min(0.1, t.deltaMS / 1000);
     if (mapView.ready) mapView.tick(dt, state.pieces, state.texts.pieceBurst);
     else site.tick(dt);
-    // Tạm cho R2 (R4 làm bố cục mới): banner hoặc bảng che hạng mục đang xây thì mờ đi để vẫn thấy công trình.
-    const focus = mapView.ready ? mapView.focusOnScreen() : null;
-    if (ui && state) {
-      const r = uiRects(state.layout.safeArea);
-      const top: Rect = { x: r.banner.x, y: r.banner.y, w: r.banner.w, h: r.chip.y + r.chip.h - r.banner.y };
-      const fade = (c: { alpha: number }, covers: boolean) => {
-        const target = covers ? 0.3 : 1;
-        c.alpha += (target - c.alpha) * Math.min(1, dt * 4);
-      };
-      fade(ui.banner.container, !!focus && rectsOverlap(focus, top));
-      fade(ui.board.container, !!focus && rectsOverlap(focus, r.board));
+    const overview = mapView.ready && mapView.cameraMode === 'overview';
+    // Thu toàn cảnh: các bảng mờ xuống 30%, chỉ còn thanh tiến độ (mục 8).
+    dim += ((overview ? 0.3 : 1) - dim) * Math.min(1, dt * 3);
+    const mm = state.hud.minimap;
+    minimap.want = mapView.ready && (mm === 'always' || (mm === 'overview' && overview)) ? 1 : 0;
+    minimap.tick(dt);
+    if (hud) {
+      hud.board.dim = dim;
+      hud.events.dim = dim;
+      slow -= dt;
+      if (slow <= 0) {
+        slow = 0.5;
+        // Bảng xếp hạng tự dời sang chỗ không che hạng mục đang xây (chỉ xét khi camera ở chế độ thường).
+        if (!mapView.ready || mapView.cameraMode === 'site') {
+          const slot = chooseBoardSlot(hud.rects.boards, mapView.ready ? mapView.focusOnScreen() : null, state.hud.boardPosition, hud.slot);
+          if (slot !== hud.slot) {
+            hud.slot = slot;
+            hud.board.place(hud.rects.boards[slot]);
+          }
+        }
+        if (minimap.want > 0 || minimap.container.visible) minimap.update(mapView.displayStatus());
+      }
+      hud.progress.tick(dt);
+      hud.board.tick(dt);
+      hud.events.tick(dt);
     }
-    ui?.banner.tick(dt);
-    ui?.board.tick(dt);
   });
 }
 

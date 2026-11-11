@@ -66,6 +66,7 @@ describe('xây thử', () => {
       name: 'Khách thử',
       source: 'like',
       points: 10,
+      coins: 0,
       allocations: [{ itemId: 'gac_chuong', stageIndex: 0, points: 10, from: 0, cost: gac.stages[0]!.cost }],
     });
     expect(sb.view().stagePoints).toBe(10);

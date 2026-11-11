@@ -37,6 +37,11 @@ export class StateBroadcaster {
     this.sendAll(msg);
   }
 
+  /** Admin bấm "Toàn cảnh" / "Lia giới thiệu" (mục 8), gửi ngay. */
+  camera(mode: Extract<ServerMessage, { type: 'camera' }>['mode']): void {
+    this.sendAll({ type: 'camera', mode });
+  }
+
   flush(): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;

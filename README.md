@@ -7,8 +7,10 @@ mỗi hạng mục qua nhiều giai đoạn thi công.
 
 > **Tiến độ:** đã xong **R1** (mô hình hạng mục và giai đoạn), **R2** (bản đồ chùa thật: ghép nền, phóng to bằng AI,
 > cắt từng công trình từ ảnh, lớp tiền cảnh, trang chỉnh khung cắt), **R3a** (trang chia vùng `/tools/parts`), **R3b**
-> ("xây từng mảnh": mỗi lần có công, từng viên gạch, viên ngói, thanh gỗ bay vào đúng chỗ) và **R3c** (trang thử xây
-> `/tools/build`: chọn hạng mục, giai đoạn, nút tim và quà, đo FPS). Sắp tới: R4 camera và bố cục mới.
+> ("xây từng mảnh": mỗi lần có công, từng viên gạch, viên ngói, thanh gỗ bay vào đúng chỗ), **R3c** (trang thử xây
+> `/tools/build`: chọn hạng mục, giai đoạn, nút tim và quà, đo FPS) và **R4** (camera phóng to, toàn cảnh, lia giới thiệu;
+> giao diện mới: thanh tiến độ góc trên phải, bảng xếp hạng thu gọn tự tránh công trình, ô sự kiện, bản đồ thu nhỏ, lọc tên).
+> Sắp tới: giai đoạn 4 (nhân vật, trụ trì, chế độ độ đông, thông báo quà).
 > Chưa có nhân vật và trụ trì (giai đoạn 4), chưa kết nối TikTok (giai đoạn 6).
 
 ---
@@ -76,24 +78,46 @@ Trên overlay hiện có:
     - đào móng, đào hồ: **đất lõm** từng mảng, **đống đất** cao dần;
     - tập kết vật liệu: đống vật liệu to dần.
   - **Giàn giáo tre** dựng quanh thân công trình, cao dần theo phần đã xây, tháo dần ở giai đoạn cuối.
-  - Xong giai đoạn thì công trình chớp sáng nhẹ, xong hạng mục thì chớp mạnh. Lễ (giai đoạn 5) sẽ bắt đầu đúng lúc
-    mảnh cuối đặt xong.
+  - Xong giai đoạn thì công trình chớp sáng nhẹ, xong hạng mục thì chớp mạnh và camera đẩy chậm vào công trình.
+    Lễ (giai đoạn 5) sẽ bắt đầu đúng lúc mảnh cuối đặt xong.
   - **Mở lại overlay** (hoặc mất mạng) thì công trình hiện ngay đúng tiến độ: game không lưu từng mảnh, chỉ cần tiến độ giai đoạn.
   - Chưa có âm thanh đặt gạch, lợp ngói (làm ở giai đoạn 5b) và chưa có dân phu khiêng (giai đoạn 4).
-- **Camera tạm:** bản đồ co vừa bề ngang, tự lia lên xuống để hạng mục đang xây nằm giữa màn hình (R4 làm camera đầy đủ:
-  phóng to, toàn cảnh, lia giới thiệu). Hạng mục ở đỉnh bản đồ (bảo tháp, nhà tổ) bị banner che thì banner tự mờ đi.
+- **Camera** (SPEC mục 8), chuyển cảnh luôn mượt, không bao giờ lộ ra ngoài mép bản đồ:
+  - **Công trường** (thường ngày): phóng vào hạng mục đang xây, công trình chiếm khoảng một nửa bề ngang
+    (công trình nhỏ thì phóng tới mức tối đa ×1,6 là dừng), nằm giữa phần màn hình không bị nền tảng che.
+  - **Toàn cảnh**: thu nhỏ hết cỡ, lia chậm từ đỉnh quần thể xuống hồ sen trong 9 giây. Các bảng mờ xuống 30%,
+    chỉ còn thanh tiến độ; hiện **bản đồ thu nhỏ** góc dưới trái (đã xong có màu, chưa xây là bóng xám, đang xây nhấp nháy).
+    Tự chạy mỗi 6 phút (phòng vắng: 3 phút; phòng đông: không tự chạy), hoặc bấm nút **Toàn cảnh** trên trang trạng thái.
+  - **Lia giới thiệu**: từ trời lia chậm xuống cổng tam quan trong 20 giây. Phòng vắng tự chạy mỗi 10 phút; bấm nút **Lia giới thiệu** để xem thử.
+  - **Đẩy vào**: xong một hạng mục thì camera đẩy chậm vào công trình đó khoảng 5 giây (lễ đầy đủ làm ở giai đoạn 5).
+  - **Rung nhẹ** khi có quà từ 1.000 xu.
+  - Chế độ độ đông của phòng (vắng, vừa, đông, rất đông) làm ở giai đoạn 4; từ giờ tới đó game luôn coi là phòng **vừa**.
 - Chưa dựng bản đồ (thiếu ảnh) thì overlay tự quay về vẽ tạm bằng hình khối có tên, không bị dừng.
-- **Banner trên giữa:**
-  - dòng 1 `Hạng mục 4/23 · Cổng tam quan`;
-  - dòng 2 `Giai đoạn 5/10: Dựng cột` kèm % của giai đoạn;
-  - thanh tiến độ của giai đoạn;
-  - bên dưới: hàng chấm các giai đoạn (chỉ khi hạng mục có tối đa 10 giai đoạn) và dòng `Toàn công trình 7%`.
-- **Bảng phải** đổi mỗi 15 giây: Top phiên này → Bảng góp công → **Bia ghi danh – (hạng mục đang xây)**. Bảng chưa có ai thì bỏ qua.
-- Huy hiệu hệ số (ví dụ `Giờ vàng ×2`, `Ngày Rằm ×2`) khi đang có hệ số nhân.
+- **Thanh tiến độ** góc trên phải, ngay dưới vùng an toàn trên:
+  - dòng 1 `Hạng mục 4/23 · Cổng tam quan` (tên dài thì chữ tự nhỏ lại);
+  - dòng 2 `Giai đoạn 5/10: Dựng cột`, thanh tiến độ chạy liên tục, phần trăm;
+  - dòng nhỏ `Toàn công trình 7%`; hàng chấm các giai đoạn (chỉ khi hạng mục có tối đa 10 giai đoạn).
+- **Bảng xếp hạng thu gọn** (top 5, nền mờ), đổi mỗi 15 giây: Top phiên này → Bảng góp công → **Bia ghi danh – (hạng mục đang xây)**.
+  Bảng chưa có ai thì bỏ qua. Bảng có 3 chỗ đặt sẵn (trái giữa, phải giữa, trái trên) và **tự dời sang chỗ không che
+  hạng mục đang xây** (mờ đi, dời, hiện lại). Muốn cố định một chỗ: chỉnh trên trang trạng thái.
+- **Ô sự kiện** dưới thanh tiến độ, chỉ hiện khi có: `Giờ vàng ×2 · còn 12:34` (đồng hồ đếm ngược), sự kiện lịch
+  (ví dụ `Ngày Rằm ×2`), tổng hệ số khi có từ hai thứ trở lên. (Mục tiêu tim của phiên làm ở giai đoạn 4.)
 - Nhãn **CHẾ ĐỘ THỬ** khi dùng giả lập, **DIỄN TẬP** khi hồ sơ thử dùng live thật. Live thật ở `start.bat` thì không có nhãn.
-- Dải miễn trừ cố định `Trò chơi mô phỏng xây chùa – không phải quyên góp tôn giáo` ngay trên vùng comment của nền tảng.
+- Dải miễn trừ cố định, nhỏ, nền mờ `Trò chơi mô phỏng xây chùa – không phải quyên góp tôn giáo` ngay trên vùng comment của nền tảng.
+- **Lọc tên:** tên người xem được chuẩn hóa (chữ kiểu 𝓜𝓲𝓷𝓱 → Minh, bỏ ký tự vô hình). Tên chứa từ cấm (danh sách
+  `nameFilter.bannedWords` trong `config.json`, so không dấu, không phân biệt hoa thường, kể cả chèn dấu chấm) hoặc tên rỗng
+  hiện `Thiện hữu ẩn danh`, cả trên bảng xếp hạng lẫn nhãn "… vừa xây …".
 - **Phím `D`** (bấm khi đang xem overlay): bật/tắt khung tô màu các vùng an toàn. Mở `.../overlay/?debug=1` thì bật sẵn.
+  Khi đang bật, **kéo thả ảnh chụp màn hình live thật** (chụp trên điện thoại) vào cửa sổ overlay: ảnh phủ mờ lên trên
+  để so xem chữ của game có bị nút, khung comment của TikTok che không. Phím `F` đổi cách khớp ảnh, `[` `]` mờ / đậm, `X` bỏ ảnh.
+  Ảnh chỉ nằm trong trình duyệt, không gửi đi đâu.
 - Chấm đỏ nhỏ góc trên bên phải nghĩa là overlay mất kết nối với game. Nó tự kết nối lại khi game chạy lại.
+
+**Chỉnh hiển thị** (trang trạng thái, khung **Camera và hiển thị**; kéo là overlay đổi ngay):
+- **Zoom tối đa** (mặc định ×1,6) và **Công trình chiếm** bao nhiêu phần bề ngang (mặc định 52%).
+- **Bảng xếp hạng**: tự chọn chỗ không che công trình, hoặc cố định trái giữa / phải giữa / trái trên.
+- **Bản đồ thu nhỏ**: chỉ khi thu toàn cảnh / luôn hiện / tắt.
+- **Độ đậm nền** từng khung: thanh tiến độ, bảng xếp hạng, ô sự kiện, dải miễn trừ.
 
 Overlay không đặt thông tin vào các vùng nền tảng tự vẽ: trên 180px, dưới 600px, phải 150px (sửa trong `config.json`, mục `overlay.safeArea`).
 
@@ -286,7 +310,23 @@ Mở cửa sổ lệnh **tại thư mục dự án**: mở thư mục `game-xay-
    FPS nên giữ quanh 60 (bằng tần số màn hình; màn 144Hz thì cao hơn). Mình báo em số "thấp nhất 10 giây qua".
 7. Mở overlay ở cửa sổ khác: overlay **không** thay đổi theo trang thử.
 
-**g) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
+**g) R4: camera và bố cục mới**
+1. Đóng cửa sổ game cũ (nếu đang mở), nhấp đúp `start-test.bat` lại, bấm **Mở overlay ↗**. Kéo cửa sổ overlay cao lên cho dễ nhìn.
+2. Nhìn bố cục:
+   - thanh tiến độ góc trên phải (hạng mục, giai đoạn, thanh chạy, %, toàn công trình, hàng chấm);
+   - bảng xếp hạng nhỏ, nền mờ, **không che** công trình đang xây;
+   - dải miễn trừ nhỏ ngay trên vùng comment.
+3. Bấm **Quà lớn (1.000 xu)** vài lần cho sang hạng mục khác: camera lia mượt sang công trình mới, rung nhẹ khi nhận quà.
+   Bảng xếp hạng tự dời chỗ nếu công trình mới nằm ở chỗ bảng đang đứng. Xong hạng mục thì camera đẩy chậm vào khoảng 5 giây.
+4. Trên trang trạng thái bấm **Toàn cảnh**: camera thu nhỏ, lia từ đỉnh xuống hồ sen; bảng mờ đi; hiện bản đồ thu nhỏ góc dưới trái.
+   Bấm **Lia giới thiệu**: camera đi từ trời xuống cổng tam quan.
+5. Thử khung **Camera và hiển thị**: kéo **Zoom tối đa**, **Công trình chiếm**, chọn chỗ đặt bảng, kéo độ đậm nền: overlay đổi ngay.
+6. **So với live thật:** chụp màn hình điện thoại lúc đang xem một phiên live TikTok (dọc). Gửi ảnh về máy tính.
+   Trên cửa sổ overlay bấm phím `D`, kéo thả ảnh đó vào. Xem chữ của game (thanh tiến độ, bảng, dải miễn trừ) có bị
+   nút tim/chia sẻ, khung comment, tên kênh của TikTok che không. Bị che thì báo em, hoặc sửa `overlay.safeArea` trong `config.json`.
+7. Giờ vàng: tạm thời chỉ bật được bằng lịch trong `config.json` (`goldenHour.schedule`); khi bật, ô sự kiện hiện `Giờ vàng ×2 · còn …` đếm ngược.
+
+**h) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
 Lệnh này xóa dữ liệu thử và chạy một chuỗi sự kiện mẫu. Màn hình in từng giai đoạn, từng hạng mục vừa xong, kèm các bảng xếp hạng.
 
 ---
@@ -370,7 +410,26 @@ Chữ trên thanh tiến độ nằm ở `labels.progress` (đổi được câu
 | `project` | `Toàn công trình {percent}%` |
 | `completed` | `{project} đã hoàn thành` |
 
-Tên bia trên bảng phải: `labels.boards.itemTop`, mặc định `Bia ghi danh – {item}`.
+Tên bia trên bảng xếp hạng: `labels.boards.itemTop`, mặc định `Bia ghi danh – {item}`.
+
+Mục `camera` (SPEC mục 8; `maxZoom`, `siteWidth` chỉnh được bằng thanh trượt trên trang trạng thái):
+
+| Khóa | Mặc định | Ý nghĩa |
+|---|---|---|
+| `maxZoom` | 1,6 | Phóng to tối đa (1,6 = đúng độ nét ảnh bản đồ; hơn nữa sẽ mờ) |
+| `siteWidth` | 0,52 | Công trình chiếm bao nhiêu phần bề ngang khung hình (0,45–0,6) |
+| `overviewEverySec` | vắng 180, vừa 360, đông 0, rất đông 0 | Mỗi bao nhiêu giây tự thu toàn cảnh (0 = không tự động) |
+| `overviewSec` | 9 | Thu toàn cảnh trong bao nhiêu giây |
+| `tourEverySec` | vắng 600, còn lại 0 | Mỗi bao nhiêu giây tự lia giới thiệu |
+| `tourSec` | 20 | Lia giới thiệu trong bao nhiêu giây |
+| `ceremonySec`, `ceremonyZoom` | 5, 1,15 | Xong hạng mục: đẩy vào trong bao nhiêu giây, phóng thêm bao nhiêu lần (không quá `maxZoom`) |
+| `shakeMinCoins` | 1000 | Quà từ bao nhiêu xu thì camera rung nhẹ |
+
+Mục `overlay` (bố cục): `boardPosition` (`auto`, `leftMiddle`, `rightMiddle`, `leftTop`), `minimap` (`overview`, `always`, `off`),
+`opacity` (độ đậm nền: `progress`, `board`, `events`, `disclaimer`, từ 0 đến 1), `boardRotateSec` (15 giây).
+
+Ô sự kiện: chữ ở `labels.events` (`goldenHour` mặc định `{name} ×{multiplier} · còn {time}`, `event`, `total`).
+Lọc tên: `nameFilter.bannedWords`, ví dụ `"bannedWords": ["từ cấm 1", "từ cấm 2"]`; tên vi phạm hiện `labels.anonymousName`.
 
 File `config.json` cũ của bản tháp (có mục `tower`, tên tầng…) được game **tự dọn** ở lần chạy đầu, phần mình đã chỉnh khác được giữ nguyên.
 Riêng các khóa `floor1WidthPx`, `towerTaper`, `towerCenterX`, `towerBaseY` trong mục `overlay` chỉ còn dùng cho trang `/tools/assets` cũ.

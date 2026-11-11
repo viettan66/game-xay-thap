@@ -8,6 +8,7 @@ import { GameCore } from './core.js';
 import { LiveService } from './live/service.js';
 import type { Logger } from './logger.js';
 import { StateBroadcaster } from './overlay/broadcaster.js';
+import { overlayName } from './overlay/state.js';
 import { attachOverlaySocket } from './overlay/socket.js';
 import { buildOverlayState } from './overlay/state.js';
 import type { ProfileName } from './profile.js';
@@ -71,9 +72,10 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
       if (r.status === 'counted' && r.score && ev.type !== 'viewers' && r.score.source !== 'none') {
         broadcaster.contribution({
           type: 'contribution',
-          name: ev.user.nickname,
+          name: overlayName(core, ev.user.nickname),
           source: r.score.source,
           points: r.score.points,
+          coins: ev.type === 'gift' ? Math.max(0, ev.coinValueEach) * Math.max(0, ev.count) : 0,
           allocations: r.progress?.allocations ?? [],
         });
       }

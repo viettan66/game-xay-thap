@@ -7,10 +7,11 @@ import { Application } from 'pixi.js';
 import type { PointRules } from '../../../shared/points.js';
 import type { ResolvedProject } from '../../../shared/project.js';
 import type { ProgressLabels } from '../../../shared/progressView.js';
-import type { PiecesConfig, SafeArea } from '../../../shared/protocol.js';
+import type { CameraConfig, PiecesConfig, SafeArea } from '../../../shared/protocol.js';
 import { PARTS } from '../../../shared/parts.js';
 import { destroyArt, loadArt } from '../art.js';
-import { STAGE_H, STAGE_W, uiRects } from '../layout.js';
+import { hudRects } from '../hudLayout.js';
+import { STAGE_H, STAGE_W } from '../layout.js';
 import { MapView } from '../scene/map.js';
 import { loadFonts } from '../theme.js';
 import { Badge, Disclaimer } from '../ui/chrome.js';
@@ -34,6 +35,7 @@ interface BuildReply {
   texts: { pieceBurst: string[] };
   labels: { badge: string; disclaimer: string; pointUnit: string };
   safeArea: SafeArea;
+  camera: Omit<CameraConfig, 'overviewEverySec' | 'tourEverySec'> & { overviewEverySec: Record<CrowdKey, number>; tourEverySec: Record<CrowdKey, number> };
   assetsVersion: string;
 }
 
@@ -53,8 +55,8 @@ async function boot(): Promise<void> {
   $('stage').prepend(app.canvas);
 
   // Cùng khung nhìn với overlay: phần giữa khối giao diện phía trên và dải miễn trừ.
-  const r = uiRects(cfg.safeArea);
-  const mapView = new MapView({ top: r.chip.y + r.chip.h, bottom: r.disclaimer.y }, app.renderer);
+  const r = hudRects(cfg.safeArea);
+  const mapView = new MapView(r.view, app.renderer);
   const badge = new Badge(r.badge);
   const disclaimer = new Disclaimer(r.disclaimer);
   badge.update(cfg.labels.badge);
@@ -134,11 +136,12 @@ async function boot(): Promise<void> {
   const act = (a: TrialAction) => {
     const { source, points } = trialPoints(a, coinsOf(a), cfg.points, Date.now());
     const name = $<HTMLInputElement>('name').value.trim() || 'Khách thử';
-    const c = sandbox.give(name, source, points);
+    const c = sandbox.give(name, source, points, coinsOf(a));
     if (!c) return;
     clicks++;
     mapView.update(sandbox.view());
     mapView.contribution(c);
+    if (c.coins >= cfg.camera.shakeMinCoins) mapView.shake();
   };
   document.querySelectorAll<HTMLButtonElement>('button[data-act]').forEach((b) => b.addEventListener('click', () => act(b.dataset.act as TrialAction)));
   window.addEventListener('keydown', (e) => {
@@ -160,6 +163,16 @@ async function boot(): Promise<void> {
   const crowdSel = $<HTMLSelectElement>('crowd');
   for (const c of CROWDS) crowdSel.add(new Option(`${c.label}: ${cfg.pieces.maxPerSec[c.key]} mảnh/giây`, c.key));
   crowdSel.value = 'vua';
+  // Camera theo chế độ độ đông đang chọn (tự thu toàn cảnh / lia giới thiệu theo giờ hẹn).
+  const cameraCfg = (): CameraConfig => {
+    const crowd = crowdSel.value as CrowdKey;
+    return { ...cfg.camera, overviewEverySec: cfg.camera.overviewEverySec[crowd], tourEverySec: cfg.camera.tourEverySec[crowd] };
+  };
+  mapView.setCameraConfig(cameraCfg());
+  crowdSel.addEventListener('change', () => mapView.setCameraConfig(cameraCfg()));
+  document.querySelectorAll<HTMLButtonElement>('button[data-cam]').forEach((b) =>
+    b.addEventListener('click', () => mapView.requestCamera(b.dataset.cam as 'overview' | 'tour' | 'ceremony')),
+  );
   const piecesCfg = (): PiecesConfig => ({
     size: cfg.pieces.size,
     maxPerSec: cfg.pieces.maxPerSec[crowdSel.value as CrowdKey] ?? cfg.pieces.maxPerSec.vua,

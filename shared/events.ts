@@ -121,6 +121,34 @@ export function isGoldenHourActive(rules: GoldenHourRules, ts: number, manualUnt
   return rules.schedule.some((s) => s.weekdays.includes(p.weekday) && inTimeWindow(minute, s.from, s.to));
 }
 
+/**
+ * Giờ vàng đang diễn ra thì kết thúc lúc nào (ms), để overlay đếm ngược (mục 4). Không diễn ra: null.
+ * Bật tay và theo lịch chồng nhau: lấy lúc kết thúc muộn hơn (khung lịch liền nhau được nối tiếp).
+ */
+export function goldenHourEndsAt(rules: GoldenHourRules, ts: number, manualUntil: number | null): number | null {
+  let end: number | null = manualUntil !== null && ts < manualUntil ? manualUntil : null;
+  // Đi tiếp theo từng phút trong lịch (tối đa 1 ngày) để nối các khung liền nhau.
+  const p = vnParts(ts);
+  const startOfMinute = ts - p.second * 1000 - (ts % 1000);
+  const inSchedule = (t: number) => {
+    const q = vnParts(t);
+    const m = q.hour * 60 + q.minute;
+    return rules.schedule.some((s) => s.weekdays.includes(q.weekday) && inTimeWindow(m, s.from, s.to));
+  };
+  if (inSchedule(ts)) {
+    let t = startOfMinute;
+    for (let k = 0; k < 24 * 60 && inSchedule(t); k++) t += 60_000;
+    end = Math.max(end ?? 0, t);
+  }
+  // Bật tay hết giờ ngay lúc lịch bắt đầu: nối tiếp lịch.
+  if (end !== null && end === manualUntil && inSchedule(end)) {
+    let t = end - (end % 60_000);
+    for (let k = 0; k < 24 * 60 && inSchedule(t); k++) t += 60_000;
+    end = Math.max(end, t);
+  }
+  return end;
+}
+
 export function computeMultiplier(
   ts: number,
   defs: GameEventDef[],

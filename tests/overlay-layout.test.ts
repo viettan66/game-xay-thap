@@ -15,9 +15,9 @@ import {
   STAGE_W,
   towerGeometry,
   truncateToWidth,
-  uiRects,
 } from '../overlay/src/layout.js';
 import type { Board, OverlayLayout } from '../shared/protocol.js';
+import { hudRects } from '../overlay/src/hudLayout.js';
 
 const layout: OverlayLayout = {
   safeArea: { top: 180, bottom: 600, right: 150 },
@@ -86,24 +86,15 @@ describe('giao diện không đặt vào vùng an toàn (mục 8)', () => {
     { top: 240, bottom: 700, right: 200 },
   ]) {
     it(`vùng an toàn trên ${safe.top}, dưới ${safe.bottom}, phải ${safe.right}`, () => {
-      const r = uiRects(safe);
+      const r = hudRects(safe);
       const content = { x: 0, y: safe.top, w: STAGE_W - safe.right, h: STAGE_H - safe.top - safe.bottom };
-      const parts = {
-        badge: r.badge,
-        banner: r.banner,
-        progress: r.progress,
-        progressInfo: r.progressInfo,
-        chip: r.chip,
-        board: r.board,
-        site: r.site,
-        disclaimer: r.disclaimer,
-      };
-      for (const [name, rect] of Object.entries(parts)) {
+      const fixed = { badge: r.badge, progress: r.progress, events: r.events, minimap: r.minimap, disclaimer: r.disclaimer };
+      for (const [name, rect] of Object.entries({ ...fixed, ...r.boards, site: r.site })) {
         expect(rectInside(rect, content), name).toBe(true);
         expect(rect.w, name).toBeGreaterThan(0);
         expect(rect.h, name).toBeGreaterThan(0);
       }
-      const list = Object.entries(parts);
+      const list = Object.entries({ progress: r.progress, events: r.events, minimap: r.minimap, disclaimer: r.disclaimer });
       for (let i = 0; i < list.length; i++) {
         for (let j = i + 1; j < list.length; j++) {
           expect(rectsOverlap(list[i]![1], list[j]![1]), `${list[i]![0]} chồng ${list[j]![0]}`).toBe(false);
@@ -113,10 +104,6 @@ describe('giao diện không đặt vào vùng an toàn (mục 8)', () => {
       expect(r.disclaimer.y + r.disclaimer.h).toBe(STAGE_H - safe.bottom);
     });
   }
-
-  it('bảng xếp hạng đủ chỗ cho 10 dòng với vùng an toàn mặc định', () => {
-    expect(uiRects(layout.safeArea).board.h).toBeGreaterThanOrEqual(66 + 10 * 62);
-  });
 });
 
 describe('chữ và số trên overlay', () => {
