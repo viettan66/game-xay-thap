@@ -163,7 +163,7 @@ export function buildOverlayState(core: GameCore, badge: string | null): Overlay
     progress,
     boards,
     multiplier: m.total !== 1 ? { total: m.total, labels } : null,
-    labels: { pointUnit: cfg.labels.pointUnitLabel, disclaimer: cfg.labels.disclaimer },
+    labels: { pointUnit: cfg.labels.pointUnitLabel, disclaimer: cfg.labels.disclaimer, enableSound: cfg.labels.enableSound },
     layout: {
       safeArea: cfg.overlay.safeArea,
       boardRotateSec: cfg.overlay.boardRotateSec,
@@ -212,6 +212,7 @@ export function buildOverlayState(core: GameCore, badge: string | null): Overlay
     },
     anonCrowd: anonCrowd(core, crowd, badge !== cfg.labels.testBadge),
     creditsSpeed: cfg.ceremony.creditsSpeed,
+    audio: { version: core.audio.scan.version, settings: core.configStore.getAudio() },
     assetsVersion: assetsVersion(core.rootDir),
   };
 }

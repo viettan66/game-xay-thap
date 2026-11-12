@@ -1,6 +1,7 @@
 // Dữ liệu server gửi xuống overlay qua WebSocket (đường /ws).
 // Khi overlay kết nối (hoặc kết nối lại), server gửi ngay toàn bộ trạng thái hiện tại (mục 12 SPEC).
 
+import type { AudioSettings } from './audio.js';
 import type { CharLook, GiftEffect } from './characters.js';
 import type { PartKey } from './parts.js';
 import type { Allocation, ItemSize, ProgressTransition, StageBuild } from './project.js';
@@ -238,6 +239,8 @@ export interface OverlayState {
   labels: {
     pointUnit: string;
     disclaimer: string;
+    /** Nút "Bật âm thanh" (trình duyệt chặn tự phát âm thanh khi mở overlay bằng trình duyệt thường). */
+    enableSound: string;
   };
   layout: OverlayLayout;
   hud: HudConfig;
@@ -259,6 +262,8 @@ export interface OverlayState {
   anonCrowd: AnonCrowd | null;
   /** Credit cuối công trình cuộn bao nhiêu điểm ảnh mỗi giây (khi toàn công trình đã xong). */
   creditsSpeed: number;
+  /** Âm thanh (mục 10A): cấu hình config/audio.json; version đổi khi danh sách file đổi (overlay tải lại /api/audio/library). */
+  audio: { version: string; settings: AudioSettings };
   /** Đổi khi assets/manifest.json đổi (ví dụ vừa lưu ở /tools/assets): overlay tải lại ảnh. */
   assetsVersion: string;
 }
@@ -281,6 +286,8 @@ export type ServerMessage =
       platformId: string;
       /** Quà: hiệu ứng theo mức (gạch, bó gỗ, xe trâu, voi, chuông, tượng); tim, bình luận: null. */
       effect: GiftEffect | null;
+      /** Quà: có phát âm quà không (giới hạn chống ồn theo chế độ độ đông, mục 10A). */
+      sound?: boolean;
     }
   /** Trụ trì nói một câu (text null: chỉ đổi dáng). verified false: câu chưa duyệt (chỉ có ở giả lập, viền cam). */
   | { type: 'say'; text: string | null; pose: AbbotPose; durationMs: number; verified: boolean }
@@ -289,6 +296,10 @@ export type ServerMessage =
    * Cùng id = gộp vào thông báo đang chờ / đang hiện (quà nhỏ liên tiếp của cùng một người).
    */
   | { type: 'toast'; id: string; kind: 'big' | 'plus'; platformId: string; name: string; text: string; icon: string | null; coins: number; verified: boolean }
+  /** Admin bấm chuyển bài / tạm dừng / phát tiếp nhạc nền (mục 10A). */
+  | { type: 'audio'; cmd: 'next' | 'pause' | 'resume' }
+  /** Âm thanh của sự kiện bên server (mở phiên, kết phiên). */
+  | { type: 'sound'; group: string }
   /** Một lễ (mục 10): overlay xếp hàng, diễn khi mảnh cuối của giai đoạn đã đặt xong. */
   | { type: 'ceremony'; ceremony: CeremonyInfo }
   /** Đủ mục tiêu tim của phiên: mở khóa phần thưởng (múa lân, bảng 9A). */

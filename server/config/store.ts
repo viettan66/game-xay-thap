@@ -9,11 +9,13 @@ import type { ZodType } from 'zod';
 import type { GameEventDef } from '../../shared/events.js';
 import type { ProjectFile } from '../../shared/project.js';
 import {
+  audioFileSchema,
   configSchema,
   dialoguesFileSchema,
   eventsFileSchema,
   formatZodError,
   projectFileSchema,
+  type AudioFile,
   type DialoguesFile,
   type EventsFile,
   type GameConfig,
@@ -23,6 +25,7 @@ export const CONFIG_FILE = 'config.json';
 export const EVENTS_FILE = 'events.json';
 export const PROJECT_FILE = 'project.json';
 export const DIALOGUES_FILE = 'dialogues.json';
+export const AUDIO_FILE = 'audio.json';
 
 export class ConfigError extends Error {
   constructor(
@@ -154,6 +157,7 @@ export class ConfigStore {
   private eventsFile: EventsFile | null = null;
   private project: ProjectFile | null = null;
   private dialogues: DialoguesFile | null = null;
+  private audio: AudioFile | null = null;
   private listeners: ConfigListener[] = [];
   /** Các khóa cũ (bản tháp) vừa được dọn khỏi config.json ở lần đọc gần nhất. */
   upgradedKeys: string[] = [];
@@ -169,7 +173,7 @@ export class ConfigStore {
   /** Đọc config. Tạo file từ bản mặc định nếu chưa có. Trả về tên các file vừa tạo. */
   load(): string[] {
     const created: string[] = [];
-    for (const name of [CONFIG_FILE, EVENTS_FILE, PROJECT_FILE, DIALOGUES_FILE]) {
+    for (const name of [CONFIG_FILE, EVENTS_FILE, PROJECT_FILE, DIALOGUES_FILE, AUDIO_FILE]) {
       const target = path.join(this.configDir, name);
       if (!fs.existsSync(target)) {
         fs.copyFileSync(path.join(this.defaultsDir, name), target);
@@ -189,6 +193,7 @@ export class ConfigStore {
     if (project.changed > 0) writeJsonAtomic(projectPath, project.value);
     const dialoguesDefaults = readJson(path.join(this.defaultsDir, DIALOGUES_FILE));
     this.dialogues = validate(dialoguesFileSchema, deepMerge(dialoguesDefaults, readJson(path.join(this.configDir, DIALOGUES_FILE))), DIALOGUES_FILE);
+    this.audio = this.validateAudio(readJson(path.join(this.configDir, AUDIO_FILE)));
     return created;
   }
 
@@ -202,6 +207,27 @@ export class ConfigStore {
   validateProject(raw: unknown): ProjectFile {
     const defaults = readJson(path.join(this.defaultsDir, PROJECT_FILE));
     return validate(projectFileSchema, deepMerge(defaults, raw), PROJECT_FILE);
+  }
+
+  /** Kiểm tra audio.json (đã trộn với bản mặc định: nhóm mới ở phiên bản sau tự có giá trị mặc định). */
+  validateAudio(raw: unknown): AudioFile {
+    return validate(audioFileSchema, deepMerge(readJson(path.join(this.defaultsDir, AUDIO_FILE)), raw), AUDIO_FILE);
+  }
+
+  getAudio(): AudioFile {
+    if (!this.audio) throw new Error('Chưa đọc config (gọi load() trước)');
+    return this.audio;
+  }
+
+  /** Lưu cấu hình âm thanh (trang Âm thanh): kiểm tra, ghi file, áp dụng ngay. */
+  saveAudio(next: unknown): ConfigChange[] {
+    const valid = this.validateAudio(next);
+    const changes = diffValues(this.getAudio(), valid).map((c) => ({ file: AUDIO_FILE, ...c }));
+    if (changes.length === 0) return [];
+    writeJsonAtomic(path.join(this.configDir, AUDIO_FILE), valid);
+    this.audio = valid;
+    this.emit();
+    return changes;
   }
 
   get(): GameConfig {

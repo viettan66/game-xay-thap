@@ -182,6 +182,7 @@
       "heartGoalDone": "❤ {count} tim · đã mở khóa {reward}"
     },
     "plusPoints": "+{points} {unit} · {name}",
-    "actorPlus": "+{points} {unit}"
+    "actorPlus": "+{points} {unit}",
+    "enableSound": "🔊 Bật âm thanh"
   }
 }

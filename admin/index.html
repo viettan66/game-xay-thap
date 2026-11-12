@@ -64,6 +64,7 @@
   <a class="btn" href="/tools/build" target="_blank">Thử xây ↗</a>
   <a class="btn" href="/admin/dialogues" target="_blank">Kho thoại ↗</a>
   <a class="btn" href="/admin/steles" target="_blank">Bia ghi danh ↗</a>
+  <a class="btn" href="/admin/audio" target="_blank">Âm thanh ↗</a>
   <a class="btn" href="/tools/paths" target="_blank">Lối đi ↗</a>
   <span class="note">Trang tạm. Trang quản trị đầy đủ có ở giai đoạn 7. Tự cập nhật mỗi 2 giây.</span>
   <span id="error" class="err"></span>
@@ -98,6 +99,7 @@
     <div class="row"><span>Người tương tác 5 phút</span><span id="crowd-inter"></span></div>
     <div class="row"><span>Nhân vật trên bản đồ</span><span id="chars-count"></span></div>
     <div class="row"><span>Tượng võ tướng (ô ghi danh)</span><span id="honor-count"></span></div>
+    <div class="row"><span>Âm thanh</span><span id="audio-sum"></span></div>
     <div class="buttons" id="crowd-box">
       <button data-crowd="auto">Tự động</button>
       <button data-crowd="vang">Vắng</button>
@@ -266,6 +268,14 @@
         $('honor-count').textContent = fmt(s.characters.honors);
       }
       for (const b of document.querySelectorAll('[data-crowd]')) b.classList.toggle('on', b.dataset.crowd === (s.crowd.forced || 'auto'));
+    }
+    if (s.audio) {
+      const a = s.audio;
+      const np = a.nowPlaying && a.nowPlaying.file ? ` · đang phát: ${esc(a.nowPlaying.file.split('/').pop())}${a.nowPlaying.paused ? ' (tạm dừng)' : ''}` : '';
+      $('audio-sum').innerHTML = (a.muted ? '<b class="state-bad">ĐANG TẮT TIẾNG</b> · ' : '') + `${fmt(a.files)} file${np}`
+        + (a.missingCredits ? ` · <span class="state-bad">${fmt(a.missingCredits)} file thiếu credits</span>` : '')
+        + (a.files === 0 ? ' (chưa có âm thanh: im lặng)' : '')
+        + ' · <a href="/admin/audio" target="_blank">mở</a>';
     }
     $('mode-box').hidden = s.profile !== 'test';
     $('mode-sim').classList.toggle('on', live.mode === 'simulator');

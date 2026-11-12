@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { GROUND_LOOKS, ITEM_SIZES, PIECE_LOOKS, projectProblems, type ProjectFile } from '../../shared/project.js';
 import { PART_KEYS } from '../../shared/parts.js';
 import { GIFT_EFFECTS } from '../../shared/characters.js';
+import type { AudioSettings } from '../../shared/audio.js';
 import { DIALOGUE_VARS, varsOf } from '../dialogue/rules.js';
 
 z.config(z.locales.vi());
@@ -262,6 +263,8 @@ export const configSchema = z.strictObject({
     plusPoints: z.string().min(1),
     // Chữ bay lên trên đầu nhân vật khi thả tim, bình luận được tính công (mục 9): {points}, {unit}.
     actorPlus: z.string().min(1),
+    // Nút bật âm thanh trên overlay khi trình duyệt chặn tự phát (mục 10A).
+    enableSound: z.string().min(1),
   }),
 });
 
@@ -335,6 +338,58 @@ export const dialoguesFileSchema = z
   });
 
 export type DialoguesFile = z.infer<typeof dialoguesFileSchema>;
+
+// ---- config/audio.json: âm thanh (mục 10A) ----
+
+const vol = z.number().min(0).max(1);
+const audioMode = z.enum(['shuffle', 'sequential', 'random']);
+const tierNum = (min: number, max: number) =>
+  z.strictObject({ vang: z.number().min(min).max(max), vua: z.number().min(min).max(max), dong: z.number().min(min).max(max), ratdong: z.number().min(min).max(max) });
+
+export const audioFileSchema = z.strictObject({
+  _ghi_chu: z.string().optional(),
+  /** Tắt tiếng toàn bộ (nút khẩn cấp trên admin). */
+  muted: z.boolean(),
+  channels: z.strictObject({ master: vol, music: vol, sfx_construction: vol, sfx_gift: vol, sfx_ui: vol, sfx_ceremony: vol, ambient: vol }),
+  music: z.strictObject({
+    /** Tình huống → playlist (thư mục con của assets/audio/music). */
+    situations: z.strictObject(Object.fromEntries(['vang', 'vua', 'dong', 'ratdong', 'golden_hour', 'ceremony', 'milestone', 'festival', 'finale'].map((k) => [k, z.string()])) as Record<string, z.ZodString>),
+    /** Cách chọn bài của từng playlist. */
+    modes: z.record(z.string(), audioMode),
+    crossfadeSec: z.number().min(0).max(10),
+    duckTo: vol,
+    duckReleaseSec: z.number().min(0.1).max(10),
+  }),
+  groups: z.record(
+    z.string().regex(/^[a-z0-9_]+$/, 'Tên nhóm chỉ gồm chữ thường không dấu, số và dấu _'),
+    z.strictObject({ volume: vol, enabled: z.boolean(), mode: audioMode, cooldownMs: int(0).max(600_000), maxConcurrent: int(1).max(20) }),
+  ),
+  ambient: z.record(z.string().regex(/^[a-z0-9_]+$/), z.strictObject({ volume: vol, enabled: z.boolean() })),
+  limits: z.strictObject({
+    maxConcurrent: tierNum(1, 32),
+    /** Âm thi công mỗi giây (0 = không giới hạn). */
+    constructionPerSec: tierNum(0, 50),
+    /** Giây tối thiểu giữa hai tiếng tim (0 = mỗi lô tim một lần, -1 = tắt). */
+    likeGapSec: tierNum(-1, 600),
+    /** Phòng đông: chỉ quà từ bấy nhiêu xu mới có âm. Phòng rất đông: theo thông báo quà lớn. */
+    giftDongMinCoins: int(0),
+    /** Phòng vừa: quà nhỏ liên tiếp của cùng một người trong bấy nhiêu giây gộp một âm. */
+    giftMergeSec: z.number().min(0).max(60),
+  }),
+  /** Lệch cao độ ngẫu nhiên (0,05 = ±5%). */
+  pitchJitter: z.number().min(0).max(0.3),
+  /** Âm lượng tiếng công trường xa theo chế độ (0 = tắt). */
+  siteMurmur: tierNum(0, 1),
+  /** Chim hót cách nhau [ít nhất, nhiều nhất] giây. */
+  birdsEverySec: z.tuple([z.number().min(1), z.number().min(1)]),
+  /** Ban đêm (giờ Việt Nam): dùng tiếng côn trùng thay chim. */
+  night: z.strictObject({ from: hhmm, to: hhmm }),
+});
+
+export type AudioFile = z.infer<typeof audioFileSchema>;
+// Kiểu suy ra từ zod phải khớp kiểu gửi xuống overlay (shared/audio.ts).
+const _audioTypeCheck = (a: AudioFile): AudioSettings => a;
+void _audioTypeCheck;
 
 // ---- config/project.json: danh sách hạng mục, mẫu giai đoạn, giá (mục 5) ----
 

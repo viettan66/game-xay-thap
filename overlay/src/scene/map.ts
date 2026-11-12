@@ -13,6 +13,7 @@ import type { Art } from '../art.js';
 import { Builder, type BuilderStats, type BuildSite } from '../build/builder.js';
 import { CameraDirector, type CamView } from '../camera.js';
 import { carryOf, workKind } from '../chars/sprites.js';
+import { pieceSoundGroup } from '../../../shared/audio.js';
 import { loiterPoints, type Pt, type SiteGeom } from '../chars/spots.js';
 import { CharactersView } from '../chars/view.js';
 
@@ -62,6 +63,8 @@ export class MapView {
   private loiterCache: { key: string; pts: Pt[] } = { key: '', pts: [] };
   private finale = false;
   private finaleTurn = 0;
+  /** Âm thanh gắn với hoạt ảnh trên bản đồ (mảnh khớp chỗ, nhân vật làm việc…, mục 10A). */
+  onSound: (group: string) => void = () => {};
   /** Gọi khi mảnh cuối của một giai đoạn đã đặt xong (sau này mở lễ, giai đoạn 5). */
   onStageDone: (itemId: string, stageIndex: number, itemDone: boolean) => void = () => {};
 
@@ -80,12 +83,14 @@ export class MapView {
         attach: (site) => this.attach(site),
         carry: (actorId, prop) => this.chars.carryFor(actorId, carryOf(prop)),
         source: () => this.chars.handNear(),
+        pieceLand: (prop) => this.onSound(pieceSoundGroup(prop)),
       },
       () => this.world.scale.x,
     );
     this.buildings.sortableChildren = true;
     this.world.addChild(this.tiles, this.buildings, this.fg, this.builder.fxLayer);
     this.chars = new CharactersView(this.buildings, this.builder.fxLayer);
+    this.chars.onSound = (g) => this.onSound(g);
     this.chars.setContext({
       site: () => this.siteGeom(),
       siteZ: () => {

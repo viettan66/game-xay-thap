@@ -128,10 +128,14 @@ export class ToastView {
     while (this.plus.length > 4) this.plus.shift()!.text.destroy();
   }
 
+  /** Gọi khi một thông báo quà lớn bắt đầu hiện (âm toast_in, mục 10A). */
+  onShow: (msg: ToastMsg) => void = () => {};
+
   tick(dt: number): void {
     if (!this.current && this.queue.length) {
       const msg = this.queue.shift()!;
       this.current = { msg, t: 0, dur: this.durationSec };
+      this.onShow(msg);
       this.slide = 0;
       this.render(msg);
     }

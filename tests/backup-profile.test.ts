@@ -50,7 +50,8 @@ describe('backup (mục 6)', () => {
     const list = listBackups(core.paths.backupsDir);
     expect(list).toHaveLength(2);
     const newest = path.join(core.paths.backupsDir, list.at(-1)!);
-    expect(fs.readdirSync(newest).sort()).toEqual(['config.json', 'events.json', 'game.db', 'project.json']);
+    // audio-credits.json: bản ghi bản quyền âm thanh (assets/audio/credits.json, không có trên git).
+    expect(fs.readdirSync(newest).sort()).toEqual(['audio-credits.json', 'audio.json', 'config.json', 'events.json', 'game.db', 'project.json']);
     const copy = new Database(path.join(newest, 'game.db'), { readonly: true });
     expect((copy.prepare('SELECT total_points AS n FROM users').get() as { n: number }).n).toBe(30);
     copy.close();

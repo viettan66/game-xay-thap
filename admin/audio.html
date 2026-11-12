@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Âm thanh – Đại Danh Lam Thiên Phúc</title>
+<style>
+  :root { --bg: #f6f1e7; --card: #fffdf8; --ink: #2b2118; --muted: #7a6a58; --line: #e4d9c6; --accent: #b5462b; --warn: #c06a00; --bad: #b3261e; --ok: #2e7d32; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+  header { position: sticky; top: 0; z-index: 5; padding: 10px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); background: var(--card); }
+  header h1 { font-size: 19px; margin: 0; }
+  header a { color: var(--accent); font-size: 14px; }
+  button, select, input { font: inherit; font-size: 14px; }
+  button { padding: 6px 12px; border-radius: 8px; border: 1px solid #c9b79a; background: #fff; color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.danger { background: var(--bad); color: #fff; border-color: var(--bad); }
+  button.small { padding: 2px 8px; font-size: 13px; white-space: nowrap; }
+  main { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 14px; padding: 14px 20px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+  section.wide { grid-column: 1 / -1; }
+  h2 { font-size: 16px; color: var(--accent); margin: 6px 0 10px; }
+  .note { color: var(--muted); font-size: 13px; }
+  .warn { color: var(--warn); }
+  .bad { color: var(--bad); font-weight: 600; }
+  .ok { color: var(--ok); }
+  label.rng { display: grid; grid-template-columns: 170px 1fr 48px; gap: 8px; align-items: center; margin: 4px 0; font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  td.desc { color: var(--muted); font-size: 13px; max-width: 360px; }
+  td input[type=range] { width: 110px; }
+  .files { margin: 4px 0 0; padding: 0; list-style: none; font-size: 13px; }
+  .files li { display: flex; gap: 6px; align-items: center; padding: 1px 0; }
+  .cnt0 { color: var(--warn); font-weight: 600; }
+  code { background: #f3eadb; border-radius: 4px; padding: 0 4px; font-size: 12px; }
+  .lim input { width: 64px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Âm thanh</h1>
+  <a href="/admin">← Trang trạng thái</a>
+  <button id="rescan">Quét lại thư mục</button>
+  <button id="mute" class="danger">🔇 Tắt tiếng toàn bộ</button>
+  <span id="msg" class="note"></span>
+</header>
+<main>
+  <section>
+    <h2>Âm lượng các kênh</h2>
+    <div id="channels"></div>
+    <p class="note">Kéo là overlay đổi ngay (lưu vào <code>config\audio.json</code>). Âm thanh phát ở trang overlay: trong OBS nhớ bật
+      <b>Control audio via OBS</b> ở Browser Source.</p>
+  </section>
+  <section>
+    <h2>Nhạc nền</h2>
+    <div id="now" class="note"></div>
+    <div style="display:flex; gap:8px; margin:8px 0">
+      <button data-cmd="next">⏭ Chuyển bài</button>
+      <button data-cmd="pause">⏸ Tạm dừng</button>
+      <button data-cmd="resume">▶ Phát tiếp</button>
+    </div>
+    <table><thead><tr><th>Tình huống</th><th>Playlist</th></tr></thead><tbody id="situations"></tbody></table>
+  </section>
+  <section class="wide">
+    <h2>Cảnh báo</h2>
+    <div id="warnings"></div>
+  </section>
+  <section class="wide">
+    <h2>Playlist nhạc nền (<code>assets\audio\music\…</code>)</h2>
+    <table><thead><tr><th>Playlist</th><th>Dùng cho</th><th>Số bài</th><th>Cách chọn bài</th></tr></thead><tbody id="playlists"></tbody></table>
+  </section>
+  <section class="wide">
+    <h2>Hiệu ứng âm thanh (<code>assets\audio\sfx\…</code>)</h2>
+    <p class="note" style="margin-top:0">Mỗi nhóm nhiều file = nhiều biến thể, mỗi lần phát chọn một file (lệch cao độ nhẹ ±5%). "Nghỉ" = số mili giây tối thiểu giữa hai lần phát cùng nhóm.</p>
+    <table><thead><tr><th>Nhóm</th><th>Khi nào</th><th>File</th><th>Bật</th><th>Âm lượng</th><th>Cách chọn</th><th>Nghỉ (ms)</th><th></th></tr></thead><tbody id="groups"></tbody></table>
+  </section>
+  <section class="wide">
+    <h2>Âm thanh môi trường (<code>assets\audio\ambient\…</code>)</h2>
+    <table><thead><tr><th>Nhóm</th><th>Khi nào</th><th>File</th><th>Bật</th><th>Âm lượng</th><th></th></tr></thead><tbody id="ambient"></tbody></table>
+  </section>
+  <section class="wide lim">
+    <h2>Giới hạn chống ồn theo độ đông</h2>
+    <table><thead><tr><th></th><th>Vắng</th><th>Vừa</th><th>Đông</th><th>Rất đông</th></tr></thead><tbody id="limits"></tbody></table>
+    <p class="note">Âm thi công mỗi giây: 0 = không giới hạn. Tiếng tim: số giây tối thiểu giữa hai lần, 0 = mỗi lô tim một lần, -1 = tắt.
+      Âm quà: vắng, vừa mọi quà (vừa gộp quà nhỏ liên tiếp của cùng người); đông chỉ quà từ <input id="giftDong" type="number" min="0"> xu;
+      rất đông theo cùng ngưỡng thông báo quà lớn. Công trường xa (âm thanh môi trường) to dần theo độ đông.</p>
+  </section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const CH = { master: 'Tổng', music: 'Nhạc nền', sfx_construction: 'Thi công', sfx_gift: 'Quà và tương tác', sfx_ui: 'Giao diện', sfx_ceremony: 'Lễ, mốc', ambient: 'Môi trường' };
+  const SIT = { vang: 'Phòng vắng', vua: 'Phòng vừa', dong: 'Phòng đông', ratdong: 'Phòng rất đông', golden_hour: 'Giờ hoàng đạo', ceremony: 'Lễ giai đoạn đặc biệt, xong hạng mục (phát đè)', milestone: 'Khánh thành hạng mục lớn (phát đè)', festival: 'Lễ hội mở khóa – múa lân (phát đè)', finale: 'Khánh thành toàn công trình + credit' };
+  const MODES = { shuffle: 'Xáo trộn', sequential: 'Lần lượt', random: 'Ngẫu nhiên' };
+  const TIERS = ['vang', 'vua', 'dong', 'ratdong'];
+  let data = null;
+  let s = null; // settings đang sửa
+  let saveTimer = null;
+  let player = null;
+
+  const fileUrl = (f) => '/assets/audio/' + f.split('/').map(encodeURIComponent).join('/');
+  function listen(file, vol = 1) {
+    if (player) player.pause();
+    player = new Audio(fileUrl(file));
+    player.volume = Math.max(0, Math.min(1, vol));
+    player.play().catch(() => { $('msg').textContent = 'Không phát được file (định dạng lỗi?)'; });
+  }
+  const pct = (v) => Math.round(v * 100) + '%';
+  const modeSel = (val, attr) => `<select ${attr}>${Object.entries(MODES).map(([k, v]) => `<option value="${k}" ${k === val ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+
+  function save() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      const r = await fetch('/api/audio', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ settings: s }) });
+      const j = await r.json();
+      if (!r.ok) { $('msg').innerHTML = `<span class="bad">${esc(j.error || 'Lỗi')}</span>`; return; }
+      $('msg').textContent = 'Đã lưu, overlay áp dụng ngay.';
+      data = j; s = structuredClone(j.settings);
+      renderTop();
+    }, 300);
+  }
+
+  function filesList(files, vol) {
+    return files.length ? `<ul class="files">${files.map((f) => `<li><button class="small" data-play="${esc(f)}" data-vol="${vol}">▶</button> ${esc(f.split('/').pop())}${data.missingCredits.includes(f) ? ' <span class="warn">(chưa có credits)</span>' : ''}</li>`).join('')}</ul>` : '';
+  }
+
+  function renderTop() {
+    $('mute').textContent = s.muted ? '🔊 Bật lại âm thanh' : '🔇 Tắt tiếng toàn bộ';
+    $('mute').className = s.muted ? 'primary' : 'danger';
+    const np = data.nowPlaying;
+    $('now').innerHTML = np && np.file ? `Đang phát: <b>${esc(np.file.split('/').pop())}</b> (playlist <code>${esc(np.playlist)}</code>)${np.paused ? ' – đang tạm dừng' : ''}`
+      : np ? `Playlist <code>${esc(np.playlist)}</code> chưa có bài nào: im lặng.` : 'Overlay chưa mở hoặc chưa phát nhạc.';
+    const w = [];
+    if (data.creditsError) w.push(`<p class="bad">${esc(data.creditsError)}</p>`);
+    if (data.missingCredits.length) w.push(`<p class="warn"><b>${data.missingCredits.length} file chưa có dòng trong credits.json</b> (nguồn, giấy phép): ${data.missingCredits.map((f) => `<code>${esc(f)}</code>`).join(' ')}</p>`);
+    if (data.empty.length) w.push(`<p class="warn">${data.empty.length} nhóm chưa có file (im lặng): ${data.empty.map((e) => `<code>${esc(e.section + '/' + e.group)}</code>`).join(' ')}</p>`);
+    if (data.unknown.length) w.push(`<p class="note">Thư mục lạ (không nhóm nào dùng): ${data.unknown.map((e) => `<code>${esc(e.section + '/' + e.group)}</code>`).join(' ')}</p>`);
+    $('warnings').innerHTML = w.join('') || '<p class="ok">Không có cảnh báo.</p>';
+  }
+
+  function render() {
+    $('channels').innerHTML = Object.entries(CH).map(([k, v]) => `<label class="rng">${v} <input type="range" min="0" max="1" step="0.05" value="${s.channels[k]}" data-ch="${k}"><span>${pct(s.channels[k])}</span></label>`).join('');
+    const pls = [...new Set([...Object.keys(data.known.music), ...Object.keys(data.library.music)])];
+    $('situations').innerHTML = data.known.situations.map((k) => `<tr><td>${SIT[k] || k}</td><td><select data-sit="${k}">${pls.map((p) => `<option value="${p}" ${p === s.music.situations[k] ? 'selected' : ''}>${p} (${(data.library.music[p] || []).length} bài)</option>`).join('')}</select></td></tr>`).join('');
+    $('playlists').innerHTML = pls.map((p) => {
+      const files = data.library.music[p] || [];
+      return `<tr><td><code>${esc(p)}</code></td><td class="desc">${esc(data.known.music[p] || '(thư mục tự thêm)')}${filesList(files, s.channels.music)}</td><td class="${files.length ? '' : 'cnt0'}">${files.length}</td><td>${modeSel(s.music.modes[p] || 'shuffle', `data-pmode="${p}"`)}</td></tr>`;
+    }).join('');
+    $('groups').innerHTML = Object.entries(data.known.sfx).map(([g, info]) => {
+      const c = s.groups[g];
+      const files = data.library.sfx[g] || [];
+      if (!c) return '';
+      return `<tr><td><code>${g}</code></td><td class="desc">${esc(info.desc)}${filesList(files, c.volume)}</td><td class="${files.length ? '' : 'cnt0'}">${files.length}</td>
+        <td><input type="checkbox" data-gen="${g}" ${c.enabled ? 'checked' : ''}></td>
+        <td><input type="range" min="0" max="1" step="0.05" value="${c.volume}" data-gvol="${g}"> ${pct(c.volume)}</td>
+        <td>${modeSel(c.mode, `data-gmode="${g}"`)}</td>
+        <td><input type="number" min="0" step="50" value="${c.cooldownMs}" data-gcd="${g}" style="width:72px"></td>
+        <td>${files.length ? `<button class="small" data-try="${g}">▶ Nghe thử</button>` : ''}</td></tr>`;
+    }).join('');
+    $('ambient').innerHTML = Object.entries(data.known.ambient).map(([g, desc]) => {
+      const c = s.ambient[g];
+      const files = data.library.ambient[g] || [];
+      if (!c) return '';
+      return `<tr><td><code>${g}</code></td><td class="desc">${esc(desc)}${filesList(files, c.volume)}</td><td class="${files.length ? '' : 'cnt0'}">${files.length}</td>
+        <td><input type="checkbox" data-aen="${g}" ${c.enabled ? 'checked' : ''}></td>
+        <td><input type="range" min="0" max="1" step="0.05" value="${c.volume}" data-avol="${g}"> ${pct(c.volume)}</td><td></td></tr>`;
+    }).join('');
+    const row = (label, key) => `<tr><td>${label}</td>${TIERS.map((t) => `<td><input type="number" step="0.1" value="${s.limits[key][t]}" data-lim="${key}" data-tier="${t}"></td>`).join('')}</tr>`;
+    const murmur = `<tr><td>Âm lượng công trường xa (0–1)</td>${TIERS.map((t) => `<td><input type="number" step="0.05" min="0" max="1" value="${s.siteMurmur[t]}" data-murmur="${t}"></td>`).join('')}</tr>`;
+    $('limits').innerHTML = row('Số âm cùng lúc tối đa', 'maxConcurrent') + row('Âm thi công mỗi giây', 'constructionPerSec') + row('Tiếng tim: giây giữa hai lần', 'likeGapSec') + murmur;
+    $('giftDong').value = s.limits.giftDongMinCoins;
+    renderTop();
+  }
+
+  document.addEventListener('input', (e) => {
+    const t = e.target;
+    const d = t.dataset;
+    if (d.ch) { s.channels[d.ch] = Number(t.value); t.nextElementSibling.textContent = pct(s.channels[d.ch]); }
+    else if (d.gvol) { s.groups[d.gvol].volume = Number(t.value); t.nextSibling.textContent = ' ' + pct(Number(t.value)); }
+    else if (d.avol) { s.ambient[d.avol].volume = Number(t.value); t.nextSibling.textContent = ' ' + pct(Number(t.value)); }
+    else return;
+    save();
+  });
+  document.addEventListener('change', (e) => {
+    const t = e.target;
+    const d = t.dataset;
+    if (d.sit) s.music.situations[d.sit] = t.value;
+    else if (d.pmode) s.music.modes[d.pmode] = t.value;
+    else if (d.gen) s.groups[d.gen].enabled = t.checked;
+    else if (d.gmode) s.groups[d.gmode].mode = t.value;
+    else if (d.gcd) s.groups[d.gcd].cooldownMs = Math.max(0, Math.round(Number(t.value)));
+    else if (d.aen) s.ambient[d.aen].enabled = t.checked;
+    else if (d.lim) s.limits[d.lim][d.tier] = Number(t.value);
+    else if (d.murmur) s.siteMurmur[d.murmur] = Number(t.value);
+    else if (t.id === 'giftDong') s.limits.giftDongMinCoins = Math.max(0, Math.round(Number(t.value)));
+    else return;
+    save();
+  });
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.play) listen(b.dataset.play, Number(b.dataset.vol || 1));
+    if (b.dataset.try) { const files = data.library.sfx[b.dataset.try] || []; if (files.length) listen(files[Math.floor(Math.random() * files.length)], s.groups[b.dataset.try].volume); }
+    if (b.dataset.cmd) {
+      await fetch('/api/audio/cmd', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cmd: b.dataset.cmd }) });
+      setTimeout(load, 800);
+    }
+    if (b.id === 'mute') { s.muted = !s.muted; save(); renderTop(); }
+    if (b.id === 'rescan') {
+      const r = await fetch('/api/audio/rescan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      data = await r.json(); s = structuredClone(data.settings); render();
+      $('msg').textContent = 'Đã quét lại thư mục âm thanh.';
+    }
+  });
+
+  async function load() {
+    data = await (await fetch('/api/audio')).json();
+    if (!s) { s = structuredClone(data.settings); render(); } else renderTop();
+  }
+  load();
+  setInterval(load, 5000);
+</script>
+</body>
+</html>

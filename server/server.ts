@@ -3,6 +3,7 @@
 
 import type { AddressInfo } from 'node:net';
 import { giftEffect } from '../shared/characters.js';
+import { giftSoundAllowed } from '../shared/audio.js';
 import { AbbotDirector } from './abbot/director.js';
 import { dbGreetStore } from './abbot/greeted.js';
 import { createApp } from './app.js';
@@ -106,8 +107,14 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
     abbot.onGoalReached(target);
     broadcaster.markDirty();
   });
-  core.bus.on('sessionStart', () => abbot.onSessionStart());
-  core.bus.on('sessionEnd', () => abbot.onSessionEnd());
+  core.bus.on('sessionStart', () => {
+    abbot.onSessionStart();
+    socket?.broadcast({ type: 'sound', group: 'session_start' });
+  });
+  core.bus.on('sessionEnd', () => {
+    abbot.onSessionEnd();
+    socket?.broadcast({ type: 'sound', group: 'session_end' });
+  });
   // Người góp công cũ quay lại tương tác: trụ trì chào riêng (mục 9B, nhóm returning).
   core.bus.on('returning', (m: { id: string; name: string }) => abbot.onReturning(m.id, m.name));
   core.bus.on('crowd', () => broadcaster.markDirty());
@@ -115,8 +122,9 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
     logger: o.logger,
     onProcessed: (r, ev) => {
       abbot.onEvent(ev, r);
+      let bigToast = false;
       if (ev.type === 'gift' && r.status === 'counted' && r.score) {
-        toasts.onGift(ev.user.platformId, overlayName(core, ev.user.nickname), Math.max(0, ev.coinValueEach) * Math.max(0, ev.count), r.score.points, ev.giftId);
+        bigToast = toasts.onGift(ev.user.platformId, overlayName(core, ev.user.nickname), Math.max(0, ev.coinValueEach) * Math.max(0, ev.count), r.score.points, ev.giftId)?.kind === 'big';
       }
       broadcaster.markDirty();
       if (r.status === 'counted' && r.score && ev.type !== 'viewers' && r.score.source !== 'none') {
@@ -129,6 +137,10 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
           allocations: r.progress?.allocations ?? [],
           platformId: ev.user.platformId,
           effect: ev.type === 'gift' ? giftEffect(core.config.gifts.tiers, Math.max(0, ev.coinValueEach) * Math.max(0, ev.count)) : null,
+          // Âm quà theo chế độ độ đông (mục 10A): đông chỉ quà từ 10 xu, rất đông theo thông báo quà lớn.
+          sound:
+            ev.type === 'gift' &&
+            giftSoundAllowed(core.crowd.tier, Math.max(0, ev.coinValueEach) * Math.max(0, ev.count), bigToast, core.configStore.getAudio().limits.giftDongMinCoins),
         });
       }
       if (r.progress) {

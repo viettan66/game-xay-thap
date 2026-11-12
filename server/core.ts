@@ -16,6 +16,8 @@ import { getSetting, setSetting } from './db/settings.js';
 import { CROWD_TIERS, CrowdTracker } from './game/crowd.js';
 import { HeartGoalService } from './game/heartGoal.js';
 import { CharacterRoster, type ReturningPick } from './game/roster.js';
+import { audioDir } from './audio/library.js';
+import { AudioService } from './audio/service.js';
 import { excludedIds, pickReturning, returningCandidates, setExcluded } from './game/returning.js';
 import { userTotalPoints } from './game/queries.js';
 import { titleFor } from '../shared/characters.js';
@@ -61,6 +63,8 @@ export class GameCore {
   readonly goals: HeartGoalService;
   /** Nhân vật người xem đang có trên bản đồ (mục 9, 9A). */
   readonly roster: CharacterRoster;
+  /** Âm thanh (mục 10A): thư viện file, thứ tự nhạc nền. */
+  readonly audio: AudioService;
   /** Sự kiện cho các phần khác (trụ trì…): 'sessionStart', 'sessionEnd' (SessionRow), 'crowd' (CrowdTier), 'goal' (nấc vừa đạt),
    *  'returning' (người góp công cũ vừa quay lại tương tác: ReturningMember). */
   readonly bus = new EventEmitter();
@@ -129,6 +133,7 @@ export class GameCore {
       this.sessions.recoverOnBoot();
       this.goals = new HeartGoalService(this.db, () => this.config.heartGoal.targets, () => this.crowd.tier, () => this.sessions.currentId());
       this.restoreRoster();
+      this.audio = new AudioService(this.rootDir, this.db, () => this.configStore.getAudio(), this.log);
     } catch (e) {
       // project.json không khớp với dữ liệu đã xây: đóng DB rồi báo lỗi (để file không bị giữ khóa).
       this.db.close();
@@ -343,6 +348,7 @@ export class GameCore {
       keep: this.config.backup.keep,
       reason,
       ts: this.now(),
+      extra: { 'audio-credits.json': path.join(audioDir(this.rootDir), 'credits.json') },
     })
       .then((folder) => {
         this.log.info(`Đã backup: ${path.basename(folder)}`);

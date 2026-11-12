@@ -17,7 +17,9 @@ mỗi hạng mục qua nhiều giai đoạn thi công.
 > và **4e** (dân phu không tên, người góp công cũ, đám đông vô danh ở phòng rất đông, công trường tự chạy: cờ, chim, xe trâu).
 > Giai đoạn 4 đã xong. **Giai đoạn 5** đã xong: các loại lễ (xong giai đoạn, giai đoạn có lễ, xong hạng mục, khánh thành toàn
 > công trình), bia ghi danh trồi lên, đèn lồng, pháo hoa, hoa đăng, cảnh khánh thành có credit, trang **Bia ghi danh** để xem và chiếu lại bia.
-> Sắp tới: 5b (âm thanh), 5c (ngày đêm, thời tiết).
+> **Giai đoạn 5b** đã xong: âm thanh (nhạc nền theo tình huống, hiệu ứng gắn với hoạt ảnh và sự kiện, âm thanh môi trường,
+> giới hạn chống ồn theo độ đông, trang **Âm thanh**). Game chưa kèm file âm thanh nào: mình tự thêm (xem mục 3c).
+> Sắp tới: 5c (ngày đêm, thời tiết).
 > Chưa kết nối TikTok (giai đoạn 6).
 
 ---
@@ -61,8 +63,10 @@ Trên trang trạng thái có nút **Mở overlay ↗** để xem nhanh.
 **Thêm vào OBS:**
 1. Trong OBS, ở ô **Sources** bấm **+** → **Browser**, đặt tên ví dụ `Quần thể chùa`, bấm OK.
 2. **URL:** `http://127.0.0.1:3000/overlay/`, **Width:** `1080`, **Height:** `1920`. Bấm OK.
-3. Canvas của OBS nên đặt dọc 1080×1920: **Settings → Video → Base (Canvas) Resolution**.
-4. Nếu sửa game mà overlay chưa đổi: chuột phải vào source → **Refresh**.
+3. **Âm thanh:** trong cùng cửa sổ đó tick **Control audio via OBS**. Âm thanh game hiện thành một thanh âm lượng riêng
+   ở ô **Audio Mixer** của OBS (chỉnh to nhỏ, tắt riêng được, không lẫn với micro).
+4. Canvas của OBS nên đặt dọc 1080×1920: **Settings → Video → Base (Canvas) Resolution**.
+5. Nếu sửa game mà overlay chưa đổi: chuột phải vào source → **Refresh**.
 
 Trên overlay hiện có:
 - **Bản đồ quần thể chùa** (đồi, núi, trời, đường đá nối dài phía dưới). Mỗi hạng mục là một công trình cắt từ ảnh chùa hoàn chỉnh:
@@ -89,7 +93,7 @@ Trên overlay hiện có:
   - **Mở lại overlay** (hoặc mất mạng) thì công trình hiện ngay đúng tiến độ: game không lưu từng mảnh, chỉ cần tiến độ giai đoạn.
   - Có nhân vật người xem ở công trường thì mảnh thỉnh thoảng bay **từ tay người đứng gần**, và tim, bình luận chưa đủ một mảnh
     thì **chính nhân vật của người đó khiêng vật liệu ra đống** (xem "Nhân vật người xem" bên dưới).
-  - Chưa có âm thanh đặt gạch, lợp ngói (làm ở giai đoạn 5b).
+  - Âm thanh: mảnh khớp chỗ kêu theo vật liệu (đặt gạch, lợp ngói, đóng gỗ, đục đá), nhân vật làm việc kêu đúng nhịp động tác (mục 3c).
 - **Nhân vật người xem** (SPEC mục 9, giai đoạn 4d), vẽ chung lớp với công trình nên đi sau công trình thì bị che, đi trước thì đè lên:
   - **Khi nào có nhân vật** (theo chế độ độ đông): phòng vắng: vào phòng là có; phòng vừa: lần tim, bình luận hoặc quà đầu tiên;
     phòng đông: tặng quà, hoặc đủ 50 tim, hoặc đủ 3 bình luận trong phiên; phòng rất đông: chỉ khi tặng quà.
@@ -129,7 +133,7 @@ Trên overlay hiện có:
     Quà, tim, bình luận vẫn được ghi (nhãn "sau khánh thành"). Nối thêm hạng mục mới (mở rộng chùa) thì trở lại công trường bình thường.
   - **Xem lại, chiếu lại bia**: trang trạng thái → **Bia ghi danh ↗**: danh sách bia của mọi giai đoạn có lễ, mọi hạng mục đã xong
     (và toàn công trình); **Xem** để xem bia trên trang, **Chiếu lên overlay** để overlay dựng lại bia đó (camera đẩy vào công trình, 12 giây).
-  - Chưa có âm thanh lễ (chuông, `stele_rise`…): làm ở giai đoạn 5b.
+  - Âm thanh lễ: chuông mốc, tiếng bia trồi lên, đoạn nhạc lễ phát đè, nhạc nền tự nhỏ lại trong lúc làm lễ (mục 3c).
 - **Dân phu không tên** (SPEC 9B, giai đoạn 4e): nhân vật nền của game, không phải người xem. Phòng vắng 6–8 người, phòng vừa 3–4,
   phòng đông và rất đông không có. Có cả chú tiểu (chú tiểu chỉ làm dân phu, không bao giờ là nhân vật của người xem).
   Trên đầu chỉ có nhãn nghề nhỏ, mờ: `Dân phu`, `Thợ mộc`, `Thợ nề` (chú tiểu không có nhãn). Làm việc theo giai đoạn như người xem
@@ -348,6 +352,78 @@ Thư mục `.venv\`, `.tools\`, `assets\work\` là đồ trung gian, không đư
 
 ---
 
+## 3c. Âm thanh (SPEC mục 10A, giai đoạn 5b)
+
+Game **không kèm file âm thanh nào** và không tự tải âm thanh từ Internet. Thư mục nào chưa có file thì phần đó **im lặng, không lỗi**.
+
+### Thêm file âm thanh
+1. Mở thư mục `assets\audio\` của dự án. Có sẵn 3 thư mục: `music` (nhạc nền), `sfx` (hiệu ứng), `ambient` (âm thanh môi trường).
+   Mỗi thư mục con là một nhóm, trong đó có file **`README.txt`** ghi loại âm cần đặt vào.
+2. Chép file **`.ogg`** hoặc **`.mp3`** vào đúng thư mục con. Tên file tùy ý (có dấu được).
+   - Hiệu ứng: nhiều file trong một nhóm = nhiều biến thể (ví dụ 5 tiếng đóng đinh khác nhau). Mỗi lần phát game chọn một file
+     và lệch cao độ nhẹ ±5% cho đỡ nhàm.
+   - Nhạc nền: nhiều bài trong một thư mục = một playlist, phát lần lượt theo cách chọn bài (xáo trộn / lần lượt / ngẫu nhiên).
+3. Ghi nguồn vào **`assets\audio\credits.json`** (mở bằng Notepad), mỗi file một dòng:
+   ```json
+   { "files": [
+     { "file": "sfx/brick_lay/dat-gach-1.ogg", "source": "Tự thu âm", "license": "CC0", "link": "" },
+     { "file": "music/calm/sao-truc.mp3", "source": "Tên người làm nhạc", "license": "Đã mua bản quyền", "link": "https://..." }
+   ] }
+   ```
+   Dòng cuối cùng không có dấu phẩy. File chưa có dòng credits vẫn phát, nhưng trang Âm thanh cảnh báo.
+4. Trang trạng thái → **Âm thanh ↗** → bấm **Quét lại thư mục** (không cần tắt game). Overlay tự tải âm thanh mới.
+
+**Bản quyền và nội dung (bắt buộc):**
+- Chỉ dùng âm thanh tự làm, đã mua bản quyền, hoặc miễn phí có giấy phép cho phép livestream thương mại (CC0…).
+  Nhạc vi phạm bản quyền có thể khiến nền tảng tắt tiếng hoặc chặn live.
+- **KHÔNG** dùng tiếng tụng kinh, niệm Phật, mõ, nhạc lễ Phật giáo. Nhạc nền: nhạc cụ dân tộc không lời (sáo trúc, đàn tranh…).
+  Tiếng chuông chùa chỉ đặt vào nhóm `milestone_bell` (chỉ phát ở lễ giai đoạn đặc biệt và khánh thành).
+- File âm thanh và `credits.json` **không đưa lên git** (repo công khai, bản quyền riêng). Chuyển máy thì tự chép thư mục `assets\audio\`.
+
+### Khi nào phát gì
+- **Nhạc nền** (`music\`): `calm` phòng vắng, `normal` phòng vừa, `lively` phòng đông và rất đông, `golden_hour` giờ vàng
+  (playlist này trống thì vẫn phát nhạc theo độ đông), `finale` khánh thành toàn công trình và credit. Đoạn nhạc **phát đè** lên nhạc đang chạy:
+  `ceremony` (lễ giai đoạn đặc biệt, xong hạng mục), `milestone` (khánh thành hạng mục lớn), `festival` (múa lân).
+  - Đổi bài **mờ chéo** 2,5 giây. Đổi độ đông thì hết bài mới đổi playlist (không cắt ngang); giờ vàng, khánh thành đổi ngay.
+  - Tắt máy bật lại: phát tiếp vòng cũ, không lặp lại bài vừa nghe.
+  - **Nhạc nền tự nhỏ lại** (còn 30%) khi có quà lớn, lễ, múa lân, mở phiên, rồi to lại mượt sau 1,5 giây.
+- **Hiệu ứng** (`sfx\`), mô tả từng nhóm trong `README.txt` và trên trang Âm thanh:
+  - thi công, gắn với hoạt ảnh: mảnh khớp chỗ (`brick_lay`, `tile_place`, `wood_hammer`, `stone_chisel`, `dig_shovel` theo vật liệu),
+    nhân vật làm việc đúng nhịp động tác (`dig_shovel`, `wood_saw`, `nail_hammer`, `stone_chisel`, `brick_lay`, `pulley_rope`, `tile_place`;
+    chỉ người đang trong khung hình), đặt vật liệu xuống đống (`carry_drop`), bước chân người mới vào (`footsteps`, chỉ phòng vắng, vừa);
+  - quà theo mức: `gift_small` (dưới 10 xu), `gift_logs` (10–99), `gift_buffalo` (100–499), `gift_elephant` (500–999), `gift_huge`
+    (1.000–4.999), `gift_guardian` (từ 5.000); `like_pop` (tim), `comment_tick` (bình luận, mặc định tắt), `rank_up`, `top_change`;
+  - giao diện: `toast_in` (thông báo quà), `abbot_speak` (trụ trì nói), `golden_hour_start` / `_end`, `session_start` / `_end`;
+  - lễ: `stage_complete`, `milestone_bell`, `item_complete`, `scaffold_remove`, `stele_rise`, `lantern_release`, `lion_dance`, `goal_reached`,
+    `project_complete`. (`thunder` để dành cho thời tiết, giai đoạn 5c.)
+- **Âm thanh môi trường** (`ambient\`), chạy lặp: `wind` (gió), `wind_chime` (chuông gió xa), `birds` (chim, thưa thớt ban ngày),
+  `night` (côn trùng, 18:30–5:30 giờ Việt Nam, thay tiếng chim), `site_murmur` (công trường xa: tắt ở phòng vắng, to dần khi đông).
+  `rain_light`, `rain_heavy`, `storm_wind` để dành cho giai đoạn 5c.
+
+### Giới hạn chống ồn (theo chế độ độ đông, sửa trên trang Âm thanh)
+| | Vắng | Vừa | Đông | Rất đông |
+|---|---|---|---|---|
+| Số hiệu ứng cùng lúc tối đa | 6 | 8 | 8 | 8 |
+| Âm thi công | theo từng hoạt ảnh | tối đa 3 âm/giây | tối đa 2 âm/giây | thi thoảng 1 âm (1 âm/5 giây), tiếng công trường xa to |
+| Tiếng tim | mỗi lô tim 1 lần | 1 lần/2 giây | 1 lần/5 giây | tắt |
+| Âm quà | mọi quà | mọi quà, quà nhỏ liên tiếp của cùng người gộp 1 âm | quà từ 10 xu | quà có thông báo lớn |
+
+Quá số âm cùng lúc thì bỏ âm ít quan trọng trước: tim < thi công < quà nhỏ < giao diện < quà lớn < lễ, mốc.
+Mỗi nhóm còn có thời gian nghỉ riêng ("Nghỉ (ms)") để một âm không lặp quá dày.
+
+### Trang Âm thanh (trang trạng thái → **Âm thanh ↗**)
+- **Âm lượng từng kênh**: tổng, nhạc nền, thi công, quà và tương tác, giao diện, lễ, môi trường. Kéo là overlay đổi ngay.
+- Nút đỏ **Tắt tiếng toàn bộ** (khẩn cấp), bấm lại để bật.
+- **Nhạc nền**: bài đang phát, **Chuyển bài**, **Tạm dừng**, **Phát tiếp**; chọn playlist cho từng tình huống; cách chọn bài của từng playlist.
+- **Hiệu ứng**: bật / tắt, âm lượng, cách chọn biến thể, thời gian nghỉ từng nhóm; nút ▶ cạnh từng file và **Nghe thử** (phát trên máy mình, không lên overlay).
+- **Cảnh báo**: nhóm chưa có file, file chưa có credits, thư mục lạ, `credits.json` viết sai.
+- Thiết lập lưu ở `config\audio.json`.
+
+**Mở overlay bằng trình duyệt thường** (Chrome, Edge) thì trình duyệt chặn tự phát âm thanh: góc trên trái overlay hiện nút
+**🔊 Bật âm thanh**, bấm một lần là có tiếng. Trong OBS không cần (OBS cho tự phát), nút không hiện.
+
+---
+
 ## 4. Giả lập (chỉ ở `start-test.bat`)
 
 Trên trang trạng thái, khung **Giả lập**:
@@ -539,7 +615,29 @@ Mở cửa sổ lệnh **tại thư mục dự án**: mở thư mục `game-xay-
    khoảng 1 phút, sau đó cảnh khánh thành lặp với credit cuộn tên mọi người đã góp công. Mở lại overlay (F5) lúc này: vào thẳng cảnh khánh thành.
 7. Muốn quay lại xây từ đầu: đóng game, xóa dữ liệu thử như bước 1.
 
-**n) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
+**n) Giai đoạn 5b: âm thanh**
+1. Đóng game, nhấp đúp lại `start-test.bat`. Mở thư mục `assets\audio\` của dự án: có `music`, `sfx`, `ambient`, mỗi thư mục con
+   có `README.txt`. Mở thử một file README.txt đọc mô tả.
+2. Trang trạng thái: dòng **Âm thanh** ghi `0 file … (chưa có âm thanh: im lặng)`. Bấm **Âm thanh ↗**: mục **Cảnh báo** liệt kê các nhóm chưa có file.
+   Mở overlay: chạy bình thường, không lỗi, không tiếng.
+3. **Để nghe thử**, chép tạm vài file `.mp3` bất kỳ có sẵn trong máy (chỉ để thử, thử xong xóa, KHÔNG dùng khi live):
+   - 2 bài vào `assets\audio\music\calm\`;
+   - vài tiếng ngắn vào `assets\audio\sfx\gift_small\`, `sfx\gift_buffalo\`, `sfx\stage_complete\`, `sfx\toast_in\`, và các thư mục
+     thi công `sfx\brick_lay\`, `sfx\dig_shovel\`, `sfx\wood_hammer\`, `sfx\stone_chisel\` (cùng một file chép vào nhiều thư mục cũng được).
+4. Trang Âm thanh → **Quét lại thư mục**: số file cập nhật, các file mới có cảnh báo "chưa có credits". Bấm ▶ cạnh một file
+   hoặc **Nghe thử**: nghe trên máy mình.
+5. Mở overlay bằng trình duyệt: góc trên trái có nút **🔊 Bật âm thanh**, bấm vào: nhạc nền trong `calm` bắt đầu phát (mờ dần lên).
+   Trang Âm thanh hiện **Đang phát: …**. Thử **Chuyển bài**, **Tạm dừng**, **Phát tiếp**.
+6. Khung **Độ đông** bấm **Vắng**. Giả lập: bấm **Quà 1 xu (gạch)** (tiếng `gift_small`), **Quà 100 xu (xe trâu)** (tiếng `gift_buffalo`, thông báo quà kêu
+   `toast_in`, nhạc nền nhỏ lại rồi to lên). Mảnh vật liệu khớp vào chỗ và dân phu đang làm việc kêu theo vật liệu, động tác
+   (đất: `dig_shovel`, gạch: `brick_lay`, gỗ: `wood_hammer`, đá: `stone_chisel`). Xong giai đoạn: tiếng `stage_complete`.
+7. Kéo thanh **Nhạc nền** trên trang Âm thanh xuống 0: nhạc tắt ngay trên overlay; kéo lại lên. Bỏ tick **Bật** của `brick_lay`: hết tiếng đặt gạch.
+   Bấm **Tắt tiếng toàn bộ**: overlay im hẳn; bấm lại để bật.
+8. Khung **Độ đông** bấm **Rất đông**, bấm **1.000 tim** nhiều lần: không có tiếng tim; tiếng đặt gạch thưa hẳn.
+9. Thêm vào OBS theo mục 3 (tick **Control audio via OBS**): ô Audio Mixer của OBS có thanh âm lượng của overlay, không cần bấm "Bật âm thanh".
+10. Thử xong: xóa các file đã chép tạm ở bước 3, bấm **Quét lại thư mục**.
+
+**o) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
 Lệnh này xóa dữ liệu thử và chạy một chuỗi sự kiện mẫu. Màn hình in từng giai đoạn, từng hạng mục vừa xong, kèm các bảng xếp hạng.
 
 ---
@@ -554,6 +652,7 @@ Các file sau được tạo tự động ở lần chạy đầu, từ bản m�
 | `config\project.json` | **Danh sách hạng mục** theo thứ tự xây, giá, các mẫu giai đoạn (mục 5 của SPEC) |
 | `config\events.json` | Lịch sự kiện dương lịch, âm lịch (Mùng 1, Rằm, Tết…) |
 | `config\dialogues.json` | Kho thoại (mục 9C): thoại trụ trì (`session_start`, `greet_single`, `gift_small`…) và chữ trên bản đồ (`piece_burst`, nhãn nghề dân phu, bộ đếm đám đông…). Xem dưới |
+| `config\audio.json` | Âm thanh (mục 10A): âm lượng kênh, playlist theo tình huống, từng nhóm hiệu ứng, giới hạn chống ồn. **Sửa trên trang Âm thanh** (áp dụng ngay), không cần mở file. Xem mục 3c |
 
 - Mở bằng Notepad để sửa, lưu lại rồi tắt và bật lại game. Từ giai đoạn 7, sửa trực tiếp trên trang admin.
 - Ghi sai thì game không chạy và báo rõ chỗ sai, ví dụ: `items: Hạng mục "tam_quan": không có mẫu giai đoạn "vuaa"`.
@@ -735,7 +834,8 @@ trong mục `overlay`…) được game **tự dọn** ở lần chạy đầu, 
 
 - Dữ liệu nằm trong `data\<hồ sơ>\`: `game.db` (điểm, tiến độ), `logs\` (nhật ký theo ngày), `backups\`, `avatars\`.
 - Backup tự động: mỗi ngày lúc 04:00 (nếu game đang chạy) và mỗi khi kết thúc một phiên live. Giữ 30 bản gần nhất.
-  Mỗi bản là một thư mục chứa `game.db` cùng các file config lúc đó.
+  Mỗi bản là một thư mục chứa `game.db` cùng các file config lúc đó (kể cả `audio.json`), và `audio-credits.json`
+  = bản sao `assets\audio\credits.json` (nguồn, giấy phép của file âm thanh; file này không có trên git).
 - Khôi phục một bản backup: tắt game, chép `game.db` trong thư mục backup đè lên `data\<hồ sơ>\game.db`
   (xóa thêm `game.db-wal` và `game.db-shm` nếu có), rồi bật lại game.
 - Thư mục `data\` và file `.env` (API key) **không** được đưa lên GitHub.

@@ -33,7 +33,7 @@ describe('trạng thái gửi xuống overlay', () => {
     expect(s.progress.items).toHaveLength(23);
     expect(s.boards.map((b) => b.key)).toEqual(['session', 'total', 'item']);
     expect(s.boards.map((b) => b.title)).toEqual(['Top phiên này', 'Bảng góp công', 'Bia ghi danh – San nền công trường']);
-    expect(s.labels).toEqual({ pointUnit: 'công', disclaimer: 'Trò chơi mô phỏng xây chùa – không phải quyên góp tôn giáo' });
+    expect(s.labels).toEqual({ pointUnit: 'công', disclaimer: 'Trò chơi mô phỏng xây chùa – không phải quyên góp tôn giáo', enableSound: '🔊 Bật âm thanh' });
     expect(s.layout).toEqual({
       safeArea: { top: 180, bottom: 600, right: 150 },
       boardRotateSec: 15,

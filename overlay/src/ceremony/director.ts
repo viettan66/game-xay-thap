@@ -39,6 +39,10 @@ export interface CeremonyHost {
   crowd(): CrowdTier;
   /** Múa lân (dùng chung với phần thưởng mục tiêu tim). */
   festival(sec: number): void;
+  /** Âm thanh (mục 10A): phát nhóm hiệu ứng, hạ nhạc nền, đoạn nhạc lễ phát đè. */
+  sound(group: string): void;
+  duck(sec: number): void;
+  clip(situation: 'ceremony' | 'milestone' | 'festival'): void;
 }
 
 interface Running {
@@ -150,12 +154,22 @@ export class CeremonyDirector {
     const at = (t: number, run: () => void) => actions.push({ at: Math.max(0, Math.min(t, dur)), run });
     const steleOn = (from: number, to: number) => {
       if (!c.stele || to - from < 1.5) return;
-      at(from, () => this.stele.show(c.stele!, steleBox(this.steleArea()), to - from));
+      at(from, () => {
+        this.stele.show(c.stele!, steleBox(this.steleArea()), to - from);
+        h.sound('stele_rise');
+      });
+    };
+    const lionDance = (sec: number) => {
+      h.festival(sec);
+      h.sound('lion_dance');
+      h.clip('festival');
+      h.duck(sec);
     };
     let pauses = false;
     this.fireworks.sparksPerBurst = h.crowd() === 'ratdong' ? 20 : h.crowd() === 'dong' ? 32 : 46;
     switch (c.kind) {
       case 'stage_minor': {
+        at(0, () => h.sound('stage_complete'));
         if (rect) {
           at(0, () => this.dust.burst(rect.x + rect.w / 2, rect.y + rect.h, rect.w));
           if (c.banner) {
@@ -168,7 +182,12 @@ export class CeremonyDirector {
       }
       case 'stage_ritual': {
         pauses = true;
-        at(0, () => h.camera('ceremony', rect, dur));
+        at(0, () => {
+          h.camera('ceremony', rect, dur);
+          h.sound('milestone_bell');
+          h.duck(dur);
+          if (dur >= 6) h.clip('ceremony');
+        });
         // Vài giây đầu ngắm công trình, rồi bia trồi lên (bia che giữa màn hình), thu bia trước khi hết lễ.
         steleOn(dur < 6 ? 0.5 : Math.min(2, dur * 0.2), dur < 6 ? dur : dur - 0.8);
         break;
@@ -177,14 +196,24 @@ export class CeremonyDirector {
         pauses = true;
         const pond = c.festival ? h.pondWaters() : [];
         const pondEnd = pond.length && dur >= 14 ? 6 : 0;
-        at(0, () => h.camera('ceremony', rect, dur - pondEnd));
+        at(0, () => {
+          h.camera('ceremony', rect, dur - pondEnd);
+          h.sound('item_complete');
+          h.sound('scaffold_remove');
+          h.duck(dur);
+          if (c.festival) h.sound('milestone_bell');
+          if (dur >= 6) h.clip(c.festival ? 'milestone' : 'ceremony');
+        });
         if (rect) at(0.3, () => this.lanterns.hang(rect, dur + 1.5, h.heightMap()));
         steleOn(dur < 6 ? 0.5 : 3, dur - pondEnd - (dur < 6 ? 0 : 2));
         if (c.festival) {
-          at(2, () => h.festival(Math.min(14, dur - 4)));
+          at(2, () => lionDance(Math.min(14, dur - 4)));
           at(1, () => this.fireworks.start(Math.max(2, dur - 4)));
           if (pond.length) {
-            at(3, () => this.lotus.release(pond, 18, 40, h.heightMap()));
+            at(3, () => {
+              this.lotus.release(pond, 18, 40, h.heightMap());
+              h.sound('lantern_release');
+            });
             // Cuối lễ: camera hạ xuống hồ sen ngắm hoa đăng.
             if (pondEnd) at(dur - pondEnd, () => h.camera('ceremony', boundsOf(pond), pondEnd));
           }
@@ -194,14 +223,23 @@ export class CeremonyDirector {
       case 'project_complete': {
         pauses = true;
         const tourAt = Math.min(18, dur * 0.3);
-        at(0, () => h.camera('ceremony', h.complexRect(), tourAt));
+        at(0, () => {
+          h.camera('ceremony', h.complexRect(), tourAt);
+          h.sound('project_complete');
+          h.sound('milestone_bell');
+          h.duck(dur);
+          h.clip('milestone');
+        });
         at(0.5, () => {
           for (const r of h.doneObjectRects()) this.lanterns.hang(r, dur, h.heightMap());
         });
         steleOn(1.5, tourAt - 0.5);
         at(1, () => this.fireworks.start(dur - 5));
-        at(3, () => h.festival(14));
-        at(2, () => this.lotus.release(h.pondWaters(), 24, 50, h.heightMap()));
+        at(3, () => lionDance(14));
+        at(2, () => {
+          this.lotus.release(h.pondWaters(), 24, 50, h.heightMap());
+          h.sound('lantern_release');
+        });
         // Lia giới thiệu toàn quần thể (từ trời xuống cổng tam quan).
         at(tourAt, () => h.camera('tour', null, dur - tourAt, true));
         break;

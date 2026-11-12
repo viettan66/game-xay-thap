@@ -177,4 +177,18 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    version: 4,
+    name: 'Vị trí phát nhạc nền theo playlist (giai đoạn 5b)',
+    sql: `
+      -- Vòng phát của từng playlist (mục 10A): khởi động lại vẫn phát tiếp; danh sách bài đổi thì tạo vòng mới.
+      CREATE TABLE music_state (
+        playlist   TEXT PRIMARY KEY,
+        order_json TEXT NOT NULL,
+        position   INTEGER NOT NULL,
+        files_hash TEXT NOT NULL,
+        last_index INTEGER
+      );
+    `,
+  },
 ];

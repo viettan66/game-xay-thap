@@ -23,6 +23,8 @@ import { ConfigError } from './config/store.js';
 import type { StateBroadcaster } from './overlay/broadcaster.js';
 import { actorList, buildOverlayState, ceremonyDeps, dialogueLines } from './overlay/state.js';
 import { creditsOf, replayCeremony, steleEntries, steleFor, type SteleTarget } from './game/ceremony.js';
+import { audioDir } from './audio/library.js';
+import { AMBIENT_GROUPS, MUSIC_PLAYLISTS, MUSIC_SITUATIONS, SFX_GROUPS } from '../shared/audio.js';
 import { excludedIds } from './game/returning.js';
 import { foldForMatch } from '../shared/names.js';
 
@@ -69,6 +71,14 @@ export function buildStatus({ core, live }: Pick<AppDeps, 'core' | 'live'>) {
       total: core.roster.total,
       max: cfg.characters.maxCharacters,
       honors: overlay.honors.length,
+    },
+    // Âm thanh (mục 10A): số file, nhóm trống, file chưa có credits.
+    audio: {
+      files: Object.values(core.audio.scan.library).reduce((a, sec) => a + Object.values(sec as Record<string, string[]>).flat().length, 0),
+      empty: core.audio.scan.empty.length,
+      missingCredits: core.audio.scan.missingCredits.length,
+      muted: core.configStore.getAudio().muted,
+      nowPlaying: core.audio.music.nowPlaying,
     },
     // Nhóm thoại chưa có câu đã duyệt: live thật thì lúc đó im lặng (mục 9C).
     dialogueWarnings: unverifiedGroups(core.configStore.getDialogues().groups),
@@ -215,6 +225,65 @@ export function createApp(deps: AppDeps): express.Express {
         .slice(0, 20)
         .map((r) => ({ ...r, excluded: excluded.has(r.platformId) })),
     });
+  });
+
+  // ---- Âm thanh (mục 10A): trang Âm thanh, thư viện cho overlay, thứ tự nhạc nền ----
+  app.use('/assets/audio', express.static(audioDir(rootDir), { maxAge: 0 }));
+  const audioPayload = () => {
+    const sc = core.audio.scan;
+    return {
+      settings: core.configStore.getAudio(),
+      library: sc.library,
+      version: sc.version,
+      empty: sc.empty,
+      missingCredits: sc.missingCredits,
+      unknown: sc.unknown,
+      creditsError: sc.creditsError,
+      nowPlaying: core.audio.music.nowPlaying,
+      known: { sfx: SFX_GROUPS, music: MUSIC_PLAYLISTS, ambient: AMBIENT_GROUPS, situations: MUSIC_SITUATIONS },
+    };
+  };
+  app.get('/api/audio', (_req, res) => {
+    res.json(audioPayload());
+  });
+  // Lưu cấu hình âm thanh (kiểm tra bằng zod, ghi nhật ký, overlay áp dụng ngay).
+  app.post('/api/audio', (req, res) => {
+    const changes = core.configStore.saveAudio(body(req).settings);
+    if (changes.length) {
+      const ts = core.now();
+      const insert = core.db.prepare('INSERT INTO config_changes (ts, file, path, old_json, new_json, source) VALUES (?, ?, ?, ?, ?, ?)');
+      for (const c of changes) insert.run(ts, c.file, c.path, JSON.stringify(c.oldValue ?? null), JSON.stringify(c.newValue ?? null), 'admin/audio');
+    }
+    broadcaster.markDirty();
+    res.json(audioPayload());
+  });
+  app.post('/api/audio/rescan', (_req, res) => {
+    core.audio.rescan();
+    broadcaster.markDirty();
+    res.json(audioPayload());
+  });
+  // Overlay: danh sách file (tải khi version đổi), bài kế tiếp của một playlist, bài đang phát.
+  app.get('/api/audio/library', (_req, res) => {
+    res.json({ version: core.audio.scan.version, library: core.audio.scan.library });
+  });
+  app.get('/api/audio/next', (req, res) => {
+    const playlist = String(req.query.playlist ?? '');
+    res.json({ file: /^[a-z0-9_]+$/.test(playlist) ? core.audio.music.next(playlist) : null });
+  });
+  app.post('/api/audio/nowplaying', (req, res) => {
+    const b = body(req);
+    core.audio.music.nowPlaying = { playlist: String(b.playlist ?? ''), file: typeof b.file === 'string' ? b.file : null, paused: b.paused === true, at: core.now() };
+    res.json({ ok: true });
+  });
+  // Admin: chuyển bài, tạm dừng, phát tiếp (overlay thực hiện).
+  app.post('/api/audio/cmd', (req, res) => {
+    const cmd = body(req).cmd;
+    if (cmd !== 'next' && cmd !== 'pause' && cmd !== 'resume') throw new BadRequest('Lệnh không hợp lệ');
+    deps.sendOverlay({ type: 'audio', cmd });
+    res.json({ ok: true });
+  });
+  app.get('/admin/audio', (_req, res) => {
+    res.sendFile(path.join(rootDir, 'admin', 'audio.html'));
   });
 
   // ---- Bia ghi danh (mục 10): xem lại, chiếu lại lên overlay; credit cuối công trình (14.12) ----

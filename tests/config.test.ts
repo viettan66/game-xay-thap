@@ -19,7 +19,7 @@ const readCfg = () => JSON.parse(fs.readFileSync(path.join(configDir(), 'config.
 describe('đọc config', () => {
   it('lần chạy đầu tạo config.json và events.json từ bản mặc định', () => {
     const store = new ConfigStore(configDir());
-    expect(store.load()).toEqual(['config.json', 'events.json', 'project.json', 'dialogues.json']);
+    expect(store.load()).toEqual(['config.json', 'events.json', 'project.json', 'dialogues.json', 'audio.json']);
     expect(store.getDialogues().groups.piece_burst!.lines.map((l) => l.text)).toEqual(['{name} vừa xây {n} {material}', '+{n} {material} từ {name}']);
     expect(store.get().points.giftPointsPerCoin).toBe(100);
     expect(store.getProject().items).toHaveLength(23);

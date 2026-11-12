@@ -41,3 +41,9 @@ desktop.ini
 # --- Ảnh trung gian khi xử lý đồ họa (tạo lại được bằng script) và công cụ tải về ---
 assets/work/
 .tools/
+
+# --- Âm thanh: file nhạc, hiệu ứng và credits.json do chủ dự án tự thêm (bản quyền riêng, repo công khai).
+#     Chỉ đưa lên git cây thư mục kèm README.txt mô tả loại âm cần đặt vào ---
+/assets/audio/**
+!/assets/audio/**/
+!/assets/audio/**/README.txt

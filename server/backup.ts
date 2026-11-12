@@ -30,6 +30,8 @@ export interface BackupOptions {
   keep: number;
   reason: string;
   ts: number;
+  /** Tên trong thư mục backup → đường dẫn file gốc. */
+  extra?: Record<string, string>;
 }
 
 export async function createBackup(o: BackupOptions): Promise<string> {
@@ -37,9 +39,13 @@ export async function createBackup(o: BackupOptions): Promise<string> {
   const folder = path.join(o.backupsDir, name);
   fs.mkdirSync(folder, { recursive: true });
   await o.db.backup(path.join(folder, 'game.db'));
-  for (const f of ['config.json', 'events.json', 'project.json']) {
+  for (const f of ['config.json', 'events.json', 'project.json', 'audio.json']) {
     const src = path.join(o.configDir, f);
     if (fs.existsSync(src)) fs.copyFileSync(src, path.join(folder, f));
+  }
+  // File khác cần giữ (credits.json của âm thanh: không có trên git, là bản ghi bản quyền).
+  for (const [name, src] of Object.entries(o.extra ?? {})) {
+    if (fs.existsSync(src)) fs.copyFileSync(src, path.join(folder, name));
   }
   for (const old of selectBackupsToDelete(listBackups(o.backupsDir), o.keep)) {
     fs.rmSync(path.join(o.backupsDir, old), { recursive: true, force: true });

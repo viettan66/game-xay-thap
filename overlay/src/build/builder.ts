@@ -711,6 +711,8 @@ export interface BuilderEvents {
   carry?(actorId: string | null, prop: PropKind): boolean;
   /** Tay dân phu đứng gần để mảnh bay từ đó (mục 7.5). */
   source?(): { x: number; y: number } | null;
+  /** Mảnh vật liệu vừa khớp vào chỗ (âm brick_lay / tile_place…, mục 10A). */
+  pieceLand?(prop: PropKind): void;
 }
 
 export class Builder {
@@ -1013,7 +1015,9 @@ export class Builder {
       const stage = job.stageIndex;
       const itemId = job.itemId;
       const completes = to >= count;
+      const prop = site.plans[stage]?.prop ?? 'gach';
       site.fly(stage, from, to, () => {
+        this.events.pieceLand?.(prop);
         if (completes) {
           const last = stage === site.plans.length - 1;
           site.flash(last ? 0.9 : 0.45);

@@ -16,6 +16,8 @@ import { chooseAbbotSide, chooseBoardSlot, hudRects, type BoardSlot, type HudRec
 import { STAGE_H, STAGE_W } from './layout.js';
 import { connectServer } from './net.js';
 import { CeremonyDirector } from './ceremony/director.js';
+import { AudioEngine } from './audio/engine.js';
+import { giftSoundGroup } from '../../shared/audio.js';
 import { MapView } from './scene/map.js';
 import { SiteView } from './scene/site.js';
 import { loadFonts } from './theme.js';
@@ -67,6 +69,10 @@ async function boot(): Promise<void> {
   // Thông báo quà (mục 8) và múa lân khi đủ mục tiêu tim (bảng 9A).
   const toasts = new ToastView(initial.toast, initial.plus);
   const festival = new FestivalView(initial.festival);
+  // Âm thanh (mục 10A): hiệu ứng, nhạc nền, âm thanh môi trường (Howler.js).
+  const audio = new AudioEngine();
+  mapView.onSound = (g) => audio.play(g);
+  toasts.onShow = () => audio.play('toast_in');
   // Lễ (mục 10): bia, pháo hoa, chữ giai đoạn mới, credit (lớp màn hình, trên giao diện); đèn lồng, hoa đăng (lớp bản đồ).
   let crowdTier: CrowdTier = 'vua';
   const ceremonies = new CeremonyDirector({
@@ -79,12 +85,30 @@ async function boot(): Promise<void> {
     cameraMode: () => mapView.cameraMode,
     cameraRelease: () => mapView.cameraRelease(),
     pauseBuilder: (on) => mapView.pauseBuilder(on),
-    setFinale: (on) => mapView.setFinale(on),
+    setFinale: (on) => {
+      mapView.setFinale(on);
+      audio.setFinale(on);
+    },
     toScreen: (x, y) => mapView.toScreen(x, y),
     heightMap: () => state?.characters?.heightMap ?? 54,
     crowd: () => crowdTier,
     festival: (sec) => festival.start(sec * 1000),
+    sound: (g) => audio.play(g),
+    duck: (sec) => audio.duckFor(sec),
+    clip: (sit) => audio.clip(sit),
   });
+  // Nút "Bật âm thanh": trình duyệt chặn tự phát khi mở overlay bằng trình duyệt thường (OBS thì không cần).
+  const unlockBtn = document.createElement('button');
+  unlockBtn.style.cssText =
+    'position:fixed;left:12px;top:12px;z-index:10;padding:10px 16px;font:600 16px "Be Vietnam Pro",sans-serif;border-radius:20px;border:2px solid #e2ae45;background:#5e150c;color:#fff4dc;cursor:pointer;display:none';
+  unlockBtn.addEventListener('click', () => {
+    audio.unlock();
+    unlockBtn.style.display = 'none';
+  });
+  document.body.appendChild(unlockBtn);
+  let prevGolden: boolean | null = null;
+  let prevTop: string[] | null = null;
+  const lastGiftSound = new Map<string, number>();
   mapView.addWorldFx(ceremonies.world);
   mapView.onStageDone = (itemId, stage, itemDone) => ceremonies.stageDone(itemId, stage, itemDone);
   const safeDebug = new SafeAreaDebug();
@@ -185,6 +209,19 @@ async function boot(): Promise<void> {
     if (s.honors) mapView.setHonors(s.honors);
     mapView.setAnonCrowd(s.anonCrowd ?? null);
     crowdTier = s.crowd;
+    // Âm thanh: cấu hình, chế độ độ đông, giờ hoàng đạo (tiếng cồng, playlist riêng), người mới vào top 3.
+    if (s.audio) {
+      audio.setSettings(s.audio.settings, s.audio.version);
+      audio.setTier(s.crowd);
+      unlockBtn.textContent = s.labels.enableSound;
+      const golden = s.eventBox.some((e) => e.kind === 'golden');
+      if (prevGolden !== null && golden !== prevGolden) audio.play(golden ? 'golden_hour_start' : 'golden_hour_end');
+      prevGolden = golden;
+      audio.setGolden(golden);
+      const top = s.boards.find((b) => b.key === 'total')?.rows.slice(0, 3).map((r) => r.platformId) ?? [];
+      if (prevTop && top.some((id) => !prevTop!.includes(id))) audio.play('top_change');
+      prevTop = top;
+    }
     ceremonies.setCompleted(s.progress.completed, s.creditsSpeed ?? 45);
     h.progress.update(s.progress, s.hud.opacity.progress);
     h.board.update(s.boards, s.labels.pointUnit, s.hud.opacity.board, s.hud.boardRotateSec);
@@ -198,13 +235,36 @@ async function boot(): Promise<void> {
   const onMessage = (m: ServerMessage) => {
     if (m.type === 'state') apply(m.state);
     else if (m.type === 'contribution') {
+      // Âm quà theo mức (server đã xét giới hạn theo chế độ độ đông); phòng vừa gộp quà nhỏ liên tiếp của cùng người.
+      if (m.source === 'gift' && m.sound) {
+        const g = giftSoundGroup(m.effect);
+        const small = g === 'gift_small' || g === 'gift_logs';
+        const now = performance.now();
+        const merge = (state?.audio?.settings.limits.giftMergeSec ?? 3) * 1000;
+        if (!(small && crowdTier === 'vua' && now - (lastGiftSound.get(m.platformId) ?? -Infinity) < merge)) audio.play(g);
+        lastGiftSound.set(m.platformId, now);
+        if (!small) audio.duckFor(3);
+      } else if (m.source === 'like') audio.play('like_pop');
+      else if (m.source === 'comment') audio.play('comment_tick');
       mapView.contribution(m);
       // Quà lớn: camera rung nhẹ (mục 8).
       if (state && m.coins >= state.camera.shakeMinCoins) mapView.shake();
     } else if (m.type === 'camera') mapView.requestCamera(m.mode);
-    else if (m.type === 'say') abbot.say(m);
+    else if (m.type === 'say') {
+      abbot.say(m);
+      if (m.text) audio.play('abbot_speak');
+    }
     else if (m.type === 'toast') toasts.push(m);
-    else if (m.type === 'festival') festival.start(m.durationMs);
+    else if (m.type === 'festival') {
+      festival.start(m.durationMs);
+      audio.play('goal_reached');
+      audio.play('lion_dance');
+      audio.clip('festival');
+      audio.duckFor(m.durationMs / 1000);
+    } else if (m.type === 'sound') {
+      audio.play(m.group);
+      audio.duckFor(3);
+    } else if (m.type === 'audio') audio.command(m.cmd);
     else if (m.type === 'ceremony') ceremonies.push(m.ceremony);
     else if (m.type === 'progress' && !mapView.ready) {
       // Hình khối tạm (chưa có bản đồ): chớp sáng ngay. Trên bản đồ thì chớp khi mảnh cuối của giai đoạn đã đặt xong.
@@ -230,6 +290,7 @@ async function boot(): Promise<void> {
   (window as unknown as { __overlay: unknown }).__overlay = {
     stats: () => ({ ...mapView.chars.stats(), camera: mapView.cameraMode }),
     actors: () => mapView.chars.debug(),
+    audio: () => ({ log: audio.log(), status: audio.status() }),
     ceremony: () => ({ current: ceremonies.current?.kind ?? null, id: ceremonies.current?.id ?? null, queued: ceremonies.queue.ids(), stele: ceremonies.steleShown, camera: mapView.cameraMode }),
   };
 
@@ -241,6 +302,8 @@ async function boot(): Promise<void> {
     if (mapView.ready) mapView.tick(dt, state.pieces, state.texts.pieceBurst);
     else site.tick(dt);
     if (mapView.ready) ceremonies.tick(dt);
+    audio.tick(dt);
+    unlockBtn.style.display = audio.blocked ? 'block' : 'none';
     const overview = mapView.ready && mapView.cameraMode === 'overview';
     // Thu toàn cảnh: các bảng mờ xuống 30%, chỉ còn thanh tiến độ (mục 8). Bia đang dựng, cảnh khánh thành: mờ thêm.
     dim += (Math.min(overview ? 0.3 : 1, ceremonies.hudDim) - dim) * Math.min(1, dt * 3);

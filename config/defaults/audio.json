@@ -1,0 +1,364 @@
+{
+  "_ghi_chu": "Âm thanh (SPEC mục 10A). Sửa trên trang Âm thanh của admin. channels: âm lượng từng kênh 0–1; groups: từng nhóm hiệu ứng (âm lượng, bật/tắt, cách chọn biến thể, nghỉ tối thiểu giữa hai lần, số âm cùng lúc); music.situations: tình huống → playlist (tên thư mục trong assets/audio/music).",
+  "muted": false,
+  "channels": {
+    "master": 0.8,
+    "music": 0.45,
+    "sfx_construction": 0.55,
+    "sfx_gift": 0.8,
+    "sfx_ui": 0.6,
+    "sfx_ceremony": 0.9,
+    "ambient": 0.35
+  },
+  "music": {
+    "situations": {
+      "vang": "calm",
+      "vua": "normal",
+      "dong": "lively",
+      "ratdong": "lively",
+      "golden_hour": "golden_hour",
+      "ceremony": "ceremony",
+      "milestone": "milestone",
+      "festival": "festival",
+      "finale": "finale"
+    },
+    "modes": {
+      "calm": "shuffle",
+      "normal": "shuffle",
+      "lively": "shuffle",
+      "golden_hour": "shuffle",
+      "ceremony": "shuffle",
+      "milestone": "shuffle",
+      "festival": "shuffle",
+      "finale": "shuffle"
+    },
+    "crossfadeSec": 2.5,
+    "duckTo": 0.3,
+    "duckReleaseSec": 1.5
+  },
+  "groups": {
+    "dig_shovel": {
+      "volume": 0.7,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 180,
+      "maxConcurrent": 2
+    },
+    "stone_chisel": {
+      "volume": 0.7,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 180,
+      "maxConcurrent": 2
+    },
+    "wood_saw": {
+      "volume": 0.7,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 180,
+      "maxConcurrent": 2
+    },
+    "wood_hammer": {
+      "volume": 0.7,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 180,
+      "maxConcurrent": 2
+    },
+    "nail_hammer": {
+      "volume": 0.7,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 180,
+      "maxConcurrent": 2
+    },
+    "brick_lay": {
+      "volume": 0.7,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 180,
+      "maxConcurrent": 2
+    },
+    "pulley_rope": {
+      "volume": 0.7,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 180,
+      "maxConcurrent": 2
+    },
+    "tile_place": {
+      "volume": 0.7,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 180,
+      "maxConcurrent": 2
+    },
+    "carry_drop": {
+      "volume": 0.7,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 180,
+      "maxConcurrent": 2
+    },
+    "scaffold_remove": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "footsteps": {
+      "volume": 0.7,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1500,
+      "maxConcurrent": 2
+    },
+    "gift_small": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 250,
+      "maxConcurrent": 3
+    },
+    "gift_logs": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 250,
+      "maxConcurrent": 3
+    },
+    "gift_buffalo": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 800,
+      "maxConcurrent": 2
+    },
+    "gift_elephant": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 800,
+      "maxConcurrent": 2
+    },
+    "gift_huge": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 800,
+      "maxConcurrent": 2
+    },
+    "gift_guardian": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 800,
+      "maxConcurrent": 2
+    },
+    "like_pop": {
+      "volume": 0.5,
+      "enabled": true,
+      "mode": "random",
+      "cooldownMs": 400,
+      "maxConcurrent": 1
+    },
+    "comment_tick": {
+      "volume": 0.4,
+      "enabled": false,
+      "mode": "random",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "rank_up": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "top_change": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "toast_in": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "abbot_speak": {
+      "volume": 0.6,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 2000,
+      "maxConcurrent": 1
+    },
+    "golden_hour_start": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "golden_hour_end": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "session_start": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "session_end": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "stage_complete": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "item_complete": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "stele_rise": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "milestone_bell": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "lion_dance": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "lantern_release": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "goal_reached": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "project_complete": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    },
+    "thunder": {
+      "volume": 0.9,
+      "enabled": true,
+      "mode": "shuffle",
+      "cooldownMs": 1000,
+      "maxConcurrent": 1
+    }
+  },
+  "ambient": {
+    "wind": {
+      "volume": 0.8,
+      "enabled": true
+    },
+    "birds": {
+      "volume": 0.6,
+      "enabled": true
+    },
+    "wind_chime": {
+      "volume": 0.35,
+      "enabled": true
+    },
+    "site_murmur": {
+      "volume": 0.8,
+      "enabled": true
+    },
+    "night": {
+      "volume": 0.8,
+      "enabled": true
+    },
+    "rain_light": {
+      "volume": 0.8,
+      "enabled": true
+    },
+    "rain_heavy": {
+      "volume": 0.8,
+      "enabled": true
+    },
+    "storm_wind": {
+      "volume": 0.8,
+      "enabled": true
+    }
+  },
+  "limits": {
+    "maxConcurrent": {
+      "vang": 6,
+      "vua": 8,
+      "dong": 8,
+      "ratdong": 8
+    },
+    "constructionPerSec": {
+      "vang": 0,
+      "vua": 3,
+      "dong": 2,
+      "ratdong": 0.2
+    },
+    "likeGapSec": {
+      "vang": 0,
+      "vua": 2,
+      "dong": 5,
+      "ratdong": -1
+    },
+    "giftDongMinCoins": 10,
+    "giftMergeSec": 3
+  },
+  "pitchJitter": 0.05,
+  "siteMurmur": {
+    "vang": 0,
+    "vua": 0.35,
+    "dong": 0.65,
+    "ratdong": 1
+  },
+  "birdsEverySec": [
+    20,
+    60
+  ],
+  "night": {
+    "from": "18:30",
+    "to": "05:30"
+  }
+}

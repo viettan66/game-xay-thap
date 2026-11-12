@@ -20,6 +20,7 @@ import { Birds, NpcCartTimer } from './ambient.js';
 import { AnonCrowdView } from './crowd.js';
 import { actorTag, npcTag, plusText, returningTag, type NameTag } from './labels.js';
 import { scaffoldShare, workActions, type CarryKind, type WorkKind } from './sprites.js';
+import { workSoundGroup } from '../../../shared/audio.js';
 import { SpotPool, type Pt, type SiteGeom } from './spots.js';
 
 /** Những gì lớp nhân vật cần biết về bản đồ và công trường (MapView cung cấp). */
@@ -61,6 +62,8 @@ interface Entry {
   info: ActorInfo;
   /** Lần có công gần nhất (để ưu tiên hiện chữ khi chồng nhau). */
   ping: number;
+  /** Khung ảnh lần trước (để phát âm đúng nhịp động tác). */
+  lastFrame?: string | null;
 }
 
 interface Plus {
@@ -102,6 +105,8 @@ export class CharactersView {
     flags: true,
   };
   private readonly crowd: AnonCrowdView;
+  /** Âm thanh gắn với hoạt ảnh (mục 10A): động tác làm việc, đặt vật liệu, bước chân, lên danh hiệu. */
+  onSound: (group: string) => void = () => {};
   private readonly birds = new Birds();
   private readonly cartTimer = new NpcCartTimer();
   private unit = '';
@@ -133,7 +138,10 @@ export class CharactersView {
       actions: (look) => workActions(self.art?.frames.get(look), self.ctx?.kind() ?? 'mason'),
       scaffoldShare: () => scaffoldShare(self.ctx?.kind() ?? 'mason'),
       material: () => self.ctx?.material() ?? 'basket',
-      dropAtPile: () => self.ctx?.dropAtPile(),
+      dropAtPile: () => {
+        self.ctx?.dropAtPile();
+        self.onSound('carry_drop');
+      },
       rand: () => self.rand(),
       get scale() {
         return self.cfg.heightMap / 54;
@@ -238,6 +246,7 @@ export class CharactersView {
       const en = this.entries.get(info.id);
       if (!en) this.spawn(info, snap);
       else if (tagKey(en.info) !== tagKey(info)) {
+        if (info.kind === 'viewer' && info.title && info.title !== en.info.title && en.info.kind === 'viewer') this.onSound('rank_up');
         // Đổi tên, danh hiệu, hoặc người góp công cũ vừa tương tác (thành người xem thật): giữ nhân vật, đổi chữ.
         en.info = info;
         en.actor.pace = info.kind === 'npc' ? this.cfg.npcPace : 1;
@@ -254,6 +263,7 @@ export class CharactersView {
     // Dân phu NPC làm chậm hơn người xem (mục 9B).
     actor.pace = info.kind === 'npc' ? this.cfg.npcPace : 1;
     actor.enter(this.world, snap);
+    if (!snap) this.onSound('footsteps');
     const sprite = new Sprite();
     this.depth.addChild(sprite);
     const tag = makeTag(info);
@@ -383,6 +393,15 @@ export class CharactersView {
       en.actor.update(dt, this.world);
       const p = en.actor.pose();
       this.draw(en, p, h, siteZ);
+      // Âm động tác làm việc đúng nhịp (khung thứ hai của động tác), chỉ người đang trong khung hình.
+      if (p.sprite !== en.lastFrame) {
+        en.lastFrame = p.sprite;
+        const a = en.actor;
+        if (a.working && p.sprite?.endsWith('_2') && a.x > view.x && a.x < view.x + view.w && a.y > view.y && a.y < view.y + view.h) {
+          const g = workSoundGroup(a.action);
+          if (g) this.onSound(g);
+        }
+      }
     }
     // Đi ra xong: mờ dần rồi bỏ.
     for (let i = this.leaving.length - 1; i >= 0; i--) {
