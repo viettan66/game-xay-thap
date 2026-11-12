@@ -107,6 +107,16 @@
   "honor": {
     "rotateSec": 20
   },
+  "ceremony": {
+    "stageMinorSec": 2.5,
+    "stageRitualSec": 10,
+    "itemSec": { "nho": 8, "vua": 15, "lon": 25 },
+    "shortSec": 4,
+    "projectSec": 60,
+    "steleTop": 10,
+    "replaySec": 12,
+    "creditsSpeed": 45
+  },
   "npc": {
     "count": { "vang": [6, 8], "vua": [3, 4], "dong": [0, 0], "ratdong": [0, 0] },
     "fillGapSec": 6,

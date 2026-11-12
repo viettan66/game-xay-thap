@@ -248,6 +248,44 @@
         {"text": "đã góp {item}", "tiers": [], "weight": 1, "enabled": true, "verified": true},
         {"text": "từng góp sức xây {item}", "tiers": [], "weight": 1, "enabled": true, "verified": false}
       ]
+    },
+    "ceremony_title": {
+      "mode": "sequential",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "Bia ghi danh – {item}", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Bia ghi danh – {ritual} · {item}", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "ceremony_others": {
+      "mode": "sequential",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "…và {n} thiện hữu khác", "tiers": [], "weight": 1, "enabled": true, "verified": true}
+      ]
+    },
+    "project_complete": {
+      "mode": "shuffle",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "{item} đã hoàn thành. Thầy cảm ơn {count} thiện hữu đã cùng góp sức!", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Hôm nay khánh thành {item}, mời quý vị cùng ngắm lại công trình.", "tiers": [], "weight": 1, "enabled": true, "verified": false},
+        {"text": "Từ viên gạch đầu tiên đến mái ngói cuối cùng, cảm ơn {count} thiện hữu.", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "credits_title": {
+      "mode": "sequential",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "Cảm ơn {count} thiện hữu đã góp công xây dựng", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "credits_end": {
+      "mode": "sequential",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "Hẹn gặp lại quý vị trên công trường", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
     }
   }
 }

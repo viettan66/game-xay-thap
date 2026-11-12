@@ -14,7 +14,8 @@ import { LiveService } from './live/service.js';
 import type { Logger } from './logger.js';
 import { StateBroadcaster } from './overlay/broadcaster.js';
 import { GiftToasts } from './overlay/toasts.js';
-import { overlayName } from './overlay/state.js';
+import { ceremonyDeps, overlayName } from './overlay/state.js';
+import { ceremoniesFor, totalContributorCount } from './game/ceremony.js';
 import { attachOverlaySocket } from './overlay/socket.js';
 import { buildOverlayState } from './overlay/state.js';
 import type { ProfileName } from './profile.js';
@@ -85,6 +86,8 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
     sessionId: () => core.sessions.currentId(),
     greeted: dbGreetStore(core.db),
     itemContributors: (itemId) => itemContributorCount(core.db, itemId),
+    totalContributors: () => totalContributorCount(core.db),
+    projectName: () => core.project.name,
     send: (msg) => socket?.broadcast(msg),
     now: core.now,
   });
@@ -128,7 +131,11 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
           effect: ev.type === 'gift' ? giftEffect(core.config.gifts.tiers, Math.max(0, ev.coinValueEach) * Math.max(0, ev.count)) : null,
         });
       }
-      if (r.progress) broadcaster.progress(r.progress.transitions);
+      if (r.progress) {
+        broadcaster.progress(r.progress.transitions);
+        // Lễ (mục 10): bia tính ngay lúc xong; overlay xếp hàng, diễn khi mảnh cuối đã đặt xong.
+        for (const c of ceremoniesFor(r.progress.transitions, ceremonyDeps(core, live.mode() !== 'simulator'))) socket?.broadcast({ type: 'ceremony', ceremony: c });
+      }
     },
     onStatus: () => broadcaster.markDirty(),
     ...(o.simulatorTimer !== undefined ? { simulatorTimer: o.simulatorTimer } : {}),

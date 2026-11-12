@@ -21,7 +21,8 @@ import type { ServerMessage } from '../shared/protocol.js';
 import { vnStamp } from '../shared/time.js';
 import { ConfigError } from './config/store.js';
 import type { StateBroadcaster } from './overlay/broadcaster.js';
-import { actorList, buildOverlayState, dialogueLines } from './overlay/state.js';
+import { actorList, buildOverlayState, ceremonyDeps, dialogueLines } from './overlay/state.js';
+import { creditsOf, replayCeremony, steleEntries, steleFor, type SteleTarget } from './game/ceremony.js';
 import { excludedIds } from './game/returning.js';
 import { foldForMatch } from '../shared/names.js';
 
@@ -214,6 +215,36 @@ export function createApp(deps: AppDeps): express.Express {
         .slice(0, 20)
         .map((r) => ({ ...r, excluded: excluded.has(r.platformId) })),
     });
+  });
+
+  // ---- Bia ghi danh (mục 10): xem lại, chiếu lại lên overlay; credit cuối công trình (14.12) ----
+  const ceremonyCtx = () => ceremonyDeps(core, live.mode() !== 'simulator');
+  const steleTarget = (q: Record<string, unknown>): SteleTarget => {
+    const kind = String(q.kind ?? '');
+    const itemId = String(q.itemId ?? '');
+    if (kind === 'project') return { kind: 'project' };
+    if (!core.project.items.some((i) => i.id === itemId)) throw new BadRequest('Không có hạng mục này');
+    if (kind === 'item') return { kind: 'item', itemId };
+    const stageIndex = Number(q.stageIndex);
+    if (kind === 'stage' && Number.isInteger(stageIndex) && stageIndex >= 0) return { kind: 'stage', itemId, stageIndex };
+    throw new BadRequest('Bia không hợp lệ');
+  };
+  app.get('/api/steles', (_req, res) => {
+    res.json({ steles: steleEntries(core.db, core.project) });
+  });
+  app.get('/api/steles/view', (req, res) => {
+    res.json({ stele: steleFor(ceremonyCtx(), steleTarget(req.query as Record<string, unknown>)) });
+  });
+  app.post('/api/steles/show', (req, res) => {
+    const c = replayCeremony(ceremonyCtx(), steleTarget(body(req)), `replay:${Date.now()}`);
+    deps.sendOverlay({ type: 'ceremony', ceremony: c });
+    res.json({ ok: true });
+  });
+  app.get('/api/credits', (_req, res) => {
+    res.json(creditsOf(ceremonyCtx()));
+  });
+  app.get('/admin/steles', (_req, res) => {
+    res.sendFile(path.join(rootDir, 'admin', 'steles.html'));
   });
 
   // ---- Trang Kho thoại (mục 9C) ----

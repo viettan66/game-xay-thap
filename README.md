@@ -15,7 +15,9 @@ mỗi hạng mục qua nhiều giai đoạn thi công.
 > voi, tượng võ tướng đá; lối đi, vị trí làm việc, ô ghi danh trên bản đồ; trang `/tools/paths`) và **4d** (nhân vật người xem
 > đi lại, làm việc, khiêng vật liệu trên bản đồ; hiệu ứng quà theo mức: gạch, bó gỗ, xe trâu, voi, đúc chuông, tượng ghi danh)
 > và **4e** (dân phu không tên, người góp công cũ, đám đông vô danh ở phòng rất đông, công trường tự chạy: cờ, chim, xe trâu).
-> Giai đoạn 4 đã xong. Sắp tới: giai đoạn 5 (các loại lễ và bia).
+> Giai đoạn 4 đã xong. **Giai đoạn 5** đã xong: các loại lễ (xong giai đoạn, giai đoạn có lễ, xong hạng mục, khánh thành toàn
+> công trình), bia ghi danh trồi lên, đèn lồng, pháo hoa, hoa đăng, cảnh khánh thành có credit, trang **Bia ghi danh** để xem và chiếu lại bia.
+> Sắp tới: 5b (âm thanh), 5c (ngày đêm, thời tiết).
 > Chưa kết nối TikTok (giai đoạn 6).
 
 ---
@@ -83,8 +85,7 @@ Trên overlay hiện có:
     - đào móng, đào hồ: **đất lõm** từng mảng, **đống đất** cao dần;
     - tập kết vật liệu: đống vật liệu to dần.
   - **Giàn giáo tre** dựng quanh thân công trình, cao dần theo phần đã xây, tháo dần ở giai đoạn cuối.
-  - Xong giai đoạn thì công trình chớp sáng nhẹ, xong hạng mục thì chớp mạnh và camera đẩy chậm vào công trình.
-    Lễ (giai đoạn 5) sẽ bắt đầu đúng lúc mảnh cuối đặt xong.
+  - Xong giai đoạn thì công trình chớp sáng nhẹ, xong hạng mục thì chớp mạnh, rồi làm **lễ** (xem dưới) đúng lúc mảnh cuối đặt xong.
   - **Mở lại overlay** (hoặc mất mạng) thì công trình hiện ngay đúng tiến độ: game không lưu từng mảnh, chỉ cần tiến độ giai đoạn.
   - Có nhân vật người xem ở công trường thì mảnh thỉnh thoảng bay **từ tay người đứng gần**, và tim, bình luận chưa đủ một mảnh
     thì **chính nhân vật của người đó khiêng vật liệu ra đống** (xem "Nhân vật người xem" bên dưới).
@@ -108,6 +109,27 @@ Trên overlay hiện có:
   - **Tối đa 40 người.** Đầy chỗ thì người ưu tiên thấp nhất nhường chỗ: phòng vừa giữ người tương tác gần nhất, phòng đông
     giữ người tặng quà, phòng rất đông giữ người tặng nhiều nhất trong 10 phút gần đây. Người mới có ưu tiên thấp nhất thì chưa có nhân vật.
   - Tắt game bật lại giữa phiên: nhân vật của những người còn trong giờ tự quay lại.
+- **Các loại lễ** (SPEC mục 10, giai đoạn 5). Lễ bắt đầu đúng lúc mảnh cuối của giai đoạn đặt xong; trong lúc làm lễ
+  (trừ lễ giai đoạn thường) công trường tạm dừng đặt mảnh mới, lễ xong mới xây tiếp. Công vẫn được tính bình thường trong lúc làm lễ.
+  - **Xong giai đoạn thường** (2–3 giây): vòng bụi ở chân công trình, chữ `Giai đoạn 3/5: Đầm nền` hiện ngắn.
+  - **Xong giai đoạn có lễ** (khởi công, dựng cột, thượng lương, đặt chóp tháp…; khoảng 10 giây): camera đẩy vào, trụ trì dang tay,
+    **bia ghi danh** trồi lên với top 10 người góp **trong giai đoạn đó**.
+  - **Xong hạng mục** (nhỏ 8 giây, vừa 15, lớn và tầng 9 bảo tháp 25): camera đẩy vào, **đèn lồng** đỏ sáng dọc mái, bia top 10 người
+    góp của hạng mục. Hạng mục lớn (Chính điện, tầng 9 bảo tháp) thêm **múa lân, pháo hoa**, và **hoa đăng** thả trên hồ sen
+    (cuối lễ camera hạ xuống hồ). Giàn giáo đã tháo dần trong giai đoạn cuối.
+  - **Bia**: trồi lên giữa khung hình kèm bụi đá và bóng đổ dưới chân, vài giây đầu để người xem ngắm công trình rồi bia mới lên,
+    thu lại trước khi hết lễ. Tiêu đề `Bia ghi danh – Gác chuông` (kho thoại `ceremony_title`); top 3 chữ vàng đồng kèm huy chương,
+    hạng 4–10 chữ nâu đỏ khắc chìm, cỡ chữ không dưới 32px; dòng cuối `…và 12 thiện hữu khác`. Lúc dựng bia các khung giao diện mờ đi.
+  - **Nhiều lễ dồn lại** (quà rất lớn vượt nhiều giai đoạn, nhiều hạng mục): diễn lần lượt; lễ giai đoạn thường còn khoảng 1 giây,
+    lễ giai đoạn có lễ và lễ hạng mục nhỏ còn khoảng 4 giây; lễ hạng mục vừa, lớn luôn diễn đủ (14.4).
+  - **Khánh thành toàn công trình** (≥ 60 giây): toàn cảnh quần thể, đèn lồng sáng khắp các công trình, bia top 10 người góp toàn công trình,
+    múa lân, pháo hoa, hoa đăng, trụ trì nói lời khánh thành, rồi camera lia giới thiệu từ trời xuống cổng tam quan.
+    Sau đó là **cảnh khánh thành lặp**: camera luân phiên lia giới thiệu và thu toàn cảnh, **credit** cuộn chậm giữa màn hình:
+    tên công trình, `Cảm ơn … thiện hữu đã góp công xây dựng`, rồi TẤT CẢ người góp công (nhiều công trước), hết thì cuộn lại.
+    Quà, tim, bình luận vẫn được ghi (nhãn "sau khánh thành"). Nối thêm hạng mục mới (mở rộng chùa) thì trở lại công trường bình thường.
+  - **Xem lại, chiếu lại bia**: trang trạng thái → **Bia ghi danh ↗**: danh sách bia của mọi giai đoạn có lễ, mọi hạng mục đã xong
+    (và toàn công trình); **Xem** để xem bia trên trang, **Chiếu lên overlay** để overlay dựng lại bia đó (camera đẩy vào công trình, 12 giây).
+  - Chưa có âm thanh lễ (chuông, `stele_rise`…): làm ở giai đoạn 5b.
 - **Dân phu không tên** (SPEC 9B, giai đoạn 4e): nhân vật nền của game, không phải người xem. Phòng vắng 6–8 người, phòng vừa 3–4,
   phòng đông và rất đông không có. Có cả chú tiểu (chú tiểu chỉ làm dân phu, không bao giờ là nhân vật của người xem).
   Trên đầu chỉ có nhãn nghề nhỏ, mờ: `Dân phu`, `Thợ mộc`, `Thợ nề` (chú tiểu không có nhãn). Làm việc theo giai đoạn như người xem
@@ -145,7 +167,7 @@ Trên overlay hiện có:
     chỉ còn thanh tiến độ; hiện **bản đồ thu nhỏ** góc dưới phải (đã xong có màu, chưa xây là bóng xám, đang xây nhấp nháy).
     Tự chạy mỗi 6 phút (phòng vắng: 3 phút; phòng đông: không tự chạy), hoặc bấm nút **Toàn cảnh** trên trang trạng thái.
   - **Lia giới thiệu**: từ trời lia chậm xuống cổng tam quan trong 20 giây. Phòng vắng tự chạy mỗi 10 phút; bấm nút **Lia giới thiệu** để xem thử.
-  - **Đẩy vào**: xong một hạng mục thì camera đẩy chậm vào công trình đó khoảng 5 giây (lễ đầy đủ làm ở giai đoạn 5).
+  - **Đẩy vào**: trong lễ, camera đẩy chậm vào công trình đang làm lễ (lễ dài bao nhiêu thì đẩy vào bấy nhiêu).
   - **Rung nhẹ** khi có quà từ 1.000 xu.
   - Nhịp tự động theo **chế độ độ đông** của phòng (xem dưới).
 - Chưa dựng bản đồ (thiếu ảnh) thì overlay tự quay về vẽ tạm bằng hình khối có tên, không bị dừng.
@@ -502,7 +524,22 @@ Mở cửa sổ lệnh **tại thư mục dự án**: mở thư mục `game-xay-
    một **nhóm người nhỏ không tên** hiện quanh công trường, kèm bộ đếm "… người đang góp sức".
 8. Bấm **Vắng** trở lại: đám đông biến mất, dân phu và người góp công cũ quay lại dần.
 
-**m) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
+**m) Giai đoạn 5: các loại lễ, bia, khánh thành, credit**
+1. Đóng game, nhấp đúp lại `start-test.bat`, mở overlay cạnh trang trạng thái. Nếu muốn xem từ đầu (lễ khởi công):
+   đóng game, xóa `data\test\game.db`, `game.db-wal`, `game.db-shm` rồi mở lại (chỉ là dữ liệu thử).
+2. Bấm **Quà 100 xu (xe trâu)** vài lần: xong giai đoạn 1 của San nền thì có **Lễ khởi công**: camera đẩy vào, trụ trì dang tay,
+   bia "Bia ghi danh – …" trồi lên với những người vừa góp, khoảng 10 giây; công trường chờ lễ xong mới xây tiếp.
+   Xong giai đoạn thường: chữ "Giai đoạn …" hiện ngắn, bụi tỏa ở chân công trình.
+3. Bấm **Quà 1.000 xu (chuông)** vài lần cho qua nhiều giai đoạn, nhiều hạng mục: lễ diễn lần lượt, lễ nhỏ rút ngắn; xong mỗi hạng mục
+   có đèn lồng sáng và bia của hạng mục.
+4. Bấm **Bia ghi danh ↗** trên trang trạng thái: bấm **Xem** một bia, rồi **Chiếu lên overlay**: overlay dựng lại bia đó.
+5. Bấm **Quà 5.000 xu (tượng)** nhiều lần tới khi xong **Chính điện** (hạng mục lớn): múa lân, pháo hoa, cuối lễ camera hạ xuống hồ sen xem hoa đăng.
+6. Bấm tiếp cho tới khi xong **Bảo tháp – Tầng 9** (khoảng 6 lần quà 5.000 xu từ đầu là đủ cả công trình; các lễ vẫn diễn lần lượt nên
+   có thể mất vài phút): lễ tầng 9 rồi **lễ khánh thành**
+   khoảng 1 phút, sau đó cảnh khánh thành lặp với credit cuộn tên mọi người đã góp công. Mở lại overlay (F5) lúc này: vào thẳng cảnh khánh thành.
+7. Muốn quay lại xây từ đầu: đóng game, xóa dữ liệu thử như bước 1.
+
+**n) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
 Lệnh này xóa dữ liệu thử và chạy một chuỗi sự kiện mẫu. Màn hình in từng giai đoạn, từng hạng mục vừa xong, kèm các bảng xếp hạng.
 
 ---
@@ -527,7 +564,9 @@ Mỗi nhóm (`session_start`, `greet_single`, `greet_group`, `returning`, `gift_
 `gift_thanks_group`, `progress`, `item_complete`, `stage_ritual`, `idle_story`, `idle_howto`, `session_end`, `toast_gift` (chữ thông báo quà),
 `goal_text` (chữ mục tiêu tim), `goal_reached` (trụ trì nói khi đủ tim), `piece_burst`, và từ 4e: `crowd_counter` (bộ đếm đám đông,
 `{count}`), `npc_labels` (nhãn nghề dân phu: **dòng 1 = dân phu, dòng 2 = thợ mộc, dòng 3 = thợ nề**; tắt dòng nào thì loại đó
-không có nhãn), `returning_subtitle` (dòng phụ người góp công cũ, `{item}`)) có:
+không có nhãn), `returning_subtitle` (dòng phụ người góp công cũ, `{item}`), và từ giai đoạn 5: `ceremony_title` (tiêu đề bia, `{item}`;
+lễ giai đoạn ưu tiên dòng có `{ritual}` hoặc `{stage}`), `ceremony_others` (`…và {n} thiện hữu khác`), `project_complete` (trụ trì nói
+khi khánh thành, `{item}` = tên công trình, `{count}`), `credits_title`, `credits_end` (dòng đầu, dòng cuối của credit)) có:
 - `mode`: `shuffle` (xáo trộn, hết một vòng mới lặp lại), `sequential` (lần lượt), `random` (ngẫu nhiên theo `weight`);
 - `cooldownSec`: nghỉ ít nhất bao nhiêu giây giữa hai lần nói cùng nhóm;
 - `lines`: danh sách câu, mỗi câu `{ "text", "tiers", "weight", "enabled", "verified" }`.
@@ -681,6 +720,11 @@ bao nhiêu phút sau mới được chọn lại. Danh sách không hiện lại
 Mục `ambient` (công trường tự chạy, đám đông vô danh): `birdsEverySec`, `npcCartEverySec` = mỗi khoảng bao nhiêu giây có đàn chim,
 xe trâu NPC theo chế độ (`0` = không có); `flags` (true) = cờ bay; `crowdPerSprite` (15) và `crowdSprites` (`[6, 24]`) = phòng rất đông
 cứ bao nhiêu người tương tác thì thêm một hình người trong đám đông, ít nhất và nhiều nhất bao nhiêu hình.
+
+Mục `ceremony` (các loại lễ, SPEC 10, 14.4): `stageMinorSec` (2,5) = lễ giai đoạn thường; `stageRitualSec` (10) = lễ giai đoạn có lễ;
+`itemSec` (nhỏ 8, vừa 15, lớn 25) = lễ xong hạng mục theo cỡ; `shortSec` (4) = nhiều lễ dồn lại thì lễ giai đoạn có lễ và hạng mục nhỏ
+rút còn bao nhiêu giây; `projectSec` (60) = lễ khánh thành toàn công trình; `steleTop` (10) = bia ghi bao nhiêu người;
+`replaySec` (12) = chiếu lại bia từ admin bao lâu; `creditsSpeed` (45) = credit cuộn bao nhiêu điểm ảnh mỗi giây.
 
 File `config.json` cũ của bản tháp (có mục `tower`, tên tầng, các khóa `floor1WidthPx`, `towerTaper`, `towerCenterX`, `towerBaseY`
 trong mục `overlay`…) được game **tự dọn** ở lần chạy đầu, phần mình đã chỉnh khác được giữ nguyên.

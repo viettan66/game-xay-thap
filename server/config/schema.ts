@@ -202,6 +202,18 @@ export const configSchema = z.strictObject({
     crowdPerSprite: z.number().min(1).max(1000),
     crowdSprites: z.tuple([int(0).max(100), int(0).max(100)]),
   }),
+  // Các loại lễ (mục 10, 14.4): thời lượng theo loại và cỡ hạng mục; nhiều lễ dồn lại thì lễ giai đoạn, lễ hạng mục nhỏ rút còn
+  // shortSec; bia ghi top bao nhiêu người; chiếu lại bia từ admin bao lâu; credit cuối công trình cuộn bao nhiêu điểm ảnh mỗi giây.
+  ceremony: z.strictObject({
+    stageMinorSec: z.number().min(0.5).max(30),
+    stageRitualSec: z.number().min(2).max(120),
+    itemSec: z.strictObject({ nho: z.number().min(2).max(300), vua: z.number().min(2).max(300), lon: z.number().min(2).max(300) }),
+    shortSec: z.number().min(1).max(60),
+    projectSec: z.number().min(10).max(600),
+    steleTop: int(1).max(20),
+    replaySec: z.number().min(3).max(120),
+    creditsSpeed: z.number().min(5).max(400),
+  }),
   // Ô ghi danh (tượng võ tướng đá, mục 9): nhiều tượng hơn số ô thì mỗi bao nhiêu giây đổi sang lượt tượng khác.
   honor: z.strictObject({
     rotateSec: z.number().min(3).max(3600),

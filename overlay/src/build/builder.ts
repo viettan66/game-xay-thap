@@ -737,6 +737,8 @@ export class Builder {
   private piecesCfg: PiecesConfig = DEFAULT_PIECES;
   /** Cờ bay ở công trường (config ambient.flags). */
   flags = true;
+  /** Tạm dừng đặt mảnh mới (trong lúc làm lễ). Mảnh đang bay vẫn bay nốt. */
+  paused = false;
 
   constructor(
     private readonly renderer: Renderer,
@@ -949,6 +951,8 @@ export class Builder {
       site.tick(dt, this.shown.stage, this.shown.placed);
     }
     if (this.loading) return;
+    // Đang làm lễ (mục 10): công trường tạm dừng, mảnh mới chờ tới khi lễ xong.
+    if (this.paused) return;
 
     this.budget = Math.min(pieces.maxPerSec * 0.5 + 1, this.budget + pieces.maxPerSec * dt);
     if (!this.queue.length) {

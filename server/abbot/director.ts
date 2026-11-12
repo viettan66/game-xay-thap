@@ -57,6 +57,9 @@ export interface AbbotDeps {
   greeted: GreetStore;
   /** Số người đã góp công cho hạng mục (cho câu "cảm ơn {count} thiện hữu"). */
   itemContributors: (itemId: string) => number;
+  /** Số người đã góp công cả công trình, tên công trình (lời khánh thành). */
+  totalContributors?: () => number;
+  projectName?: () => string;
   send: (msg: SayMessage) => void;
   now: () => number;
   rng?: () => number;
@@ -206,6 +209,15 @@ export class AbbotDirector {
           pose: 'welcome',
           priority: PRIORITY.event,
           notBefore: now + 2000,
+        });
+      } else if (t.type === 'project_complete') {
+        // Khánh thành toàn công trình (mục 10): dang tay, cảm ơn mọi người.
+        this.enqueue({
+          groups: ['project_complete'],
+          vars: { item: this.d.projectName?.() ?? '', count: this.d.totalContributors?.() ?? 0 },
+          pose: 'welcome',
+          priority: PRIORITY.event,
+          notBefore: now + 9000,
         });
       } else if (t.type === 'item_complete') {
         const item = p.items.find((i) => i.id === t.itemId);

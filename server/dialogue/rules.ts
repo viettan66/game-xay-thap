@@ -88,6 +88,12 @@ export const USED_GROUPS = [
   'crowd_counter',
   'npc_labels',
   'returning_subtitle',
+  // 5: lễ, bia, khánh thành, credit.
+  'ceremony_title',
+  'ceremony_others',
+  'project_complete',
+  'credits_title',
+  'credits_end',
 ];
 
 /** Nhóm đang dùng mà chưa có câu nào vừa bật vừa đã duyệt (cảnh báo trước khi live thật, mục 9C). */

@@ -7,6 +7,8 @@ import type { CharLook } from '../../shared/characters.js';
 import { assetsVersion } from '../assets/manifest.js';
 import type { GameCore } from '../core.js';
 import { honorStatues, topItem, topSession, topTotal } from '../game/queries.js';
+import type { CeremonyDeps } from '../game/ceremony.js';
+import { varsOf } from '../dialogue/rules.js';
 import { fillTemplate } from '../../shared/project.js';
 
 /** Số tượng ghi danh gửi xuống overlay (mới nhất); ô ghi danh xoay vòng trong số này. */
@@ -30,6 +32,27 @@ export function overlayName(core: GameCore, raw: string | null | undefined): str
 export function dialogueLines(core: GameCore, group: string, liveOnly: boolean): string[] {
   const g = core.configStore.getDialogues().groups[group];
   return (g?.lines ?? []).filter((l) => l.enabled && (!liveOnly || l.verified)).map((l) => l.text);
+}
+
+/**
+ * Câu đầu tiên dùng được của một nhóm (đã bật, đã duyệt khi live thật, đủ biến), ưu tiên câu thỏa `prefer`; đã điền biến.
+ * Dùng cho chữ cố định trên màn hình (tiêu đề bia, credit), nên không xoay vòng như thoại trụ trì.
+ */
+export function pickLine(core: GameCore, group: string, vars: Record<string, string | number>, liveOnly: boolean, prefer?: (text: string) => boolean): string | null {
+  const ok = dialogueLines(core, group, liveOnly).filter((t) => varsOf(t).every((v) => vars[v] !== undefined && vars[v] !== ''));
+  const pick = (prefer ? ok.find(prefer) : undefined) ?? ok[0];
+  return pick ? fillTemplate(pick, vars) : null;
+}
+
+/** Dữ liệu dựng lễ, bia, credit (mục 10, 14.12). */
+export function ceremonyDeps(core: GameCore, liveOnly: boolean): CeremonyDeps {
+  return {
+    db: core.db,
+    project: core.project,
+    config: core.config,
+    line: (group, vars, prefer) => pickLine(core, group, vars, liveOnly, prefer),
+    name: (raw) => overlayName(core, raw),
+  };
 }
 
 /** Dòng đang bật thứ `index` của một nhóm (giữ đúng vị trí dòng, dòng tắt / chưa duyệt khi live thật = null). */
@@ -188,6 +211,7 @@ export function buildOverlayState(core: GameCore, badge: string | null): Overlay
       flags: cfg.ambient.flags,
     },
     anonCrowd: anonCrowd(core, crowd, badge !== cfg.labels.testBadge),
+    creditsSpeed: cfg.ceremony.creditsSpeed,
     assetsVersion: assetsVersion(core.rootDir),
   };
 }

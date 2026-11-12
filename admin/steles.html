@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bia ghi danh – Đại Danh Lam Thiên Phúc</title>
+<style>
+  :root { --bg: #f6f1e7; --card: #fffdf8; --ink: #2b2118; --muted: #7a6a58; --line: #e4d9c6; --accent: #b5462b; --gold: #a0731f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+  header { position: sticky; top: 0; z-index: 5; padding: 10px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); background: var(--card); }
+  header h1 { font-size: 19px; margin: 0; }
+  header a { color: var(--accent); font-size: 14px; }
+  button { font: inherit; font-size: 14px; padding: 6px 12px; border-radius: 8px; border: 1px solid #c9b79a; background: #fff; color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  main { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(320px, 520px); gap: 14px; padding: 14px 20px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+  h2 { font-size: 16px; color: var(--accent); margin: 6px 0 10px; }
+  .note { color: var(--muted); font-size: 13px; }
+  .entry { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 8px; border: 1px solid var(--line); border-radius: 8px; margin: 6px 0; background: #fff; }
+  .entry.sel { border-color: var(--ink); background: #fff3d6; }
+  .entry .k { font-size: 12px; color: var(--muted); }
+  .entry b { font-size: 15px; }
+  .stele { background: #f3e6cc; border: 2px solid #d8c29a; border-radius: 120px 120px 10px 10px; padding: 34px 26px 22px; min-height: 300px; }
+  .stele h3 { text-align: center; margin: 0 0 14px; font-size: 20px; color: #5e2a1a; }
+  .row { display: grid; grid-template-columns: 34px 1fr auto; gap: 8px; padding: 4px 0; border-bottom: 1px dashed #d8c29a; font-size: 16px; color: #5e2a1a; }
+  .row.top { color: var(--gold); font-weight: 700; }
+  .others { text-align: center; color: #5e2a1a; margin-top: 10px; font-style: italic; }
+  #msg { font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Bia ghi danh</h1>
+  <a href="/admin">← Trang trạng thái</a>
+  <span id="msg" class="note"></span>
+</header>
+<main>
+  <section>
+    <h2>Các bia đã dựng</h2>
+    <p class="note" style="margin-top:0">Mỗi giai đoạn có lễ (khởi công, dựng cột, thượng lương…) và mỗi hạng mục đã xong có một bia ghi những người góp nhiều
+      công nhất. Bấm <b>Xem</b> để xem bia, <b>Chiếu lên overlay</b> để overlay dựng lại bia đó (camera đẩy vào công trình, bia trồi lên).</p>
+    <div id="list"></div>
+  </section>
+  <section>
+    <h2>Xem bia</h2>
+    <div id="view" class="note">Chọn một bia ở bên trái.</div>
+  </section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = (n) => Number(n).toLocaleString('vi-VN');
+  const when = (ts) => new Date(ts).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+  let entries = [];
+  let sel = -1;
+
+  const label = (e) => e.kind === 'project' ? 'Toàn công trình' : e.kind === 'item' ? 'Hạng mục' : 'Giai đoạn có lễ';
+  const title = (e) => e.kind === 'stage' ? `${esc(e.itemName)} · ${esc(e.ritual)}` : esc(e.itemName);
+  const query = (e) => new URLSearchParams({ kind: e.kind, itemId: e.itemId ?? '', stageIndex: e.stageIndex ?? '' });
+
+  function renderList() {
+    $('list').innerHTML = entries.length
+      ? entries.map((e, i) => `<div class="entry ${i === sel ? 'sel' : ''}">
+          <div><div class="k">${label(e)} · ${when(e.completedAt)}</div><b>${title(e)}</b>${e.stageName ? `<div class="k">${esc(e.stageName)}</div>` : ''}</div>
+          <button data-view="${i}">Xem</button>
+          <button class="primary" data-show="${i}">Chiếu lên overlay</button></div>`).join('')
+      : '<p class="note">Chưa có bia nào: chưa xong giai đoạn có lễ hay hạng mục nào.</p>';
+  }
+
+  async function view(i) {
+    sel = i;
+    renderList();
+    const r = await (await fetch('/api/steles/view?' + query(entries[i]))).json();
+    const s = r.stele;
+    $('view').className = '';
+    $('view').innerHTML = `<div class="stele"><h3>${esc(s.title)}</h3>${s.rows.length
+      ? s.rows.map((x) => `<div class="row ${x.rank <= 3 ? 'top' : ''}"><span>${x.rank <= 3 ? ['🥇', '🥈', '🥉'][x.rank - 1] : x.rank + '.'}</span><span>${esc(x.name)}</span><span>${fmt(x.points)}</span></div>`).join('')
+      : '<p class="note" style="text-align:center">Chưa có ai góp công.</p>'}${s.others ? `<div class="others">${esc(s.others)}</div>` : ''}</div>`;
+  }
+
+  async function show(i) {
+    const e = entries[i];
+    const r = await fetch('/api/steles/show', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: e.kind, itemId: e.itemId, stageIndex: e.stageIndex }) });
+    $('msg').textContent = r.ok ? `Đã gửi lệnh chiếu bia "${e.kind === 'stage' ? e.ritual + ' · ' : ''}${e.itemName}" lên overlay.` : 'Không gửi được lệnh.';
+  }
+
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    if (b.dataset.view !== undefined) view(Number(b.dataset.view));
+    if (b.dataset.show !== undefined) show(Number(b.dataset.show));
+  });
+
+  fetch('/api/steles').then((r) => r.json()).then((r) => {
+    entries = r.steles.slice().reverse(); // mới nhất trước
+    renderList();
+  }).catch(() => { $('list').textContent = 'Mất kết nối với server.'; });
+</script>
+</body>
+</html>

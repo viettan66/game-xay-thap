@@ -179,6 +179,53 @@ export interface AnonCrowd {
   text: string;
 }
 
+/** Một dòng trên bia (mục 10): hạng, tên đã lọc, công góp vào giai đoạn / hạng mục đó. */
+export interface SteleRow {
+  rank: number;
+  name: string;
+  points: number;
+}
+
+/** Bia ghi danh: tiêu đề (nhóm ceremony_title), top người góp, dòng cuối "…và N thiện hữu khác" (nhóm ceremony_others). */
+export interface SteleInfo {
+  title: string;
+  rows: SteleRow[];
+  others: string | null;
+}
+
+/**
+ * Các loại lễ (mục 10): xong giai đoạn thường, xong giai đoạn có lễ, xong hạng mục, khánh thành toàn công trình;
+ * replay = admin chiếu lại một bia. Overlay xếp hàng, chỉ bắt đầu khi mảnh cuối của giai đoạn đã đặt xong.
+ */
+export type CeremonyKind = 'stage_minor' | 'stage_ritual' | 'item_complete' | 'project_complete' | 'replay';
+
+export interface CeremonyInfo {
+  /** Mã duy nhất (không diễn lại lễ đã diễn khi nhận trùng). */
+  id: string;
+  kind: CeremonyKind;
+  /** Hạng mục làm lễ (khánh thành toàn công trình: null). */
+  itemId: string | null;
+  /** Giai đoạn vừa xong (đếm từ 0); lễ hạng mục, khánh thành: null. */
+  stageIndex: number | null;
+  size: ItemSize | null;
+  /** Thời lượng đầy đủ (giây) và thời lượng rút gọn khi nhiều lễ dồn lại (14.4); bằng nhau nghĩa là luôn diễn đủ. */
+  durationSec: number;
+  shortSec: number;
+  /** Lễ giai đoạn thường: chữ giai đoạn mới hiện ngắn ("Giai đoạn 5/10: Dựng cột"). */
+  banner: string | null;
+  stele: SteleInfo | null;
+  /** Hạng mục lớn, khánh thành: thêm múa lân, pháo hoa, hoa đăng. */
+  festival: boolean;
+}
+
+/** Credit cuối công trình (14.12): tên công trình, dòng đầu, TẤT CẢ người góp công (nhiều công trước), dòng cuối. */
+export interface CreditsInfo {
+  project: string;
+  title: string;
+  names: string[];
+  end: string;
+}
+
 export interface OverlayState {
   profile: 'production' | 'test';
   /** "CHẾ ĐỘ THỬ" (giả lập), "DIỄN TẬP" (hồ sơ test với live thật), hoặc null (live thật). */
@@ -210,6 +257,8 @@ export interface OverlayState {
   characters: CharactersConfig;
   /** Chỉ ở phòng rất đông, còn lại null. */
   anonCrowd: AnonCrowd | null;
+  /** Credit cuối công trình cuộn bao nhiêu điểm ảnh mỗi giây (khi toàn công trình đã xong). */
+  creditsSpeed: number;
   /** Đổi khi assets/manifest.json đổi (ví dụ vừa lưu ở /tools/assets): overlay tải lại ảnh. */
   assetsVersion: string;
 }
@@ -240,6 +289,8 @@ export type ServerMessage =
    * Cùng id = gộp vào thông báo đang chờ / đang hiện (quà nhỏ liên tiếp của cùng một người).
    */
   | { type: 'toast'; id: string; kind: 'big' | 'plus'; platformId: string; name: string; text: string; icon: string | null; coins: number; verified: boolean }
+  /** Một lễ (mục 10): overlay xếp hàng, diễn khi mảnh cuối của giai đoạn đã đặt xong. */
+  | { type: 'ceremony'; ceremony: CeremonyInfo }
   /** Đủ mục tiêu tim của phiên: mở khóa phần thưởng (múa lân, bảng 9A). */
   | { type: 'festival'; target: number; durationMs: number }
   /** Admin bấm "Toàn cảnh" / "Lia giới thiệu" (mục 8). */

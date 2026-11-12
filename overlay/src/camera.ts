@@ -159,12 +159,17 @@ export class CameraDirector {
   /** Lia ngắn tới một chỗ rồi quay về (quà lớn: tượng mới ở ô ghi danh, mục 8). */
   private peekFocus: MapRect | null = null;
   private peekLeft = 0;
+  private durOverride: number | null = null;
 
-  /** Admin bấm hoặc game gọi. Đang lễ thì không chen overview / tour vào. */
-  request(mode: Exclude<CameraMode, 'site'>, focus?: MapRect | null): void {
-    if (this.mode === 'ceremony' && mode !== 'ceremony') return;
+  /**
+   * Admin bấm hoặc game gọi. Đang lễ thì không chen overview / tour vào (trừ khi `force`: chính lễ khánh thành lia toàn cảnh).
+   * `durationSec`: thời lượng riêng của lần này (lễ dài ngắn khác nhau, mục 10); bỏ trống thì theo config.
+   */
+  request(mode: Exclude<CameraMode, 'site'>, focus?: MapRect | null, durationSec?: number, force = false): void {
+    if (this.mode === 'ceremony' && mode !== 'ceremony' && !force) return;
     this.mode = mode;
     this.modeT = 0;
+    this.durOverride = durationSec ?? null;
     if (mode === 'ceremony') this.ceremonyFocus = focus ?? null;
     if (mode === 'overview' || mode === 'tour') this.sinceOverview = 0;
     if (mode === 'tour') this.sinceTour = 0;
@@ -190,7 +195,16 @@ export class CameraDirector {
     this.pose = null;
   }
 
+  /** Kết thúc chế độ đang chạy, về site (lễ xong sớm hơn dự kiến). */
+  release(): void {
+    this.mode = 'site';
+    this.modeT = 0;
+    this.ceremonyFocus = null;
+    this.durOverride = null;
+  }
+
   private duration(cfg: CameraConfig): number {
+    if (this.durOverride !== null && this.mode !== 'site') return this.durOverride;
     if (this.mode === 'overview') return cfg.overviewSec;
     if (this.mode === 'tour') return cfg.tourSec;
     if (this.mode === 'ceremony') return cfg.ceremonySec;
@@ -233,6 +247,7 @@ export class CameraDirector {
         this.mode = 'site';
         this.modeT = 0;
         this.ceremonyFocus = null;
+        this.durOverride = null;
       }
     }
 

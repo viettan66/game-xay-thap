@@ -10,11 +10,12 @@
 // Chưa dựng bản đồ (thiếu manifest.map) thì vẽ tạm bằng hình khối theo hạng mục (scene/site.ts).
 
 import { Application, Container } from 'pixi.js';
-import type { OverlayState, ServerMessage } from '../../shared/protocol.js';
+import type { CrowdTier, OverlayState, ServerMessage } from '../../shared/protocol.js';
 import { destroyArt, EMPTY_ART, loadArt, type Art } from './art.js';
 import { chooseAbbotSide, chooseBoardSlot, hudRects, type BoardSlot, type HudRects } from './hudLayout.js';
 import { STAGE_H, STAGE_W } from './layout.js';
 import { connectServer } from './net.js';
+import { CeremonyDirector } from './ceremony/director.js';
 import { MapView } from './scene/map.js';
 import { SiteView } from './scene/site.js';
 import { loadFonts } from './theme.js';
@@ -66,6 +67,26 @@ async function boot(): Promise<void> {
   // Thông báo quà (mục 8) và múa lân khi đủ mục tiêu tim (bảng 9A).
   const toasts = new ToastView(initial.toast, initial.plus);
   const festival = new FestivalView(initial.festival);
+  // Lễ (mục 10): bia, pháo hoa, chữ giai đoạn mới, credit (lớp màn hình, trên giao diện); đèn lồng, hoa đăng (lớp bản đồ).
+  let crowdTier: CrowdTier = 'vua';
+  const ceremonies = new CeremonyDirector({
+    itemRect: (id) => mapView.itemRectOf(id),
+    complexRect: () => mapView.complexRect,
+    doneObjectRects: () => mapView.doneObjectRects(),
+    pondWaters: () => mapView.pondWaters(),
+    isPast: (id, st) => mapView.isPast(id, st),
+    camera: (mode, focus, sec, force) => mapView.cameraRequest(mode, focus, sec, force),
+    cameraMode: () => mapView.cameraMode,
+    cameraRelease: () => mapView.cameraRelease(),
+    pauseBuilder: (on) => mapView.pauseBuilder(on),
+    setFinale: (on) => mapView.setFinale(on),
+    toScreen: (x, y) => mapView.toScreen(x, y),
+    heightMap: () => state?.characters?.heightMap ?? 54,
+    crowd: () => crowdTier,
+    festival: (sec) => festival.start(sec * 1000),
+  });
+  mapView.addWorldFx(ceremonies.world);
+  mapView.onStageDone = (itemId, stage, itemDone) => ceremonies.stageDone(itemId, stage, itemDone);
   const safeDebug = new SafeAreaDebug();
   const shots = new ScreenshotCompare(app.canvas);
   const dot = new ConnectionDot(STAGE_W - 170, 200);
@@ -73,6 +94,7 @@ async function boot(): Promise<void> {
     site.container,
     mapView.container,
     uiLayer,
+    ceremonies.screen,
     festival.container,
     abbot.container,
     toasts.container,
@@ -114,6 +136,7 @@ async function boot(): Promise<void> {
     abbot.setSpots(r.abbot);
     toasts.setRects(r.toast, r.plus, s.hud.toastSec);
     festival.setRect(r.festival);
+    ceremonies.setRects(r);
     hud = next;
     loadMinimap();
     return next;
@@ -132,6 +155,8 @@ async function boot(): Promise<void> {
     abbot.setArt(a);
     toasts.setArt(a);
     festival.setArt(a);
+    ceremonies.clearFx();
+    ceremonies.setArt(a);
     mapView.setArt(a);
     showMap();
     loadMinimap();
@@ -159,6 +184,8 @@ async function boot(): Promise<void> {
     if (s.actors && s.characters) mapView.setActors(s.actors, s.characters, s.labels.pointUnit);
     if (s.honors) mapView.setHonors(s.honors);
     mapView.setAnonCrowd(s.anonCrowd ?? null);
+    crowdTier = s.crowd;
+    ceremonies.setCompleted(s.progress.completed, s.creditsSpeed ?? 45);
     h.progress.update(s.progress, s.hud.opacity.progress);
     h.board.update(s.boards, s.labels.pointUnit, s.hud.opacity.board, s.hud.boardRotateSec);
     h.events.update(s.eventBox, s.serverNow, s.hud.opacity.events);
@@ -178,6 +205,7 @@ async function boot(): Promise<void> {
     else if (m.type === 'say') abbot.say(m);
     else if (m.type === 'toast') toasts.push(m);
     else if (m.type === 'festival') festival.start(m.durationMs);
+    else if (m.type === 'ceremony') ceremonies.push(m.ceremony);
     else if (m.type === 'progress' && !mapView.ready) {
       // Hình khối tạm (chưa có bản đồ): chớp sáng ngay. Trên bản đồ thì chớp khi mảnh cuối của giai đoạn đã đặt xong.
       for (const t of m.transitions) {
@@ -202,6 +230,7 @@ async function boot(): Promise<void> {
   (window as unknown as { __overlay: unknown }).__overlay = {
     stats: () => ({ ...mapView.chars.stats(), camera: mapView.cameraMode }),
     actors: () => mapView.chars.debug(),
+    ceremony: () => ({ current: ceremonies.current?.kind ?? null, id: ceremonies.current?.id ?? null, queued: ceremonies.queue.ids(), stele: ceremonies.steleShown, camera: mapView.cameraMode }),
   };
 
   let slow = 0;
@@ -211,15 +240,18 @@ async function boot(): Promise<void> {
     const dt = Math.min(0.1, t.deltaMS / 1000);
     if (mapView.ready) mapView.tick(dt, state.pieces, state.texts.pieceBurst);
     else site.tick(dt);
+    if (mapView.ready) ceremonies.tick(dt);
     const overview = mapView.ready && mapView.cameraMode === 'overview';
-    // Thu toàn cảnh: các bảng mờ xuống 30%, chỉ còn thanh tiến độ (mục 8).
-    dim += ((overview ? 0.3 : 1) - dim) * Math.min(1, dt * 3);
+    // Thu toàn cảnh: các bảng mờ xuống 30%, chỉ còn thanh tiến độ (mục 8). Bia đang dựng, cảnh khánh thành: mờ thêm.
+    dim += (Math.min(overview ? 0.3 : 1, ceremonies.hudDim) - dim) * Math.min(1, dt * 3);
     const mm = state.hud.minimap;
     minimap.want = mapView.ready && (mm === 'always' || (mm === 'overview' && overview)) ? 1 : 0;
     minimap.tick(dt);
     if (hud) {
       hud.board.dim = dim;
       hud.events.dim = dim;
+      // Bia cao gần hết khung hình, che cả thanh tiến độ: thanh tiến độ mờ đi trong lúc dựng bia.
+      hud.progress.container.alpha = 1 - 0.7 * ceremonies.steleShown;
       slow -= dt;
       if (slow <= 0) {
         slow = 0.5;

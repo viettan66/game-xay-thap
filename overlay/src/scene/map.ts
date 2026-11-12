@@ -18,6 +18,8 @@ import { CharactersView } from '../chars/view.js';
 
 /** Ground (sân, hồ, tường, san nền) luôn vẽ dưới mọi công trình đứng và nhân vật. */
 const GROUND_Z = -1_000_000;
+/** Mã hạng mục hồ sen (thả hoa đăng trong lễ lớn). */
+const POND_ID = 'ho_sen';
 /** Lia ngắn tới tượng mới bao nhiêu giây. */
 const PEEK_SEC = 4.5;
 
@@ -58,6 +60,8 @@ export class MapView {
   /** Nhân vật, xe, chuông, tượng (giai đoạn 4d). */
   readonly chars: CharactersView;
   private loiterCache: { key: string; pts: Pt[] } = { key: '', pts: [] };
+  private finale = false;
+  private finaleTurn = 0;
   /** Gọi khi mảnh cuối của một giai đoạn đã đặt xong (sau này mở lễ, giai đoạn 5). */
   onStageDone: (itemId: string, stageIndex: number, itemDone: boolean) => void = () => {};
 
@@ -70,8 +74,7 @@ export class MapView {
       {
         onDisplay: () => this.refreshVisibility(),
         onStageDone: (itemId, stage, itemDone) => {
-          // Xong hạng mục: camera đẩy chậm vào công trình (lễ đầy đủ làm ở giai đoạn 5).
-          if (itemDone && this.map) this.director.request('ceremony', itemRect(this.map, itemId));
+          // Lễ (camera đẩy vào, bia…) do bộ điều phối lễ lo (ceremony/director.ts), bắt đầu đúng lúc này.
           this.onStageDone(itemId, stage, itemDone);
         },
         attach: (site) => this.attach(site),
@@ -170,6 +173,75 @@ export class MapView {
   /** Quà lớn: rung nhẹ (mục 8). */
   shake(): void {
     this.director.shake();
+  }
+
+  // ---------- Cho bộ điều phối lễ (giai đoạn 5) ----------
+
+  /** Hiệu ứng lễ trên bản đồ (đèn lồng, hoa đăng, bụi): trên cùng của thế giới. */
+  addWorldFx(c: Container): void {
+    this.world.addChild(c);
+  }
+
+  itemRectOf(itemId: string): MapRect | null {
+    return this.map ? itemRect(this.map, itemId) : null;
+  }
+
+  /** Công trường đã hiện qua giai đoạn / hạng mục này chưa (giai đoạn null = cả hạng mục đã hiện xong). */
+  isPast(itemId: string, stageIndex: number | null): boolean {
+    const p = this.progress;
+    if (!p) return false;
+    const ci = p.items.findIndex((i) => i.id === itemId);
+    if (ci < 0) return true;
+    if (this.builder.doneCount() > ci) return true;
+    const d = this.builder.displayStage();
+    if (!d) return false;
+    const di = p.items.findIndex((i) => i.id === d.itemId);
+    if (di > ci) return true;
+    return stageIndex !== null && di === ci && d.stage > stageIndex;
+  }
+
+  /** Khung các công trình đứng đang hiện (đã xong). */
+  doneObjectRects(): MapRect[] {
+    if (!this.map) return [];
+    const status = this.displayStatus();
+    return this.map.buildings
+      .filter((b) => b.layer === 'object' && b.items.some((id) => status.get(id) === 'done'))
+      .map((b) => ({ x: b.x, y: b.y, w: b.w, h: b.h }));
+  }
+
+  /** Mặt nước hai bên hồ sen (đã xây xong) để thả hoa đăng; chưa xây thì rỗng. */
+  pondWaters(): MapRect[] {
+    if (!this.map || this.displayStatus().get(POND_ID) !== 'done') return [];
+    const r = itemRect(this.map, POND_ID);
+    if (!r) return [];
+    const y = r.y + r.h * 0.4;
+    const h = r.h * 0.42;
+    return [
+      { x: r.x + r.w * 0.08, y, w: r.w * 0.26, h },
+      { x: r.x + r.w * 0.66, y, w: r.w * 0.26, h },
+    ];
+  }
+
+  cameraRequest(mode: Exclude<CameraMode, 'site'>, focus: MapRect | null, sec: number, force = false): void {
+    this.director.request(mode, focus, sec, force);
+  }
+
+  cameraRelease(): void {
+    this.director.release();
+  }
+
+  pauseBuilder(on: boolean): void {
+    this.builder.paused = on;
+  }
+
+  /** Cảnh khánh thành lặp (14.12): camera luân phiên lia giới thiệu và thu toàn cảnh. */
+  setFinale(on: boolean): void {
+    this.finale = on;
+  }
+
+  /** Tọa độ bản đồ → màn hình. */
+  toScreen(x: number, y: number): { x: number; y: number } {
+    return { x: this.world.x + x * this.world.scale.x, y: this.world.y + y * this.world.scale.y };
   }
 
   /** Khung bao toàn quần thể (tọa độ bản đồ). */
@@ -314,6 +386,11 @@ export class MapView {
     const map = this.map;
     if (!map) return;
     this.builder.tick(dtSec, pieces, texts);
+    // Cảnh khánh thành lặp: hết lượt thì lia giới thiệu, rồi thu toàn cảnh, cứ thế luân phiên.
+    if (this.finale && this.director.mode === 'site') {
+      const tour = this.finaleTurn++ % 2 === 0;
+      this.director.request(tour ? 'tour' : 'overview', null, (tour ? this.cameraCfg.tourSec : this.cameraCfg.overviewSec) * 1.5);
+    }
     const focusId = this.builder.displayItemId ?? this.progress?.item.id;
     const cam = this.director.update(dtSec, {
       map,
