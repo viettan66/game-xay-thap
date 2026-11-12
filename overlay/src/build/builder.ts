@@ -9,12 +9,13 @@
 
 import { Container, Graphics, Rectangle, RenderTexture, Sprite, Text, Texture, type Renderer } from 'pixi.js';
 import { floorBand, buildingOf, type MapBuilding, type MapManifest } from '../../../shared/map.js';
+import { nearestOnPaths, type MapPath } from '../../../shared/paths.js';
 import { assetUrl } from '../../../shared/manifest.js';
 import { PART_KEYS } from '../../../shared/parts.js';
 import type { PiecesConfig, ProgressItem, ProgressView, ServerMessage } from '../../../shared/protocol.js';
 import type { Art } from '../art.js';
 import { FONT_BODY } from '../theme.js';
-import { clusterSize, footprint, pieceRange, planStages, scaffold, type Piece, type PropKind, type Rect, type StagePlan } from './pieces.js';
+import { clusterSize, footprint, hashSeed, pieceRange, planStages, rng, scaffold, type Piece, type PropKind, type Rect, type StagePlan } from './pieces.js';
 
 type Contribution = Extract<ServerMessage, { type: 'contribution' }>;
 
@@ -120,6 +121,21 @@ export interface SiteDeps {
   fx: Container;
   pieces: () => PiecesConfig;
   worldScale: () => number;
+  /** Tay một dân phu đứng gần (tọa độ bản đồ) để mảnh bay từ đó; null = bay từ đống vật liệu (mục 7.5). */
+  source?: () => { x: number; y: number } | null;
+}
+
+/** Hình học công trường cho nhân vật (tọa độ bản đồ): chỗ đứng, giàn giáo, đống vật liệu (mục 9). */
+export interface SiteGeometry {
+  itemId: string;
+  rect: Rect;
+  baseY: number;
+  flat: boolean;
+  floor: { x: number; y: number }[];
+  ledgers: [number, number, number][];
+  pile: { x: number; y: number };
+  /** Vật liệu của giai đoạn đang hiện. */
+  prop: PropKind;
 }
 
 export class BuildSite {
@@ -144,6 +160,13 @@ export class BuildSite {
   private pileSprite: Sprite | null = null;
   private pileKey = '';
   private placedGround = new Map<number, number>();
+  /** Thanh ngang giàn giáo đang vẽ (tọa độ trong khung). */
+  private ledgers: [number, number, number][] = [];
+  /** Công trình phẳng: điểm đứng rải trên phần đất của hạng mục (tọa độ trong khung). */
+  private floorPts: { x: number; y: number }[] = [];
+  private pileBump = 0;
+  private flatPile: { x: number; y: number } | null = null;
+  private lastBump = 0;
   /** Giai đoạn và số mảnh đang hiện (đã đặt xong, không tính mảnh đang bay). */
   shownStage = 0;
   stock = 0;
@@ -154,6 +177,7 @@ export class BuildSite {
     private readonly deps: SiteDeps,
     finalPx: ImageData,
     labels: Uint8Array,
+    paths: MapPath[] = [],
   ) {
     const { w, h } = target;
     this.rt = RenderTexture.create({ width: w, height: h });
@@ -213,6 +237,39 @@ export class BuildSite {
       this.groundLayer.addChild(g);
       return g;
     });
+    if (target.building.layer === 'ground') {
+      this.floorPts = floorPoints(labels, w, h, target.itemId);
+      // Công trình phẳng rộng (san nền, sân, hồ): đống vật liệu đặt cạnh lối đi gần chân hạng mục, không nằm sát mép bản đồ.
+      const q = nearestOnPaths(paths, { x: target.x + this.fp.x + this.fp.w / 2, y: target.y + this.fp.y + this.fp.h - Math.min(140, this.fp.h * 0.1) });
+      if (q) this.flatPile = { x: Math.round(q.x - 46 - target.x), y: Math.round(q.y + 6 - target.y) };
+    }
+  }
+
+  /** Hình học công trường (tọa độ bản đồ) cho nhân vật. */
+  geometry(stage: number): SiteGeometry {
+    const t = this.target;
+    const b = t.building;
+    const flat = b.layer === 'ground';
+    const pile = this.pilePos();
+    // Bảo tháp: người dưới đất đứng ở chân tháp; công trình khác: chân của khung đang xây.
+    const baseY = b.items.length > 1 ? b.baseY : t.y + this.fp.y + this.fp.h;
+    return {
+      itemId: t.itemId,
+      rect: { x: t.x + this.fp.x, y: t.y, w: this.fp.w, h: t.h },
+      baseY: Math.round(Math.min(baseY, b.baseY + 4)),
+      flat,
+      floor: this.floorPts.map((p) => ({ x: t.x + p.x, y: t.y + p.y })),
+      ledgers: this.ledgers.map(([x0, x1, y]) => [t.x + x0, t.x + x1, t.y + y] as [number, number, number]),
+      pile: { x: t.x + pile.x, y: t.y + pile.y },
+      prop: this.plans[Math.min(stage, this.plans.length - 1)]?.prop ?? 'gach',
+    };
+  }
+
+  /** Dân phu đặt vật liệu xuống đống: đống nảy lên, bụi nhỏ. */
+  bumpPile(): void {
+    this.pileBump = 1;
+    const p = this.pilePos();
+    this.dust(this.target.x + p.x, this.target.y + p.y - 4);
   }
 
   static async create(map: MapManifest, itemId: string, item: ProgressItem, deps: SiteDeps): Promise<BuildSite | null> {
@@ -229,7 +286,7 @@ export class BuildSite {
       seed: itemId,
       flat: t.building.layer === 'ground',
     });
-    return new BuildSite(t, plans, deps, finalPx, labels);
+    return new BuildSite(t, plans, deps, finalPx, labels, map.paths ?? []);
   }
 
   count(stage: number): number {
@@ -306,10 +363,12 @@ export class BuildSite {
 
   private updateScaffold(stage: number, placed: number): void {
     const g = this.scaffoldG.clear();
+    this.ledgers = [];
     if (!this.bodyBox || this.builtTop === Infinity) return;
     const last = this.plans.length - 1;
     const removeFrac = stage >= last ? placed / Math.max(1, this.count(last)) : 0;
     const s = scaffold(this.bodyBox, this.builtTop, removeFrac);
+    this.ledgers = s.ledgers;
     for (const [x0, x1, y] of s.ledgers) g.moveTo(x0, y).lineTo(x1, y);
     for (const [x, top, bottom] of s.poles) g.moveTo(x, top).lineTo(x, bottom);
     g.stroke({ width: 2.5, color: 0xc8a050, alpha: 0.85 });
@@ -327,6 +386,8 @@ export class BuildSite {
     if (key === this.pileKey) return;
     this.pileKey = key;
     this.pileSprite?.destroy();
+    this.lastBump = 0;
+    this.pileBump = 0;
     const tex = propTexture(this.deps.art, prop, level);
     const width = Math.max(40, Math.min(110, this.target.w * 0.18)) * (level === 'lon' ? 1.25 : level === 'vua' ? 1 : 0.8);
     const s = tex ? new Sprite(tex) : new Sprite(Texture.WHITE);
@@ -338,8 +399,9 @@ export class BuildSite {
     this.pileSprite = s;
   }
 
-  /** Chỗ đặt đống vật liệu: bên trái chân công trình (tọa độ trong khung). */
+  /** Chỗ đặt đống vật liệu: bên trái chân công trình; công trình phẳng: cạnh lối đi gần chân hạng mục (tọa độ trong khung). */
   pilePos(): { x: number; y: number } {
+    if (this.flatPile) return this.flatPile;
     return { x: Math.max(10, this.fp.x - 28), y: Math.min(this.target.h + 30, this.fp.y + this.fp.h + 8) };
   }
 
@@ -349,8 +411,9 @@ export class BuildSite {
   fly(stage: number, from: number, to: number, onLand: () => void): Rect | null {
     const plan = this.plans[stage]!;
     const pile = this.pilePos();
-    const sx = this.target.x + pile.x;
-    const sy = this.target.y + pile.y - 20;
+    const hand = this.deps.source?.() ?? null;
+    const sx = hand ? hand.x : this.target.x + pile.x;
+    const sy = hand ? hand.y : this.target.y + pile.y - 20;
     if (plan.kind === 'ground') {
       const g = plan.ground[Math.min(to, plan.ground.length) - 1];
       const ex = this.target.x + (g ? g.x + g.w / 2 : pile.x);
@@ -497,6 +560,13 @@ export class BuildSite {
       }
     }
     if (this.flashAlpha > 0) this.flashAlpha = Math.max(0, this.flashAlpha - dt * 1.2);
+    // Đống vật liệu nảy lên khi dân phu đặt vật liệu xuống.
+    if (this.pileSprite && (this.pileBump > 0 || this.lastBump > 0)) {
+      this.pileBump = Math.max(0, this.pileBump - dt * 4);
+      const k = (1 + this.pileBump * 0.12) / (1 + this.lastBump * 0.12);
+      this.pileSprite.scale.set(this.pileSprite.scale.x * k, this.pileSprite.scale.y * k);
+      this.lastBump = this.pileBump;
+    }
     this.flashSprite.alpha = this.flashAlpha * 0.6;
     this.shownStage = stage;
     this.refreshVisibility(stage, placed);
@@ -509,6 +579,29 @@ export class BuildSite {
     this.rt.destroy(true);
     for (const t of this.partTex.values()) t.destroy(true);
   }
+}
+
+/** Điểm đứng trên phần đất của công trình phẳng (sân, hồ, tường bao): lưới thưa, thứ tự cố định theo mã hạng mục. */
+function floorPoints(labels: Uint8Array, w: number, h: number, seed: string): { x: number; y: number }[] {
+  const out: { x: number; y: number }[] = [];
+  const step = 44;
+  let row = 0;
+  for (let y = step / 2; y < h; y += step * 0.75, row++) {
+    for (let x = step / 2 + (row % 2) * (step / 2); x < w; x += step) {
+      const xi = Math.round(x);
+      const yi = Math.round(y);
+      // Cần có đất quanh chỗ đứng (không đứng ở mép hình).
+      if (labels[yi * w + xi] && labels[Math.max(0, yi - 10) * w + xi] && labels[Math.min(h - 1, yi + 6) * w + xi]) out.push({ x: xi, y: yi });
+    }
+  }
+  const r = rng(hashSeed('floor:' + seed));
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(r() * (i + 1));
+    const tmp = out[i]!;
+    out[i] = out[j]!;
+    out[j] = tmp;
+  }
+  return out.slice(0, 60);
 }
 
 function propTexture(art: Art, prop: PropKind, level: 'lon' | 'vua' | 'nho'): Texture | null {
@@ -526,6 +619,8 @@ interface Job {
   name: string | null;
   source: Contribution['source'] | null;
   contrib: number;
+  /** Người góp (platformId), để nhân vật của họ khiêng vật liệu. */
+  actor: string | null;
   /** Đặt thẳng khoảng mảnh (dùng khi bù cho khớp server). */
   pieces?: [number, number];
   cursor?: number;
@@ -555,6 +650,10 @@ export interface BuilderEvents {
   onStageDone(itemId: string, stageIndex: number, itemDone: boolean): void;
   /** Gắn công trường vào đúng lớp vẽ của công trình. */
   attach(site: BuildSite): void;
+  /** Tim, bình luận chưa đủ một mảnh: nhân vật của người góp khiêng vật liệu ra đống (true = đã lo). */
+  carry?(actorId: string | null, prop: PropKind): boolean;
+  /** Tay dân phu đứng gần để mảnh bay từ đó (mục 7.5). */
+  source?(): { x: number; y: number } | null;
 }
 
 export class Builder {
@@ -665,16 +764,36 @@ export class Builder {
     if (!this.shown) return; // chưa dựng xong: lần đối chiếu tới sẽ dựng đúng tiến độ
     const contrib = ++this.contribSeq;
     for (const a of msg.allocations) {
-      this.queue.push({ itemId: a.itemId, stageIndex: a.stageIndex, from: a.from, points: a.points, cost: a.cost, name: msg.name, source: msg.source, contrib });
+      this.queue.push({ itemId: a.itemId, stageIndex: a.stageIndex, from: a.from, points: a.points, cost: a.cost, name: msg.name, source: msg.source, contrib, actor: msg.platformId || null });
     }
-    if (msg.allocations.length === 0 && this.site && msg.source !== 'gift') this.queueCarry();
+    if (msg.allocations.length === 0 && this.site && msg.source !== 'gift') this.queueCarry(msg.platformId || null);
   }
 
-  private queueCarry(): void {
-    if (this.carryCooldown > 0 || !this.site) return;
-    this.carryCooldown = 0.35;
+  private queueCarry(actor: string | null): void {
+    if (!this.site) return;
     const plan = this.site.plans[this.shown?.stage ?? 0];
-    this.site.carry(plan?.prop ?? 'gach');
+    const prop = plan?.prop ?? 'gach';
+    // Có nhân vật của người góp: người đó khiêng ra đống (dân phu khiêng, mục 7.5). Không có: vật liệu bay từ mép công trường.
+    if (this.events.carry?.(actor, prop)) return;
+    if (this.carryCooldown > 0) return;
+    this.carryCooldown = 0.35;
+    this.site.carry(prop);
+  }
+
+  /** Hình học công trường đang hiện (cho nhân vật), null nếu chưa dựng xong. */
+  siteGeometry(): SiteGeometry | null {
+    if (!this.siteReady || !this.shown || this.shownDone) return null;
+    return this.site!.geometry(this.shown.stage);
+  }
+
+  /** Giai đoạn đang hiện trên bản đồ (hạng mục, số thứ tự từ 0). */
+  displayStage(): { itemId: string; stage: number } | null {
+    return this.shown && !this.shownDone ? { itemId: this.shown.itemId, stage: this.shown.stage } : null;
+  }
+
+  /** Dân phu đặt vật liệu xuống đống. */
+  bumpPile(): void {
+    if (this.siteReady) this.site!.bumpPile();
   }
 
   /** Dựng ngay công trường đúng trạng thái server (mở overlay, mất tin, đổi giá…). */
@@ -727,6 +846,7 @@ export class Builder {
         fx: this.fx,
         pieces: () => this.piecesCfg,
         worldScale: this.worldScale,
+        source: () => this.events.source?.() ?? null,
       });
       if (this.map !== map || this.loading !== itemId) {
         site?.destroy();
@@ -814,7 +934,7 @@ export class Builder {
         job.cursor = Math.max(a, this.shown.placed);
         job.end = b;
         if (job.source === 'gift' && b > a && job.name) this.burst(site, job, b - a, pieces, texts);
-        if (b === a && job.source !== 'gift') this.queueCarry();
+        if (b === a && job.source !== 'gift') this.queueCarry(job.actor);
       }
       if (job.cursor >= job.end!) {
         this.queue.shift();
@@ -877,7 +997,7 @@ export class Builder {
     }
     const want = pieceRange(site.count(stage), 0, p.stagePoints, p.stageCost)[1];
     if (want > shown.placed && want - shown.placed <= 40) {
-      this.queue.push({ itemId: shown.itemId, stageIndex: stage, from: 0, points: 0, cost: 1, name: null, source: null, contrib: 0, pieces: [shown.placed, want] });
+      this.queue.push({ itemId: shown.itemId, stageIndex: stage, from: 0, points: 0, cost: 1, name: null, source: null, contrib: 0, actor: null, pieces: [shown.placed, want] });
     } else if (want !== shown.placed) {
       this.snap();
     }

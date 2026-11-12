@@ -162,4 +162,19 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    version: 3,
+    name: 'Tượng võ tướng đá ở ô ghi danh (giai đoạn 4d)',
+    sql: `
+      -- Mỗi lần tặng quà từ mức "tượng" (mặc định 5.000 xu) được một tượng mang tên người tặng, đặt vĩnh viễn (mục 9).
+      -- Thứ tự tượng (id) quyết định ô ghi danh; hết ô thì overlay xoay vòng hiển thị.
+      CREATE TABLE honor_statues (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        platform_id TEXT NOT NULL,
+        event_id    INTEGER NOT NULL REFERENCES events (id),
+        coins       INTEGER NOT NULL,
+        created_at  INTEGER NOT NULL
+      );
+    `,
+  },
 ];

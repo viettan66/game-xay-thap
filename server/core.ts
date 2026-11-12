@@ -15,6 +15,11 @@ import { retireLegacyTowerDb } from './db/legacy.js';
 import { getSetting, setSetting } from './db/settings.js';
 import { CROWD_TIERS, CrowdTracker } from './game/crowd.js';
 import { HeartGoalService } from './game/heartGoal.js';
+import { CharacterRoster } from './game/roster.js';
+import { userTotalPoints } from './game/queries.js';
+import { titleFor } from '../shared/characters.js';
+import { displayName } from '../shared/names.js';
+import { hasUser } from '../shared/types.js';
 import type { CrowdTier } from '../shared/protocol.js';
 import { GameEngine, type ProcessResult, type RepricePreview } from './game/engine.js';
 import { silentLogger, type Logger } from './logger.js';
@@ -53,6 +58,8 @@ export class GameCore {
   readonly crowd: CrowdTracker;
   /** Mục tiêu tim của phiên (bảng 9A). */
   readonly goals: HeartGoalService;
+  /** Nhân vật người xem đang có trên bản đồ (mục 9, 9A). */
+  readonly roster: CharacterRoster;
   /** Sự kiện cho các phần khác (trụ trì…): 'sessionStart', 'sessionEnd' (SessionRow), 'crowd' (CrowdTier), 'goal' (nấc vừa đạt). */
   readonly bus = new EventEmitter();
   private readonly log: Logger;
@@ -86,6 +93,7 @@ export class GameCore {
       onStart: (s) => {
         this.log.info(`Bắt đầu phiên live #${s.id} (${s.start_reason})`);
         this.goals?.onSessionStart(s.id);
+        this.roster?.onSessionStart();
         this.bus.emit('sessionStart', s);
       },
       onEnd: (s) => {
@@ -103,12 +111,14 @@ export class GameCore {
       now: this.now,
     });
     this.crowd = new CrowdTracker(() => this.config.crowd);
+    this.roster = new CharacterRoster({ config: () => this.config.characters, tier: () => this.crowd.tier });
     const forced = getSetting<string | null>(this.db, 'crowd_forced', null);
     this.crowd.forced = CROWD_TIERS.includes(forced as CrowdTier) ? (forced as CrowdTier) : null;
     try {
       this.engine.init();
       this.sessions.recoverOnBoot();
       this.goals = new HeartGoalService(this.db, () => this.config.heartGoal.targets, () => this.crowd.tier, () => this.sessions.currentId());
+      this.restoreRoster();
     } catch (e) {
       // project.json không khớp với dữ liệu đã xây: đóng DB rồi báo lỗi (để file không bị giữ khóa).
       this.db.close();
@@ -141,8 +151,47 @@ export class GameCore {
       this.crowd.observe(ev, this.now());
       this.updateCrowd();
       this.goalHit(this.goals.onEvent(ev));
+      if (hasUser(ev)) this.rosterEvent(ev, this.now());
     }
     return r;
+  }
+
+  /** Cập nhật nhân vật của người xem (sinh mới, đổi tên, danh hiệu, lần tương tác). */
+  private rosterEvent(ev: import('../shared/types.js').UserLiveEvent, now: number): boolean {
+    const cfg = this.config;
+    return this.roster.onEvent(
+      {
+        ev,
+        name: displayName(ev.user.nickname, cfg.nameFilter.bannedWords, cfg.labels.anonymousName),
+        title: titleFor(userTotalPoints(this.db, ev.user.platformId), cfg.titles),
+        coins: ev.type === 'gift' ? Math.max(0, ev.coinValueEach) * Math.max(0, ev.count) : 0,
+      },
+      now,
+    );
+  }
+
+  /**
+   * Khởi động lại giữa phiên live: dựng lại danh sách nhân vật từ sự kiện của phiên đang chạy (đọc từ bảng events),
+   * rồi bỏ ngay những người đã hết giờ. Không có phiên thì bắt đầu trống.
+   */
+  private restoreRoster(): void {
+    const sid = this.sessions.currentId();
+    if (sid === null) return;
+    const rows = this.db
+      .prepare<[number], { ts: number; payload_json: string }>(
+        `SELECT ts, payload_json FROM events WHERE session_id = ? AND type IN ('join', 'like', 'comment', 'gift') ORDER BY id DESC LIMIT 20000`,
+      )
+      .all(sid)
+      .reverse();
+    for (const row of rows) {
+      try {
+        const ev = JSON.parse(row.payload_json) as import('../shared/types.js').LiveEvent;
+        if (hasUser(ev)) this.rosterEvent(ev, row.ts);
+      } catch {
+        // dòng hỏng: bỏ qua
+      }
+    }
+    this.roster.tick(this.now(), true);
   }
 
   /** Cập nhật chế độ độ đông (sau sự kiện và định kỳ); đổi thì ghi log và báo cho các phần khác. */
@@ -284,6 +333,7 @@ export class GameCore {
   tick(): void {
     this.sessions.tick();
     this.updateCrowd();
+    this.roster.tick(this.now());
     if (isDailyBackupDue(this.now(), this.config.backup.dailyTime, listBackups(this.paths.backupsDir))) {
       void this.backup('daily');
     }

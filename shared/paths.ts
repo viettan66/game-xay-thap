@@ -212,3 +212,26 @@ export function honorSlotFor(slots: HonorSlot[], k: number): HonorSlot | null {
   if (!slots.length) return null;
   return slots[((k % slots.length) + slots.length) % slots.length]!;
 }
+
+/** Điểm trên lối đi gần `p` nhất (xét mọi đoạn của mọi đường); không có lối đi thì null. */
+export function nearestOnPaths(paths: MapPath[], p: { x: number; y: number }): { x: number; y: number } | null {
+  let best: { x: number; y: number } | null = null;
+  let bd = Infinity;
+  for (const path of paths) {
+    for (let i = 1; i < path.points.length; i++) {
+      const [ax, ay] = path.points[i - 1]!;
+      const [bx, by] = path.points[i]!;
+      const dx = bx - ax;
+      const dy = by - ay;
+      const len2 = dx * dx + dy * dy;
+      const t = len2 ? Math.max(0, Math.min(1, ((p.x - ax) * dx + (p.y - ay) * dy) / len2)) : 0;
+      const q = { x: ax + t * dx, y: ay + t * dy };
+      const d = Math.hypot(q.x - p.x, q.y - p.y);
+      if (d < bd) {
+        bd = d;
+        best = q;
+      }
+    }
+  }
+  return best;
+}

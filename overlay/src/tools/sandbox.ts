@@ -63,7 +63,8 @@ export class Sandbox {
     const r = applyPoints(this.state, points, this.project);
     this.state = r.state;
     this.total += points;
-    return { type: 'contribution', name, source, points, coins, allocations: r.allocations };
+    // Trang thử chỉ xem mảnh bay vào: không có nhân vật, không có hiệu ứng quà trên bản đồ.
+    return { type: 'contribution', name, source, points, coins, allocations: r.allocations, platformId: '', effect: null };
   }
 
   view(): ProgressView {

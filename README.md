@@ -11,9 +11,10 @@ mỗi hạng mục qua nhiều giai đoạn thi công.
 > `/tools/build`: chọn hạng mục, giai đoạn, nút tim và quà, đo FPS) và **R4** (camera phóng to, toàn cảnh, lia giới thiệu;
 > giao diện mới: thanh tiến độ góc trên phải, bảng xếp hạng thu gọn tự tránh công trình, ô sự kiện, bản đồ thu nhỏ, lọc tên).
 > Giai đoạn 4 làm từng phần: đã xong **4a** (chế độ độ đông của phòng, kho thoại, trụ trì nói chuyện trên overlay, tên quà theo mức),
-> **4b** (thông báo quà, mục tiêu tim của phiên với phần thưởng múa lân, trang Kho thoại) và **4c** (ảnh nhân vật, xe trâu,
-> voi, tượng võ tướng đá; lối đi, vị trí làm việc, ô ghi danh trên bản đồ; trang `/tools/paths`).
-> Sắp tới: 4d (nhân vật người xem đi lại, làm việc trên bản đồ; hiệu ứng quà), 4e (dân phu, người góp công cũ).
+> **4b** (thông báo quà, mục tiêu tim của phiên với phần thưởng múa lân, trang Kho thoại), **4c** (ảnh nhân vật, xe trâu,
+> voi, tượng võ tướng đá; lối đi, vị trí làm việc, ô ghi danh trên bản đồ; trang `/tools/paths`) và **4d** (nhân vật người xem
+> đi lại, làm việc, khiêng vật liệu trên bản đồ; hiệu ứng quà theo mức: gạch, bó gỗ, xe trâu, voi, đúc chuông, tượng ghi danh).
+> Sắp tới: 4e (dân phu không tên, người góp công cũ, đám đông vô danh).
 > Chưa kết nối TikTok (giai đoạn 6).
 
 ---
@@ -84,7 +85,38 @@ Trên overlay hiện có:
   - Xong giai đoạn thì công trình chớp sáng nhẹ, xong hạng mục thì chớp mạnh và camera đẩy chậm vào công trình.
     Lễ (giai đoạn 5) sẽ bắt đầu đúng lúc mảnh cuối đặt xong.
   - **Mở lại overlay** (hoặc mất mạng) thì công trình hiện ngay đúng tiến độ: game không lưu từng mảnh, chỉ cần tiến độ giai đoạn.
-  - Chưa có âm thanh đặt gạch, lợp ngói (làm ở giai đoạn 5b) và chưa có dân phu khiêng (giai đoạn 4).
+  - Có nhân vật người xem ở công trường thì mảnh thỉnh thoảng bay **từ tay người đứng gần**, và tim, bình luận chưa đủ một mảnh
+    thì **chính nhân vật của người đó khiêng vật liệu ra đống** (xem "Nhân vật người xem" bên dưới).
+  - Chưa có âm thanh đặt gạch, lợp ngói (làm ở giai đoạn 5b).
+- **Nhân vật người xem** (SPEC mục 9, giai đoạn 4d), vẽ chung lớp với công trình nên đi sau công trình thì bị che, đi trước thì đè lên:
+  - **Khi nào có nhân vật** (theo chế độ độ đông): phòng vắng: vào phòng là có; phòng vừa: lần tim, bình luận hoặc quà đầu tiên;
+    phòng đông: tặng quà, hoặc đủ 50 tim, hoặc đủ 3 bình luận trong phiên; phòng rất đông: chỉ khi tặng quà.
+  - **Kiểu nhân vật** (dân phu nam, dân phu nữ, thợ mộc, thợ nề) ngẫu nhiên nhưng cố định theo từng người xem. Không dùng hình chú tiểu.
+  - **Trên đầu:** avatar tròn (tạm là chữ cái đầu, ảnh thật có ở giai đoạn 6), tên (dài hơn 14 ký tự thì cắt bớt "…"), huy hiệu
+    danh hiệu vàng (Thợ phụ, Thợ cả, Đốc công…). Chữ luôn cùng cỡ dù camera phóng to hay thu nhỏ. Nhiều người đứng sát nhau thì
+    chữ của người vừa góp công được giữ, chữ bị đè tự ẩn bớt. Chữ chỉ hiện trong khung hình (không hiện dưới khu comment).
+  - **Đi vào** từ mép khung hình theo lối đi trên bản đồ, tới chỗ làm ở hạng mục đang xây: một hàng dọc chân công trình,
+    trên **sàn giàn giáo** (trèo lên, trèo xuống), hoặc rải trên mặt sân / mặt đất với hạng mục phẳng (san nền, sân gạch, hồ sen).
+    Bảo tháp: thợ đứng trên giàn giáo ở tầng đang xây. Hết chỗ thì đứng chờ dọc lối đi gần đó.
+  - **Làm động tác hợp giai đoạn:** cắm mốc → đo, kéo dây; đào → cuốc, xúc cát; dựng cột, khung → kéo dây, cưa, đóng búa;
+    xây tường, lát nền → xây gạch, trát vữa, bê đá; lợp mái → chuyền ngói (phần lớn trên giàn giáo); trang trí → chạm khắc, đục.
+    Thỉnh thoảng đi ra đống vật liệu lấy đồ mang về chỗ làm, hoặc đổi chỗ.
+  - **Thả tim, bình luận:** nhân vật đó làm nhanh hơn khoảng 4 giây, có chữ `+5 công` bay lên trên đầu.
+  - **Không tương tác lâu thì đi ra** khỏi màn hình: vắng 30 phút, vừa 10 phút, đông 5 phút, rất đông 3 phút
+    (người đã tặng từ 1.000 xu trong phiên: 10 phút). Mỗi lần chỉ một người rời đi, không biến mất cùng lúc.
+  - **Tối đa 40 người.** Đầy chỗ thì người ưu tiên thấp nhất nhường chỗ: phòng vừa giữ người tương tác gần nhất, phòng đông
+    giữ người tặng quà, phòng rất đông giữ người tặng nhiều nhất trong 10 phút gần đây. Người mới có ưu tiên thấp nhất thì chưa có nhân vật.
+  - Tắt game bật lại giữa phiên: nhân vật của những người còn trong giờ tự quay lại.
+- **Hiệu ứng quà theo mức** (giá trị một lần tặng, mục 9):
+  - dưới 10 xu: nhân vật người tặng **khiêng một viên gạch** ra đống vật liệu; 10–99 xu: **vác bó gỗ**;
+  - 100–499 xu: **xe trâu chở đá**, 500–999 xu: **voi chở gỗ**. Xe, voi đi đường chính từ mép dưới màn hình vào tới trước
+    công trình đang xây (không vòng ra sau), đổ vật liệu ra đống, rồi quay ra. Trên đầu có nhãn đỏ tên người tặng.
+    Tối đa 3 chiếc chạy cùng lúc, thừa thì chờ lượt;
+  - 1.000–4.999 xu: **đúc đại hồng chung** trước công trình: khuôn đúc đỏ rực, tia lửa, chuông nhô lên rồi lắc và ngân
+    (vòng sóng tỏa ra), khoảng 7 giây, kèm tên người tặng; camera rung nhẹ;
+  - từ 5.000 xu: **tượng võ tướng đá** mang tên người tặng, **đặt vĩnh viễn** ở ô ghi danh dọc đường đá trước hồ sen
+    (lưu trong dữ liệu, tắt máy bật lại vẫn còn). Tượng trồi lên kèm bụi, camera lia tới khoảng 4,5 giây rồi quay về công trường.
+    Hết 12 ô thì các tượng **xoay vòng hiển thị** theo lượt, mỗi lượt 20 giây (`honor.rotateSec`).
 - **Camera** (SPEC mục 8), chuyển cảnh luôn mượt, không bao giờ lộ ra ngoài mép bản đồ:
   - **Công trường** (thường ngày): phóng vào hạng mục đang xây, công trình chiếm khoảng một nửa bề ngang
     (công trình nhỏ thì phóng tới mức tối đa ×1,6 là dừng), nằm giữa phần màn hình không bị nền tảng che.
@@ -234,11 +266,12 @@ Mở trang: trên trang trạng thái bấm **Lối đi ↗**, hoặc vào `http
 - **+ Lối đi mới**, **Xóa lối đang chọn**, đổi mã và loại (lối đi bộ / đường chính) ở dưới danh sách.
 - Hai lối có điểm trùng nhau, hoặc điểm của lối này nằm trên đoạn của lối kia, là **nối với nhau**. Dưới danh sách báo
   "Mọi lối đi nối liền nhau" hoặc số cụm rời nhau (cần nối lại).
-- **+ Ô ghi danh**: bấm lên bản đồ để thêm ô. Hết ô thì tượng mới xoay vòng thay tượng cũ (giai đoạn 4d).
+- **+ Ô ghi danh**: bấm lên bản đồ để thêm ô. Hết ô thì các tượng xoay vòng hiển thị theo lượt.
 - **Thử với một hạng mục**: chọn hạng mục để thấy khung (vàng), **vị trí làm việc** tự sinh (chấm cam: dưới đất; cam nhạt: trên giàn giáo),
   **đường đi** từ cổng vào (nét đứt xanh) và một **người mẫu** đứng ở chân công trình để so tỉ lệ (khoảng 1/8 chiều cao gác chuông).
   Bấm **▶ Cho một người đi từ cổng vào** để xem người đó đi theo lối.
-- **Lưu**: ghi vào `assets\map-paths.json` (overlay dùng ngay từ giai đoạn 4d). Cắt lại bản đồ không làm mất lối đi.
+- **Lưu**: ghi vào `assets\map-paths.json`. Nhân vật, xe trâu, voi trên overlay đi theo lối đi này; tượng đứng ở các ô ghi danh.
+  Lưu xong thì mở lại overlay (F5) để nhân vật dùng lối mới. Cắt lại bản đồ không làm mất lối đi.
 
 ### Ảnh nhân vật, xe trâu, voi, tượng (4c)
 Cắt từ 12 ảnh gốc (5 loại người: dân phu nam, dân phu nữ, thợ mộc, thợ nề, chú tiểu; xe trâu và voi; 3 tượng võ tướng đá) thành
@@ -278,8 +311,10 @@ Trên trang trạng thái, khung **Giả lập**:
 - **▶ Chạy / ■ Dừng**: bật tắt dòng sự kiện giả. Bật thì phiên live tự bắt đầu. Dừng quá 15 phút thì phiên tự kết thúc, như khi kênh tắt live.
 - **Kịch bản:** Phòng vắng (2–5 người xem), Phòng vừa (10–45), Phòng đông (70–280), Phòng rất đông (400–1.500). Số người xem và số người tương tác khớp ngưỡng mục 9A.
 - **Tốc độ:** ×0,25 đến ×10.
-- **Nút bắn thử:** quà nhỏ (1 xu = 100 công), quà vừa (100 xu = 10.000 công), quà lớn (1.000 xu = 100.000 công), 1.000 tim, comment,
-  người vào phòng, đợt dồn dập (150 sự kiện một lúc).
+- **Nút bắn thử** theo từng mức hiệu ứng quà: 1 xu (gạch, 100 công), 30 xu (bó gỗ), 100 xu (xe trâu, 10.000 công),
+  500 xu (voi), 1.000 xu (chuông, 100.000 công), 5.000 xu (tượng võ tướng, 500.000 công); 1.000 tim, comment, người vào phòng,
+  đợt dồn dập (150 sự kiện một lúc). Mỗi nút bắn từ một người xem giả ngẫu nhiên.
+  Lưu ý: nút **5.000 xu** đặt một tượng vĩnh viễn trong dữ liệu **thử** (xóa `data\test\game.db` là mất).
 - Hai nút **Giả lập / Live thật (diễn tập)** chọn nguồn sự kiện của hồ sơ thử. Live thật chỉ hoạt động từ giai đoạn 6.
 
 Người xem giả có tên tiếng Việt và chỉ tồn tại trong hồ sơ thử. `start.bat` (dữ liệu thật) không bao giờ chạy giả lập.
@@ -412,7 +447,25 @@ Mở cửa sổ lệnh **tại thư mục dự án**: mở thư mục `game-xay-
 5. Thử dời một điểm, thêm một ô ghi danh, bấm **Lưu**, tải lại trang: vẫn giữ. Muốn bỏ: sửa lại rồi lưu.
    Mình thấy chỗ nào lối đi chưa hợp (đi xuyên cây, xuyên tường) thì chỉnh trên trang này, hoặc báo em.
 
-**k) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
+**k) Giai đoạn 4d: nhân vật người xem, hiệu ứng quà**
+1. Đóng game đang chạy, nhấp đúp lại `start-test.bat`, mở overlay cạnh trang trạng thái. Bấm **Bắt đầu phiên**, khung **Độ đông** bấm **Vừa**.
+2. Bấm **1.000 tim**, **Comment** nhiều lần (mỗi lần là một người xem giả khác): từng người đi vào từ mép khung hình,
+   theo lối đi tới hạng mục đang xây, đứng làm việc. Trên đầu có avatar chữ cái, tên, danh hiệu (người có nhiều công).
+   Dòng **Nhân vật trên bản đồ** trên trang trạng thái tăng dần (tối đa 40).
+3. Bấm **Comment** tiếp: chữ `+… công` bay lên trên đầu người đó; nếu chưa đủ một mảnh thì người đó khiêng vật liệu ra đống.
+4. Bấm lần lượt các nút quà:
+   - **1 xu**, **30 xu**: nhân vật người tặng vác gạch / bó gỗ ra đống (người chưa có nhân vật thì có ngay rồi mới vác);
+   - **100 xu**: xe trâu từ dưới đi lên, dừng trước công trình, đổ đá ra đống, quay ra; **500 xu**: voi chở gỗ, tương tự;
+   - **1.000 xu**: chuông đúc trước công trình, lắc và ngân, camera rung nhẹ;
+   - **5.000 xu**: camera lia xuống đường đá trước hồ sen, tượng võ tướng trồi lên kèm bảng tên, rồi camera quay về.
+     Dòng **Tượng võ tướng** trên trang trạng thái tăng 1. Tắt bật lại game: tượng vẫn còn.
+5. Xây tới công trình có giàn giáo (ví dụ **Gác chuông** khi lợp mái, hoặc **Bảo tháp**): có người trèo lên sàn giàn giáo làm.
+6. Bấm **Rất đông**, bấm **Comment**, **1.000 tim**: không có người mới; bấm **1 xu**: có người mới (chỉ quà mới sinh nhân vật).
+7. Bấm **Đợt dồn dập** vài lần: đủ 40 người, người cũ nhường chỗ dần; overlay vẫn mượt. Để yên vài phút ở **Rất đông**:
+   người không tương tác quá 3 phút lần lượt đi ra khỏi màn hình.
+8. Bấm **F5** trên overlay: nhân vật hiện ngay ở chỗ làm (không đi vào lại từ đầu).
+
+**l) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
 Lệnh này xóa dữ liệu thử và chạy một chuỗi sự kiện mẫu. Màn hình in từng giai đoạn, từng hạng mục vừa xong, kèm các bảng xếp hạng.
 
 ---
@@ -560,8 +613,23 @@ Mục `toast` (thông báo quà): `sec` (4) = hiện bao nhiêu giây; `mergeSec
 `ratdongTopPercent` (10) và `windowSec` (300) = phòng rất đông chỉ hiện quà thuộc top 10% trong 5 phút.
 Mục `heartGoal` (mục tiêu tim): `targets` = các nấc theo chế độ; `reward` = tên phần thưởng hiện trong `{reward}` (mặc định "màn múa lân");
 `festivalSec` (14) = múa lân bao lâu. Chữ trong ô sự kiện: `labels.events.heartGoal`, `labels.events.heartGoalDone`; dòng "+công": `labels.plusPoints`.
-Ảnh vật phẩm trong thông báo quà: `gifts.tiers[].icon`.
-Mục `characters`: `heightMap` (54) = một người cao bao nhiêu đơn vị bản đồ; `maxCharacters` (40) = tối đa bao nhiêu nhân vật cùng lúc (dùng từ 4d).
+Ảnh vật phẩm trong thông báo quà: `gifts.tiers[].icon`. Hiệu ứng trên bản đồ của từng mức suy từ ảnh vật phẩm
+(gạch, bó gỗ, xe trâu, voi, chuông, tượng); muốn đổi thì thêm `"effect"` vào mức đó, một trong `brick`, `logs`, `cart`,
+`elephant`, `bell`, `statue`. Mức có `statue` (mặc định từ 5.000 xu) là mức đặt tượng ghi danh.
+
+Mục `characters` (nhân vật người xem, SPEC 9 và 9A):
+- `heightMap` (54) = một người cao bao nhiêu đơn vị bản đồ; `maxCharacters` (40) = tối đa bao nhiêu nhân vật cùng lúc.
+- `spawn` = khi nào sinh nhân vật, theo từng chế độ: `onJoin` (vào phòng là có), `likes` / `comments` = đủ bao nhiêu tim /
+  bình luận trong phiên thì có (`0` = không sinh theo cách đó). Tặng quà luôn có nhân vật.
+  Mặc định: vắng `onJoin`; vừa 1 tim hoặc 1 bình luận; đông 50 tim hoặc 3 bình luận; rất đông chỉ quà.
+- `idleMin` = bao nhiêu phút không tương tác thì đi ra (vắng 30, vừa 10, đông 5, rất đông 3); `bigGiverCoins` (1000) và
+  `bigGiverIdleMin` (10) = phòng rất đông, người đã tặng từ 1.000 xu trong phiên được ở 10 phút.
+- `topWindowSec` (600) = phòng rất đông giữ chỗ cho người tặng nhiều nhất trong bao nhiêu giây gần đây.
+- `leaveGapSec` (2) = mỗi bao nhiêu giây cho một người hết giờ đi ra; `boostSec` (4) = thả tim thì làm nhanh hơn bao lâu;
+  `maxVehicles` (3) = số xe trâu, voi chạy cùng lúc.
+- Chữ bay lên trên đầu khi thả tim, bình luận: `labels.actorPlus` (mặc định `+{points} {unit}`).
+
+Mục `honor` (tượng ghi danh): `rotateSec` (20) = nhiều tượng hơn số ô thì mỗi bao nhiêu giây đổi lượt tượng.
 
 File `config.json` cũ của bản tháp (có mục `tower`, tên tầng, các khóa `floor1WidthPx`, `towerTaper`, `towerCenterX`, `towerBaseY`
 trong mục `overlay`…) được game **tự dọn** ở lần chạy đầu, phần mình đã chỉnh khác được giữ nguyên.

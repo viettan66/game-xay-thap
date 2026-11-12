@@ -156,6 +156,9 @@ export class CameraDirector {
   private pose: Pose | null = null;
   private shakeT = Infinity;
   private ceremonyFocus: MapRect | null = null;
+  /** Lia ngắn tới một chỗ rồi quay về (quà lớn: tượng mới ở ô ghi danh, mục 8). */
+  private peekFocus: MapRect | null = null;
+  private peekLeft = 0;
 
   /** Admin bấm hoặc game gọi. Đang lễ thì không chen overview / tour vào. */
   request(mode: Exclude<CameraMode, 'site'>, focus?: MapRect | null): void {
@@ -169,6 +172,17 @@ export class CameraDirector {
 
   shake(): void {
     this.shakeT = 0;
+  }
+
+  /** Lia ngắn tới `focus` trong `sec` giây rồi quay về hạng mục đang xây. Chỉ khi đang ở chế độ thường (site). */
+  peek(focus: MapRect, sec: number): void {
+    if (this.mode !== 'site') return;
+    this.peekFocus = focus;
+    this.peekLeft = sec;
+  }
+
+  get peeking(): boolean {
+    return this.peekFocus !== null && this.peekLeft > 0;
   }
 
   /** Lần cập nhật tới đặt camera thẳng vào chỗ (mở overlay, trang thử đổi hạng mục). */
@@ -195,12 +209,19 @@ export class CameraDirector {
       case 'ceremony':
         return ceremonyCamera(inp.map, this.ceremonyFocus ?? inp.focus, inp.view, inp.cfg, t);
       default:
-        return siteCamera(inp.map, inp.focus, inp.view, inp.cfg);
+        return siteCamera(inp.map, this.peeking ? this.peekFocus : inp.focus, inp.view, inp.cfg);
     }
   }
 
   update(dt: number, inp: CameraInput): MapCamera {
     // Hẹn giờ tự động (theo chế độ độ đông, 0 = không tự động); chỉ đếm khi đang ở site.
+    if (this.peekLeft > 0) {
+      this.peekLeft -= dt;
+      if (this.peekLeft <= 0 || this.mode !== 'site') {
+        this.peekLeft = 0;
+        this.peekFocus = null;
+      }
+    }
     if (this.mode === 'site') {
       this.sinceOverview += dt;
       this.sinceTour += dt;

@@ -2,6 +2,7 @@
 // main.ts gọi hàm này; test cũng gọi để chạy server thật trên cổng ngẫu nhiên.
 
 import type { AddressInfo } from 'node:net';
+import { giftEffect } from '../shared/characters.js';
 import { AbbotDirector } from './abbot/director.js';
 import { dbGreetStore } from './abbot/greeted.js';
 import { createApp } from './app.js';
@@ -121,6 +122,8 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
           points: r.score.points,
           coins: ev.type === 'gift' ? Math.max(0, ev.coinValueEach) * Math.max(0, ev.count) : 0,
           allocations: r.progress?.allocations ?? [],
+          platformId: ev.user.platformId,
+          effect: ev.type === 'gift' ? giftEffect(core.config.gifts.tiers, Math.max(0, ev.coinValueEach) * Math.max(0, ev.count)) : null,
         });
       }
       if (r.progress) broadcaster.progress(r.progress.transitions);
@@ -172,6 +175,8 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
     try {
       core.updateCrowd();
       abbot.tick();
+      // Nhân vật hết giờ đi ra dần (mục 9, 9A).
+      if (core.roster.tick(core.now())) broadcaster.markDirty();
     } catch (e) {
       o.logger.error('Lỗi khi chạy nhịp trụ trì', e);
     }

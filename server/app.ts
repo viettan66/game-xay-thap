@@ -58,6 +58,8 @@ export function buildStatus({ core, live }: Pick<AppDeps, 'core' | 'live'>) {
     sim: live.simState(),
     crowd: core.crowd.info(core.now()),
     goal: core.goals.info(),
+    // Nhân vật người xem đang có trên bản đồ và số tượng ghi danh (mục 9).
+    characters: { count: core.roster.size, max: cfg.characters.maxCharacters, honors: overlay.honors.length },
     // Nhóm thoại chưa có câu đã duyệt: live thật thì lúc đó im lặng (mục 9C).
     dialogueWarnings: unverifiedGroups(core.configStore.getDialogues().groups),
     scenarios: SCENARIO_KEYS.map((k) => ({ key: k, label: SCENARIOS[k].label })),

@@ -2,6 +2,7 @@
 // Mỗi sự kiện được xử lý trong MỘT transaction (user + contributions + state cùng lúc, mục 6).
 // Trạng thái công trình luôn đọc từ DB, nên tắt máy bật lại vẫn đúng hạng mục, đúng giai đoạn, đúng phần trăm.
 
+import { statueMinCoins } from '../../shared/characters.js';
 import { computeMultiplier, type GameEventDef, type MultiplierInfo } from '../../shared/events.js';
 import { scoreEvent, type ScoreResult } from '../../shared/points.js';
 import {
@@ -44,6 +45,8 @@ export interface ProcessResult {
   multiplier: MultiplierInfo | null;
   /** Kết quả cộng vào công trình (null nếu không có điểm hoặc công trình đã xong). */
   progress: ApplyResult | null;
+  /** Quà đủ mức "tượng": mã tượng võ tướng đá vừa ghi vào ô ghi danh (mục 9). */
+  honorId?: number | null;
 }
 
 export interface RepricePreview {
@@ -136,6 +139,7 @@ function prepareStatements(db: DB) {
       `INSERT INTO events (ts, session_id, platform_id, type, source_event_id, payload_json, base_points, multiplier, points, item_id, stage_index, note)
        VALUES (@ts, @sid, @pid, @type, @sourceId, @payload, @base, @mult, @points, @itemId, @stageIndex, @note)`,
     ),
+    insertHonor: db.prepare('INSERT INTO honor_statues (platform_id, event_id, coins, created_at) VALUES (@pid, @eventId, @coins, @ts)'),
   };
 }
 
@@ -293,8 +297,18 @@ export class GameEngine {
       if (score.capUsedDelta > 0) this.q.addCap.run({ day, pid, delta: score.capUsedDelta });
       if (score.commentCounted) this.q.setLastComment.run(ev.ts, pid);
 
+      // Quà đủ mức "tượng" (mặc định 5.000 xu một lần tặng): tượng võ tướng đá mang tên người tặng, lưu vĩnh viễn (mục 9).
+      let honorId: number | null = null;
+      if (ev.type === 'gift') {
+        const coins = Math.max(0, ev.coinValueEach) * Math.max(0, ev.count);
+        const min = statueMinCoins(cfg.gifts.tiers);
+        if (min !== null && coins > 0 && coins >= min) {
+          honorId = Number(this.q.insertHonor.run({ pid, eventId: seq, coins, ts: ev.ts }).lastInsertRowid);
+        }
+      }
+
       this.persist(progress?.state ?? before, progress, ev.ts, score.points);
-      return { status: score.points > 0 ? 'counted' : 'zero', eventRowId: seq, score, multiplier, progress };
+      return { status: score.points > 0 ? 'counted' : 'zero', eventRowId: seq, score, multiplier, progress, honorId };
     })();
   }
 

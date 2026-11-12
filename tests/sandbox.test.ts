@@ -68,6 +68,8 @@ describe('xây thử', () => {
       points: 10,
       coins: 0,
       allocations: [{ itemId: 'gac_chuong', stageIndex: 0, points: 10, from: 0, cost: gac.stages[0]!.cost }],
+      platformId: '',
+      effect: null,
     });
     expect(sb.view().stagePoints).toBe(10);
     expect(sb.view().totalPoints).toBe(10);

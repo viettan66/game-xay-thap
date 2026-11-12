@@ -52,7 +52,8 @@ export const SCENARIOS: Record<ScenarioKey, ScenarioDef> = {
 
 export const SCENARIO_KEYS = Object.keys(SCENARIOS) as ScenarioKey[];
 
-export const FIRE_KINDS = ['gift_small', 'gift_medium', 'gift_large', 'like_1000', 'comment', 'join', 'burst'] as const;
+// Nút bắn quà theo từng mức hiệu ứng (mục 9): gạch (1 xu), bó gỗ (30), xe trâu (100), voi (500), chuông (1.000), tượng (5.000).
+export const FIRE_KINDS = ['gift_small', 'gift_logs', 'gift_medium', 'gift_elephant', 'gift_large', 'gift_statue', 'like_1000', 'comment', 'join', 'burst'] as const;
 export type FireKind = (typeof FIRE_KINDS)[number];
 
 interface GiftDef {
@@ -72,6 +73,8 @@ const GIFTS: GiftDef[] = [
   { id: 'corgi', name: 'Corgi', coins: 299, weight: 4, combo: false },
   { id: 'money_gun', name: 'Money Gun', coins: 500, weight: 3, combo: false },
   { id: 'galaxy', name: 'Galaxy', coins: 1000, weight: 2, combo: false },
+  // Chỉ bắn bằng nút (không có trong quà ngẫu nhiên).
+  { id: 'castle', name: 'Castle', coins: 5000, weight: 0, combo: false },
 ];
 
 const COMMENTS = [
@@ -262,10 +265,16 @@ export class SimulatorAdapter extends BaseAdapter {
     switch (kind) {
       case 'gift_small':
         return this.emitGift(user, GIFTS[0]!, 1 + Math.floor(this.rng() * 5));
+      case 'gift_logs':
+        return this.emitGift(user, GIFTS[2]!, 1);
       case 'gift_medium':
         return this.emitGift(user, GIFTS[3]!, 1);
+      case 'gift_elephant':
+        return this.emitGift(user, GIFTS[5]!, 1);
       case 'gift_large':
         return this.emitGift(user, GIFTS[6]!, 1);
+      case 'gift_statue':
+        return this.emitGift(user, GIFTS[7]!, 1);
       case 'like_1000':
         return this.emitEvent({ type: 'like', user, count: 1000, ts: this.now() });
       case 'comment':

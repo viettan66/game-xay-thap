@@ -1,15 +1,25 @@
 // Bản đồ quần thể chùa: nền ghép + công trình cắt từ ảnh + lớp tiền cảnh.
 // Lớp từ sau ra trước (mục 8): nền → công trình nền (sân, hồ, tường) → công trình theo baseY → tiền cảnh → hiệu ứng.
 // Hạng mục đã xong hiện đủ ảnh; hạng mục đang xây được XÂY TỪNG MẢNH (build/builder.ts, mục 7); chưa xây thì ẩn.
-// Camera (camera.ts, R4): site / overview / tour / ceremony, chuyển mượt, rung khi quà lớn.
+// Camera (camera.ts, R4): site / overview / tour / ceremony, chuyển mượt, rung khi quà lớn, lia ngắn tới tượng mới.
+// Nhân vật, xe trâu, voi, chuông, tượng (chars/, giai đoạn 4d) vẽ chung lớp với công trình, sắp theo chân (zIndex = y),
+// để người đi sau công trình bị che, đi trước thì đè lên; chữ trên đầu vẽ ở lớp màn hình.
 // Thiếu ảnh nào thì bỏ qua, không crash.
 
 import { Container, Rectangle, Sprite, Texture, type Renderer } from 'pixi.js';
-import { drawOrder, floorBand, itemRect, textureKey, type MapBuilding, type MapManifest, type MapRect } from '../../../shared/map.js';
-import type { CameraConfig, CameraMode, PiecesConfig, ProgressView, ServerMessage } from '../../../shared/protocol.js';
+import { buildingOf, drawOrder, floorBand, itemRect, textureKey, type MapBuilding, type MapManifest, type MapRect } from '../../../shared/map.js';
+import type { ActorInfo, CameraConfig, CameraMode, CharactersConfig, HonorInfo, PiecesConfig, ProgressView, ServerMessage } from '../../../shared/protocol.js';
 import type { Art } from '../art.js';
 import { Builder, type BuilderStats, type BuildSite } from '../build/builder.js';
 import { CameraDirector, type CamView } from '../camera.js';
+import { carryOf, workKind } from '../chars/sprites.js';
+import { loiterPoints, type Pt, type SiteGeom } from '../chars/spots.js';
+import { CharactersView } from '../chars/view.js';
+
+/** Ground (sân, hồ, tường, san nền) luôn vẽ dưới mọi công trình đứng và nhân vật. */
+const GROUND_Z = -1_000_000;
+/** Lia ngắn tới tượng mới bao nhiêu giây. */
+const PEEK_SEC = 4.5;
 
 /** Mã hạng mục cổng tam quan: điểm dừng của camera tour (mục 8). */
 const TOUR_TARGET_ID = 'tam_quan';
@@ -29,6 +39,7 @@ export const DEFAULT_CAMERA: CameraConfig = {
 interface Piece {
   itemId: string;
   sprite: Sprite;
+  z: number;
 }
 
 export class MapView {
@@ -44,6 +55,9 @@ export class MapView {
   private readonly director = new CameraDirector();
   private cameraCfg: CameraConfig = DEFAULT_CAMERA;
   private complex: MapRect = { x: 0, y: 0, w: 1, h: 1 };
+  /** Nhân vật, xe, chuông, tượng (giai đoạn 4d). */
+  readonly chars: CharactersView;
+  private loiterCache: { key: string; pts: Pt[] } = { key: '', pts: [] };
   /** Gọi khi mảnh cuối của một giai đoạn đã đặt xong (sau này mở lễ, giai đoạn 5). */
   onStageDone: (itemId: string, stageIndex: number, itemDone: boolean) => void = () => {};
 
@@ -61,11 +75,64 @@ export class MapView {
           this.onStageDone(itemId, stage, itemDone);
         },
         attach: (site) => this.attach(site),
+        carry: (actorId, prop) => this.chars.carryFor(actorId, carryOf(prop)),
+        source: () => this.chars.handNear(),
       },
       () => this.world.scale.x,
     );
+    this.buildings.sortableChildren = true;
     this.world.addChild(this.tiles, this.buildings, this.fg, this.builder.fxLayer);
-    this.container.addChild(this.world);
+    this.chars = new CharactersView(this.buildings, this.builder.fxLayer);
+    this.chars.setContext({
+      site: () => this.siteGeom(),
+      siteZ: () => {
+        const id = this.builder.displayStage()?.itemId;
+        const b = id && this.map ? buildingOf(this.map, id)?.building : null;
+        return b ? b.baseY + 0.5 : 0;
+      },
+      kind: () => {
+        const d = this.builder.displayStage();
+        const st = d ? this.progress?.items.find((i) => i.id === d.itemId)?.stages[d.stage] : null;
+        return workKind(st?.build);
+      },
+      material: () => carryOf(this.builder.siteGeometry()?.prop ?? 'gach'),
+      dropAtPile: () => this.builder.bumpPile(),
+      view: () => this.visibleRect(),
+      toScreen: (x, y) => ({ x: this.world.x + x * this.world.scale.x, y: this.world.y + y * this.world.scale.y }),
+      peek: (rect) => this.director.peek(rect, PEEK_SEC),
+    });
+    this.container.addChild(this.world, this.chars.screen);
+  }
+
+  /** Khung bản đồ đang hiện trong vùng khung hình (tọa độ bản đồ). */
+  private visibleRect(): MapRect {
+    const k = this.world.scale.x || 1;
+    // Vùng khung hình (giữa vùng an toàn trên và khu comment dưới): nhân vật đi vào từ mép vùng này, chữ chỉ hiện trong vùng này.
+    const v = this.view;
+    return { x: (v.left - this.world.x) / k, y: (v.top - this.world.y) / k, w: (v.right - v.left) / k, h: (v.bottom - v.top) / k };
+  }
+
+  /** Công trường đang xây cho nhân vật: chỗ đứng, giàn giáo, đống vật liệu, chỗ chờ dọc lối đi. */
+  private siteGeom(): SiteGeom | null {
+    const g = this.builder.siteGeometry();
+    if (!g || !this.map) return null;
+    if (this.loiterCache.key !== g.itemId) {
+      const r = g.rect;
+      const top = Math.min(r.y + r.h * 0.4, g.baseY - 120);
+      const area = { x: r.x - 160, y: top, w: r.w + 320, h: g.baseY + 220 - top };
+      this.loiterCache = { key: g.itemId, pts: loiterPoints(this.map.paths ?? [], area) };
+    }
+    return { key: g.itemId, rect: g.rect, baseY: g.baseY, flat: g.flat, floor: g.floor, ledgers: g.ledgers, pile: g.pile, loiter: this.loiterCache.pts };
+  }
+
+  /** Nhân vật người xem đang có (server quyết định), thông số nhân vật, đơn vị công. */
+  setActors(list: ActorInfo[], cfg: CharactersConfig, unit: string): void {
+    this.chars.setActors(list, cfg, unit);
+  }
+
+  /** Tượng võ tướng đá ở ô ghi danh. */
+  setHonors(list: HonorInfo[]): void {
+    this.chars.setHonors(list);
   }
 
   get ready(): boolean {
@@ -119,6 +186,7 @@ export class MapView {
   }
 
   setArt(art: Art): void {
+    this.chars.clear();
     for (const layer of [this.tiles, this.buildings, this.fg]) layer.removeChildren().forEach((c) => c.destroy());
     this.pieces = [];
     this.map = art.manifest?.map ?? null;
@@ -140,12 +208,14 @@ export class MapView {
       s.position.set(0, t.y);
       this.tiles.addChild(s);
     }
-    for (const b of drawOrder(map.buildings)) {
+    drawOrder(map.buildings).forEach((b, i) => {
       const base = tex(b.file);
-      if (!base) continue;
-      if (b.items.length === 1) this.addPiece(b.items[0]!, base, b.x, b.y);
-      else this.addBands(b, base);
-    }
+      if (!base) return;
+      // Sắp lớp: nền luôn dưới cùng (theo thứ tự), công trình đứng theo đường chân (baseY), xen với nhân vật.
+      const z = b.layer === 'ground' ? GROUND_Z + i : b.baseY;
+      if (b.items.length === 1) this.addPiece(b.items[0]!, base, b.x, b.y, z);
+      else this.addBands(b, base, z);
+    });
     for (const b of map.buildings) {
       if (!b.fg) continue;
       const t = tex(b.fg.file);
@@ -156,23 +226,25 @@ export class MapView {
       this.fg.addChild(s);
     }
     this.refreshVisibility();
+    this.chars.setArt(art);
   }
 
-  private addPiece(itemId: string, texture: Texture, x: number, y: number): void {
+  private addPiece(itemId: string, texture: Texture, x: number, y: number, z: number): void {
     const sprite = new Sprite(texture);
     sprite.position.set(x, y);
     sprite.visible = false;
+    sprite.zIndex = z;
     this.buildings.addChild(sprite);
-    this.pieces.push({ itemId, sprite });
+    this.pieces.push({ itemId, sprite, z });
   }
 
   /** Bảo tháp: mỗi tầng một dải cắt ra từ cùng một ảnh. */
-  private addBands(b: MapBuilding, base: Texture): void {
+  private addBands(b: MapBuilding, base: Texture, z: number): void {
     b.items.forEach((itemId, k) => {
       const { top, bottom } = floorBand(b, k);
       const h = Math.max(1, Math.round(bottom - top));
       const frame = new Rectangle(0, Math.round(top - b.y), base.width, Math.min(h, base.height - Math.round(top - b.y)));
-      this.addPiece(itemId, new Texture({ source: base.source, frame }), b.x, Math.round(top));
+      this.addPiece(itemId, new Texture({ source: base.source, frame }), b.x, Math.round(top), z);
     });
   }
 
@@ -180,6 +252,8 @@ export class MapView {
   private attach(site: BuildSite): void {
     const piece = this.pieces.find((p) => p.itemId === site.target.itemId);
     const idx = piece ? this.buildings.getChildIndex(piece.sprite) + 1 : this.buildings.children.length;
+    // Ngay trên ảnh của hạng mục đó: giàn giáo, đống vật liệu che công trình nhưng người đứng trước vẫn đè lên.
+    site.container.zIndex = (piece?.z ?? site.target.building.baseY) + 0.25;
     this.buildings.addChildAt(site.container, idx);
     this.refreshVisibility();
   }
@@ -204,6 +278,7 @@ export class MapView {
 
   contribution(msg: Extract<ServerMessage, { type: 'contribution' }>): void {
     this.builder.onContribution(msg);
+    this.chars.contribution(msg);
   }
 
   /** Dựng lại ngay theo tiến độ hiện có, camera đặt thẳng vào chỗ (trang thử /tools/build). */
@@ -240,5 +315,6 @@ export class MapView {
     });
     this.world.scale.set(cam.scale);
     this.world.position.set(cam.x, cam.y);
+    this.chars.tick(dtSec);
   }
 }

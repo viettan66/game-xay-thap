@@ -84,3 +84,32 @@ export function stageContributorCount(db: DB, itemId: string, stageIndex: number
       .get(itemId, stageIndex)?.n ?? 0
   );
 }
+
+export interface HonorRow {
+  id: number;
+  /** Thứ tự tượng, đếm từ 0 (quyết định ô ghi danh: ô thứ seq % số ô). */
+  seq: number;
+  platformId: string;
+  nickname: string;
+  coins: number;
+  createdAt: number;
+}
+
+/** Tượng võ tướng đá ở ô ghi danh (mục 9): `limit` tượng mới nhất, xếp theo thứ tự đặt. */
+export function honorStatues(db: DB, limit: number): HonorRow[] {
+  return db
+    .prepare<[number], HonorRow>(
+      `SELECT * FROM (
+         SELECT h.id, ROW_NUMBER() OVER (ORDER BY h.id) - 1 AS seq, h.platform_id AS platformId, u.nickname,
+                h.coins, h.created_at AS createdAt
+         FROM honor_statues h JOIN users u ON u.platform_id = h.platform_id
+         ORDER BY h.id DESC LIMIT ?
+       ) ORDER BY id`,
+    )
+    .all(limit);
+}
+
+/** Tổng công tích lũy của một người (để tính danh hiệu). */
+export function userTotalPoints(db: DB, platformId: string): number {
+  return db.prepare<[string], { p: number }>('SELECT total_points AS p FROM users WHERE platform_id = ?').get(platformId)?.p ?? 0;
+}

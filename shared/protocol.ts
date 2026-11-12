@@ -1,6 +1,7 @@
 // Dữ liệu server gửi xuống overlay qua WebSocket (đường /ws).
 // Khi overlay kết nối (hoặc kết nối lại), server gửi ngay toàn bộ trạng thái hiện tại (mục 12 SPEC).
 
+import type { GiftEffect } from './characters.js';
 import type { PartKey } from './parts.js';
 import type { Allocation, ItemSize, ProgressTransition, StageBuild } from './project.js';
 
@@ -126,6 +127,37 @@ export interface EventLine {
   endsAt: number | null;
 }
 
+/** Nhân vật của một người xem đang có trên bản đồ (mục 9). Server quyết định ai có; overlay lo đi lại, làm việc. */
+export interface ActorInfo {
+  /** platformId (kiểu nhân vật cố định theo mã này: lookFor). */
+  id: string;
+  /** Tên đã lọc từ cấm (overlay cắt bớt khi dài hơn 14 ký tự). */
+  name: string;
+  /** Danh hiệu theo tổng công, chưa đạt mức nào thì null. */
+  title: string | null;
+}
+
+/** Tượng võ tướng đá ở ô ghi danh (mục 9). */
+export interface HonorInfo {
+  id: number;
+  /** Thứ tự tượng, đếm từ 0: đặt ở ô seq % số ô. */
+  seq: number;
+  name: string;
+}
+
+/** Thông số nhân vật cho overlay (config characters, honor, labels.actorPlus). */
+export interface CharactersConfig {
+  /** Một người cao bao nhiêu đơn vị bản đồ. */
+  heightMap: number;
+  /** Thả tim / bình luận: làm nhanh hơn trong bao nhiêu giây. */
+  boostSec: number;
+  /** Chữ "+công" bay lên trên đầu nhân vật: {points}, {unit}. */
+  plusText: string;
+  maxVehicles: number;
+  /** Nhiều tượng hơn số ô ghi danh: mỗi bao nhiêu giây đổi lượt. */
+  honorRotateSec: number;
+}
+
 export interface OverlayState {
   profile: 'production' | 'test';
   /** "CHẾ ĐỘ THỬ" (giả lập), "DIỄN TẬP" (hồ sơ test với live thật), hoặc null (live thật). */
@@ -150,6 +182,11 @@ export interface OverlayState {
   pieces: PiecesConfig;
   /** Câu lấy từ kho thoại (config/dialogues.json) mà overlay tự hiện. */
   texts: { pieceBurst: string[] };
+  /** Nhân vật người xem đang có trên bản đồ (mục 9, 9A). */
+  actors: ActorInfo[];
+  /** Tượng võ tướng đá ở ô ghi danh, theo thứ tự đặt (tối đa vài trăm tượng mới nhất). */
+  honors: HonorInfo[];
+  characters: CharactersConfig;
   /** Đổi khi assets/manifest.json đổi (ví dụ vừa lưu ở /tools/assets): overlay tải lại ảnh. */
   assetsVersion: string;
 }
@@ -168,6 +205,10 @@ export type ServerMessage =
       /** Tổng số xu của quà (0 với tim, bình luận): quà lớn thì camera rung nhẹ. */
       coins: number;
       allocations: Allocation[];
+      /** Người góp (để nhân vật của họ làm nhanh hơn, khiêng vật liệu). */
+      platformId: string;
+      /** Quà: hiệu ứng theo mức (gạch, bó gỗ, xe trâu, voi, chuông, tượng); tim, bình luận: null. */
+      effect: GiftEffect | null;
     }
   /** Trụ trì nói một câu (text null: chỉ đổi dáng). verified false: câu chưa duyệt (chỉ có ở giả lập, viền cam). */
   | { type: 'say'; text: string | null; pose: AbbotPose; durationMs: number; verified: boolean }

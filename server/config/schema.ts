@@ -4,6 +4,7 @@
 import { z } from 'zod';
 import { GROUND_LOOKS, ITEM_SIZES, PIECE_LOOKS, projectProblems, type ProjectFile } from '../../shared/project.js';
 import { PART_KEYS } from '../../shared/parts.js';
+import { GIFT_EFFECTS } from '../../shared/characters.js';
 import { DIALOGUE_VARS, varsOf } from '../dialogue/rules.js';
 
 z.config(z.locales.vi());
@@ -96,6 +97,8 @@ export const configSchema = z.strictObject({
           dialogue: z.string().regex(/^gift_[a-z0-9_]+$/, 'Nhóm thoại cảm ơn quà phải bắt đầu bằng gift_'),
           /** Ảnh vật phẩm trong thông báo quà, ví dụ "items/brick" (thiếu thì bỏ qua). */
           icon: z.string().optional(),
+          /** Hiệu ứng trên bản đồ (mục 9). Bỏ trống thì suy từ ảnh vật phẩm. */
+          effect: z.enum(GIFT_EFFECTS).optional(),
         }),
       )
       .min(1)
@@ -141,10 +144,34 @@ export const configSchema = z.strictObject({
     maxQueue: int(1).max(50),
     progressMarks: z.array(z.number().min(1).max(99)),
   }),
-  // Nhân vật trên bản đồ (mục 9): cao bao nhiêu đơn vị bản đồ (khoảng 1/8 chiều cao gác chuông), tối đa bao nhiêu người.
+  // Nhân vật trên bản đồ (mục 9, 9A): cao bao nhiêu đơn vị bản đồ (khoảng 1/8 chiều cao gác chuông), tối đa bao nhiêu người,
+  // khi nào sinh nhân vật cho người xem, bao lâu không tương tác thì rời màn hình (theo chế độ độ đông).
   characters: z.strictObject({
     heightMap: z.number().min(10).max(300),
     maxCharacters: int(1).max(200),
+    /** Sinh nhân vật khi: vào phòng (onJoin), đủ số tim / số comment trong phiên (0 = không sinh theo cách đó). Quà luôn sinh. */
+    spawn: z.strictObject(
+      Object.fromEntries(
+        (['vang', 'vua', 'dong', 'ratdong'] as const).map((t) => [t, z.strictObject({ onJoin: z.boolean(), likes: int(0), comments: int(0) })]),
+      ) as Record<'vang' | 'vua' | 'dong' | 'ratdong', z.ZodObject<{ onJoin: z.ZodBoolean; likes: z.ZodNumber; comments: z.ZodNumber }>>,
+    ),
+    /** Không tương tác quá bao nhiêu phút thì đi ra khỏi màn hình. */
+    idleMin: perCrowd(24 * 60),
+    /** Phòng rất đông: người tặng từ bigGiverCoins xu (trong phiên) được ở lại bigGiverIdleMin phút. */
+    bigGiverCoins: int(1),
+    bigGiverIdleMin: z.number().min(0).max(24 * 60),
+    /** "Gần đây" khi xét người tặng nhiều nhất để giữ chỗ (phòng rất đông), giây. */
+    topWindowSec: z.number().min(10).max(24 * 3600),
+    /** Mỗi bao nhiêu giây cho một người hết giờ đi ra (rời dần, không biến mất cùng lúc). */
+    leaveGapSec: z.number().min(0).max(60),
+    /** Thả tim / bình luận: nhân vật làm nhanh hơn trong bao nhiêu giây. */
+    boostSec: z.number().min(0).max(60),
+    /** Số xe trâu, voi chạy cùng lúc tối đa (thừa thì chờ lượt). */
+    maxVehicles: int(1).max(20),
+  }),
+  // Ô ghi danh (tượng võ tướng đá, mục 9): nhiều tượng hơn số ô thì mỗi bao nhiêu giây đổi sang lượt tượng khác.
+  honor: z.strictObject({
+    rotateSec: z.number().min(3).max(3600),
   }),
   // Lọc tên (mục 8): tên chứa từ cấm hiện labels.anonymousName.
   nameFilter: z.strictObject({
@@ -188,6 +215,8 @@ export const configSchema = z.strictObject({
     }),
     // Phòng đông: quà nhỏ chỉ hiện "+công" kèm tên: {points}, {unit}, {name}.
     plusPoints: z.string().min(1),
+    // Chữ bay lên trên đầu nhân vật khi thả tim, bình luận được tính công (mục 9): {points}, {unit}.
+    actorPlus: z.string().min(1),
   }),
 });
 

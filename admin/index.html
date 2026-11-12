@@ -95,6 +95,8 @@
     <h2 style="margin-top:18px">Độ đông của phòng</h2>
     <div class="row"><span>Chế độ</span><b id="crowd-tier"></b></div>
     <div class="row"><span>Người tương tác 5 phút</span><span id="crowd-inter"></span></div>
+    <div class="row"><span>Nhân vật trên bản đồ</span><span id="chars-count"></span></div>
+    <div class="row"><span>Tượng võ tướng (ô ghi danh)</span><span id="honor-count"></span></div>
     <div class="buttons" id="crowd-box">
       <button data-crowd="auto">Tự động</button>
       <button data-crowd="vang">Vắng</button>
@@ -168,9 +170,12 @@
       <span id="sim-state" class="note"></span>
     </div>
     <div class="buttons">
-      <button data-fire="gift_small">Quà nhỏ (1 xu)</button>
-      <button data-fire="gift_medium">Quà vừa (100 xu)</button>
-      <button data-fire="gift_large">Quà lớn (1.000 xu)</button>
+      <button data-fire="gift_small" title="Nhân vật khiêng một viên gạch">Quà 1 xu (gạch)</button>
+      <button data-fire="gift_logs" title="Nhân vật vác bó gỗ">Quà 30 xu (bó gỗ)</button>
+      <button data-fire="gift_medium" title="Xe trâu chở đá vào công trường">Quà 100 xu (xe trâu)</button>
+      <button data-fire="gift_elephant" title="Voi chở gỗ vào công trường">Quà 500 xu (voi)</button>
+      <button data-fire="gift_large" title="Đúc đại hồng chung">Quà 1.000 xu (chuông)</button>
+      <button data-fire="gift_statue" title="Tượng võ tướng đá ở ô ghi danh (lưu vĩnh viễn trong hồ sơ test)">Quà 5.000 xu (tượng)</button>
       <button data-fire="like_1000">1.000 tim</button>
       <button data-fire="comment">Comment</button>
       <button data-fire="join">Người vào phòng</button>
@@ -240,6 +245,10 @@
       const TIER = { vang: 'Vắng', vua: 'Vừa', dong: 'Đông', ratdong: 'Rất đông' };
       $('crowd-tier').textContent = s.crowd.forced ? `${TIER[s.crowd.tier]} (ép tay; tự tính: ${TIER[s.crowd.raw]})` : `${TIER[s.crowd.tier]} (tự động${s.crowd.raw !== s.crowd.tier ? `, đang chuyển sang ${TIER[s.crowd.raw]}` : ''})`;
       $('crowd-inter').textContent = fmt(s.crowd.interactors);
+      if (s.characters) {
+        $('chars-count').textContent = `${fmt(s.characters.count)} / ${fmt(s.characters.max)}`;
+        $('honor-count').textContent = fmt(s.characters.honors);
+      }
       for (const b of document.querySelectorAll('[data-crowd]')) b.classList.toggle('on', b.dataset.crowd === (s.crowd.forced || 'auto'));
     }
     $('mode-box').hidden = s.profile !== 'test';

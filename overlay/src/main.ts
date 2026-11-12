@@ -2,6 +2,7 @@
 // Dùng làm Browser Source trong OBS: http://127.0.0.1:3000/overlay/ (1080×1920).
 // Phím D: bật/tắt khung debug vùng an toàn; khi bật, kéo thả ảnh chụp màn hình live vào để so (ui/screenshot.ts).
 //
+// 4d (mục 9): nhân vật người xem đi lại, làm việc trên bản đồ; xe trâu, voi, chuông, tượng theo mức quà (chars/).
 // R4 (mục 8 SPEC): camera site / overview / tour / ceremony (camera.ts, trong scene/map.ts) và giao diện mới
 // (hudLayout.ts + ui/hud.ts): thanh tiến độ góc trên phải, bảng xếp hạng thu gọn tự dời chỗ không che công trình,
 // ô sự kiện, bản đồ thu nhỏ (mặc định chỉ khi thu toàn cảnh), dải miễn trừ nhỏ.
@@ -153,6 +154,9 @@ async function boot(): Promise<void> {
     mapView.setView(h.rects.view);
     mapView.setCameraConfig(s.camera);
     mapView.update(s.progress);
+    // Nhân vật người xem, tượng ở ô ghi danh (giai đoạn 4d). Server cũ chưa gửi thì bỏ qua.
+    if (s.actors && s.characters) mapView.setActors(s.actors, s.characters, s.labels.pointUnit);
+    if (s.honors) mapView.setHonors(s.honors);
     h.progress.update(s.progress, s.hud.opacity.progress);
     h.board.update(s.boards, s.labels.pointUnit, s.hud.opacity.board, s.hud.boardRotateSec);
     h.events.update(s.eventBox, s.serverNow, s.hud.opacity.events);
@@ -192,6 +196,8 @@ async function boot(): Promise<void> {
   });
   // Mở overlay với ?debug=1 thì bật sẵn khung debug.
   if (new URLSearchParams(location.search).has('debug')) setDebug(true);
+  // Số liệu cho kiểm tra tự động (đếm nhân vật, xe đang chạy…): window.__overlay.stats().
+  (window as unknown as { __overlay: unknown }).__overlay = { stats: () => ({ ...mapView.chars.stats(), camera: mapView.cameraMode }) };
 
   let slow = 0;
   let dim = 1;

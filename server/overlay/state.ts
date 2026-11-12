@@ -5,8 +5,11 @@ import { displayName } from '../../shared/names.js';
 import type { Board, BoardRow, CrowdTier, EventLine, OverlayState, PiecesConfig } from '../../shared/protocol.js';
 import { assetsVersion } from '../assets/manifest.js';
 import type { GameCore } from '../core.js';
-import { topItem, topSession, topTotal } from '../game/queries.js';
+import { honorStatues, topItem, topSession, topTotal } from '../game/queries.js';
 import { fillTemplate } from '../../shared/project.js';
+
+/** Số tượng ghi danh gửi xuống overlay (mới nhất); ô ghi danh xoay vòng trong số này. */
+export const HONOR_LIMIT = 300;
 
 // Bảng xếp hạng thu gọn (mục 8): top 5 mỗi bảng.
 export const BOARD_LIMITS = { session: 5, total: 5, item: 5 } as const;
@@ -129,6 +132,15 @@ export function buildOverlayState(core: GameCore, badge: string | null): Overlay
     },
     // Live thật (kể cả diễn tập) chỉ dùng câu đã duyệt; giả lập (nhãn CHẾ ĐỘ THỬ) dùng tất cả.
     texts: { pieceBurst: dialogueLines(core, 'piece_burst', badge !== cfg.labels.testBadge) },
+    actors: core.roster.list().map((m) => ({ id: m.id, name: m.name, title: m.title })),
+    honors: honorStatues(core.db, HONOR_LIMIT).map((h) => ({ id: h.id, seq: h.seq, name: overlayName(core, h.nickname) })),
+    characters: {
+      heightMap: cfg.characters.heightMap,
+      boostSec: cfg.characters.boostSec,
+      plusText: cfg.labels.actorPlus,
+      maxVehicles: cfg.characters.maxVehicles,
+      honorRotateSec: cfg.honor.rotateSec,
+    },
     assetsVersion: assetsVersion(core.rootDir),
   };
 }
