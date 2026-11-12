@@ -8,7 +8,7 @@
 
 import { Container, Rectangle, Sprite, Texture, type Renderer } from 'pixi.js';
 import { buildingOf, drawOrder, floorBand, itemRect, textureKey, type MapBuilding, type MapManifest, type MapRect } from '../../../shared/map.js';
-import type { ActorInfo, CameraConfig, CameraMode, CharactersConfig, HonorInfo, PiecesConfig, ProgressView, ServerMessage } from '../../../shared/protocol.js';
+import type { ActorInfo, AnonCrowd, CameraConfig, CameraMode, CharactersConfig, HonorInfo, PiecesConfig, ProgressView, ServerMessage } from '../../../shared/protocol.js';
 import type { Art } from '../art.js';
 import { Builder, type BuilderStats, type BuildSite } from '../build/builder.js';
 import { CameraDirector, type CamView } from '../camera.js';
@@ -100,6 +100,10 @@ export class MapView {
       view: () => this.visibleRect(),
       toScreen: (x, y) => ({ x: this.world.x + x * this.world.scale.x, y: this.world.y + y * this.world.scale.y }),
       peek: (rect) => this.director.peek(rect, PEEK_SEC),
+      screenView: () => this.view,
+      // Bị công trình đang hiện che: nằm trong bề ngang ảnh, phía sau đường chân, thấp hơn mép trên một chút.
+      hidden: (p) =>
+        this.pieces.some((q) => q.sprite.visible && q.z > GROUND_Z / 2 && p.x >= q.sprite.x && p.x <= q.sprite.x + q.sprite.width && p.y >= q.sprite.y + q.sprite.height * 0.15 && p.y < q.z),
     });
     this.container.addChild(this.world, this.chars.screen);
   }
@@ -128,6 +132,12 @@ export class MapView {
   /** Nhân vật người xem đang có (server quyết định), thông số nhân vật, đơn vị công. */
   setActors(list: ActorInfo[], cfg: CharactersConfig, unit: string): void {
     this.chars.setActors(list, cfg, unit);
+    this.builder.flags = cfg.flags;
+  }
+
+  /** Đám đông vô danh ở phòng rất đông (null ở chế độ khác). */
+  setAnonCrowd(c: AnonCrowd | null): void {
+    this.chars.setAnonCrowd(c);
   }
 
   /** Tượng võ tướng đá ở ô ghi danh. */

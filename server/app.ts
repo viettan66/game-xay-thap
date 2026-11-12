@@ -21,7 +21,9 @@ import type { ServerMessage } from '../shared/protocol.js';
 import { vnStamp } from '../shared/time.js';
 import { ConfigError } from './config/store.js';
 import type { StateBroadcaster } from './overlay/broadcaster.js';
-import { buildOverlayState, dialogueLines } from './overlay/state.js';
+import { actorList, buildOverlayState, dialogueLines } from './overlay/state.js';
+import { excludedIds } from './game/returning.js';
+import { foldForMatch } from '../shared/names.js';
 
 export interface AppDeps {
   core: GameCore;
@@ -58,8 +60,15 @@ export function buildStatus({ core, live }: Pick<AppDeps, 'core' | 'live'>) {
     sim: live.simState(),
     crowd: core.crowd.info(core.now()),
     goal: core.goals.info(),
-    // Nhân vật người xem đang có trên bản đồ và số tượng ghi danh (mục 9).
-    characters: { count: core.roster.size, max: cfg.characters.maxCharacters, honors: overlay.honors.length },
+    // Nhân vật trên bản đồ (mục 9, 9B): người xem, người góp công cũ, dân phu (tính chung tối đa maxCharacters); số tượng ghi danh.
+    characters: {
+      count: core.roster.size,
+      returning: core.roster.returningList().length,
+      npcs: core.roster.npcList().length,
+      total: core.roster.total,
+      max: cfg.characters.maxCharacters,
+      honors: overlay.honors.length,
+    },
     // Nhóm thoại chưa có câu đã duyệt: live thật thì lúc đó im lặng (mục 9C).
     dialogueWarnings: unverifiedGroups(core.configStore.getDialogues().groups),
     scenarios: SCENARIO_KEYS.map((k) => ({ key: k, label: SCENARIOS[k].label })),
@@ -167,6 +176,44 @@ export function createApp(deps: AppDeps): express.Express {
     else if (tier === 'vang' || tier === 'vua' || tier === 'dong' || tier === 'ratdong') core.setCrowdForced(tier);
     else throw new BadRequest('Chế độ không hợp lệ');
     ok(res);
+  });
+
+  // ---- Người góp công cũ (mục 9B, 11): đang hiện, danh sách không hiện lại, tìm người xem theo tên ----
+  const userName = (pid: string) =>
+    core.db.prepare<[string], { nickname: string }>('SELECT nickname FROM users WHERE platform_id = ?').get(pid)?.nickname ?? pid;
+  const returningPayload = () => {
+    const actors = actorList(core, live.badge() !== core.config.labels.testBadge);
+    return {
+      showing: actors.filter((a) => a.kind === 'returning').map((a) => ({ platformId: a.id, name: a.name, note: a.note ?? null })),
+      excluded: excludedIds(core.db).map((pid) => ({ platformId: pid, name: userName(pid) })),
+    };
+  };
+  app.get('/api/returning', (_req, res) => {
+    res.json(returningPayload());
+  });
+  app.post('/api/returning/exclude', (req, res) => {
+    const b = body(req);
+    if (typeof b.platformId !== 'string' || !b.platformId) throw new BadRequest('Thiếu mã người xem');
+    core.setReturningExcluded(b.platformId, b.exclude !== false);
+    broadcaster.markDirty();
+    res.json(returningPayload());
+  });
+  // Tìm người xem đã có công theo tên (không phân biệt hoa thường, dấu): tối đa 20 người, nhiều công trước.
+  app.get('/api/users/search', (req, res) => {
+    const q = foldForMatch(String(req.query.q ?? ''));
+    if (!q) return void res.json({ users: [] });
+    const rows = core.db
+      .prepare<[], { platformId: string; nickname: string; points: number }>(
+        'SELECT platform_id AS platformId, nickname, total_points AS points FROM users WHERE total_points > 0 ORDER BY total_points DESC LIMIT 5000',
+      )
+      .all();
+    const excluded = new Set(excludedIds(core.db));
+    res.json({
+      users: rows
+        .filter((r) => foldForMatch(r.nickname).includes(q) || foldForMatch(r.platformId).includes(q))
+        .slice(0, 20)
+        .map((r) => ({ ...r, excluded: excluded.has(r.platformId) })),
+    });
   });
 
   // ---- Trang Kho thoại (mục 9C) ----

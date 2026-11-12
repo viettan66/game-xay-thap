@@ -1,7 +1,7 @@
 // Dữ liệu server gửi xuống overlay qua WebSocket (đường /ws).
 // Khi overlay kết nối (hoặc kết nối lại), server gửi ngay toàn bộ trạng thái hiện tại (mục 12 SPEC).
 
-import type { GiftEffect } from './characters.js';
+import type { CharLook, GiftEffect } from './characters.js';
 import type { PartKey } from './parts.js';
 import type { Allocation, ItemSize, ProgressTransition, StageBuild } from './project.js';
 
@@ -127,14 +127,23 @@ export interface EventLine {
   endsAt: number | null;
 }
 
-/** Nhân vật của một người xem đang có trên bản đồ (mục 9). Server quyết định ai có; overlay lo đi lại, làm việc. */
+/**
+ * Nhân vật đang có trên bản đồ (mục 9, 9B). Server quyết định ai có; overlay lo đi lại, làm việc.
+ * - viewer: người xem đang tương tác; returning: người góp công cũ (khung tên bạc mờ, dòng phụ "đã góp …");
+ * - npc: dân phu không tên (nhãn chỉ là nghề, hoặc không có nhãn), làm chậm hơn.
+ */
 export interface ActorInfo {
-  /** platformId (kiểu nhân vật cố định theo mã này: lookFor). */
+  /** platformId (kiểu nhân vật cố định theo mã này: lookFor); dân phu: "npc-<số>". */
   id: string;
-  /** Tên đã lọc từ cấm (overlay cắt bớt khi dài hơn 14 ký tự). */
+  kind: 'viewer' | 'returning' | 'npc';
+  /** Tên đã lọc từ cấm (overlay cắt bớt khi dài hơn 14 ký tự); dân phu: nhãn nghề, rỗng = không có nhãn. */
   name: string;
   /** Danh hiệu theo tổng công, chưa đạt mức nào thì null. */
   title: string | null;
+  /** Kiểu nhân vật do server chọn (dân phu); không có thì theo lookFor(id). */
+  look?: CharLook;
+  /** Dòng phụ (người góp công cũ: "đã góp Cổng tam quan"). */
+  note?: string | null;
 }
 
 /** Tượng võ tướng đá ở ô ghi danh (mục 9). */
@@ -156,6 +165,18 @@ export interface CharactersConfig {
   maxVehicles: number;
   /** Nhiều tượng hơn số ô ghi danh: mỗi bao nhiêu giây đổi lượt. */
   honorRotateSec: number;
+  /** Dân phu làm chậm hơn người xem (hệ số tốc độ). */
+  npcPace: number;
+  /** Công trường tự chạy (mục 9B), theo chế độ hiện tại: chim bay ngang, xe trâu NPC mỗi bao nhiêu giây (0 = không), cờ bay. */
+  birdsEverySec: number;
+  npcCartEverySec: number;
+  flags: boolean;
+}
+
+/** Đám đông vô danh ở phòng rất đông (bảng 9A): bao nhiêu hình người nhỏ, chữ bộ đếm "N người đang góp sức". */
+export interface AnonCrowd {
+  sprites: number;
+  text: string;
 }
 
 export interface OverlayState {
@@ -187,6 +208,8 @@ export interface OverlayState {
   /** Tượng võ tướng đá ở ô ghi danh, theo thứ tự đặt (tối đa vài trăm tượng mới nhất). */
   honors: HonorInfo[];
   characters: CharactersConfig;
+  /** Chỉ ở phòng rất đông, còn lại null. */
+  anonCrowd: AnonCrowd | null;
   /** Đổi khi assets/manifest.json đổi (ví dụ vừa lưu ở /tools/assets): overlay tải lại ảnh. */
   assetsVersion: string;
 }

@@ -151,3 +151,37 @@ export function loiterPoints(paths: { points: [number, number][] }[], area: MapR
   }
   return out;
 }
+
+/**
+ * Chỗ đứng của đám đông: điểm dọc lối đi trong khung nhìn, tránh khung công trình đang xây; phía sau công trình (y nhỏ hơn
+ * đường chân) trước, gần công trình trước. Thiếu chỗ thì đứng thành nhóm quanh các điểm đã có. Hàm thuần, có test.
+ */
+export function crowdSpots(candidates: Pt[], site: { rect: MapRect; baseY: number } | null, n: number, hidden: (p: Pt) => boolean = () => false): Pt[] {
+  if (n <= 0 || !candidates.length) return [];
+  // Bỏ chỗ bị công trình đã xây che khuất (đứng sau thân công trình thì không ai thấy).
+  const visible = candidates.filter((p) => !hidden(p));
+  const pool0 = visible.length ? visible : candidates;
+  const free = site
+    ? pool0.filter((p) => !(p.x > site.rect.x - 30 && p.x < site.rect.x + site.rect.w + 30 && p.y > site.rect.y - 20 && p.y < site.baseY + 40))
+    : pool0;
+  const list = free.length ? free : pool0;
+  const cx = site ? site.rect.x + site.rect.w / 2 : 0;
+  const cy = site ? site.baseY : 0;
+  const ranked = [...list].sort((a, b) => {
+    const ba = site && a.y < site.baseY ? 0 : 1;
+    const bb = site && b.y < site.baseY ? 0 : 1;
+    return ba - bb || Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy);
+  });
+  const out: Pt[] = [];
+  for (let round = 0; out.length < n && round < 4; round++) {
+    for (const p of ranked) {
+      if (out.length >= n) break;
+      // Vòng sau: đứng lệch sang cạnh người đã đứng (thành nhóm).
+      const i = out.length;
+      const jx = ((i * 37) % 11) - 5;
+      const off = { x: jx + (round === 0 ? 0 : (round % 2 ? 1 : -1) * 15 * Math.ceil(round / 2)), y: ((i * 23) % 7) - 3 + round * 2 };
+      out.push({ x: Math.round(p.x + off.x), y: Math.round(p.y + off.y) });
+    }
+  }
+  return out;
+}

@@ -1,5 +1,7 @@
-// Lớp nhân vật trên bản đồ (mục 9, giai đoạn 4d): nhân vật người xem, chữ trên đầu, "+công", xe trâu, voi, chuông,
-// tượng võ tướng đá. Danh sách ai có nhân vật do server quyết định (state.actors); lớp này lo đi vào, làm việc, đi ra.
+// Lớp nhân vật trên bản đồ (mục 9, 9B; giai đoạn 4d, 4e): nhân vật người xem, người góp công cũ (khung tên bạc), dân phu
+// không tên (nhãn nghề, làm chậm hơn), chữ trên đầu, "+công", xe trâu, voi, chuông, tượng võ tướng đá, đám đông vô danh
+// (phòng rất đông), chim bay, xe trâu NPC. Danh sách ai có nhân vật do server quyết định (state.actors); lớp này lo đi vào,
+// làm việc, đi ra.
 // Nhân vật, xe, tượng vẽ trong lớp sắp theo chân (cùng lớp với công trình, mục 8: xen kẽ đúng thứ tự trước sau);
 // chữ vẽ ở lớp màn hình, kích thước cố định.
 
@@ -7,14 +9,16 @@ import { Container, Graphics, Sprite, type Text } from 'pixi.js';
 import { lookFor, type CharLook, type GiftEffect } from '../../../shared/characters.js';
 import type { MapManifest, MapRect } from '../../../shared/map.js';
 import { buildGraph, mainEntry, route, type PathGraph, type PathPoint } from '../../../shared/paths.js';
-import type { ActorInfo, CharactersConfig, HonorInfo } from '../../../shared/protocol.js';
+import type { ActorInfo, AnonCrowd, CharactersConfig, HonorInfo } from '../../../shared/protocol.js';
 import { fillTemplate } from '../../../shared/project.js';
 import type { Art } from '../art.js';
 import { Actor, type ActorWorld } from './actor.js';
 import { CharArt, placeholderFigure } from './charArt.js';
 import { Effects, type FxWorld } from './effects.js';
 import { HonorView } from './honors.js';
-import { actorTag, plusText, type NameTag } from './labels.js';
+import { Birds, NpcCartTimer } from './ambient.js';
+import { AnonCrowdView } from './crowd.js';
+import { actorTag, npcTag, plusText, returningTag, type NameTag } from './labels.js';
 import { scaffoldShare, workActions, type CarryKind, type WorkKind } from './sprites.js';
 import { SpotPool, type Pt, type SiteGeom } from './spots.js';
 
@@ -32,7 +36,22 @@ export interface CharsContext {
   toScreen(x: number, y: number): Pt;
   /** Lia camera tới một chỗ rồi quay về (tượng mới). */
   peek(rect: MapRect): void;
+  /** Vùng khung hình trên màn hình (giữa vùng an toàn trên và khu comment), cho chim bay. */
+  screenView(): { left: number; right: number; top: number; bottom: number };
+  /** Điểm (tọa độ bản đồ) bị thân một công trình đang hiện che khuất. */
+  hidden(p: Pt): boolean;
 }
+
+/** Thứ tự ưu tiên hiện chữ khi chồng nhau: người xem, rồi người góp công cũ, rồi dân phu. */
+const TAG_RANK: Record<ActorInfo['kind'], number> = { viewer: 0, returning: 1, npc: 2 };
+
+function makeTag(info: ActorInfo): NameTag {
+  if (info.kind === 'npc') return npcTag(info.name);
+  if (info.kind === 'returning') return returningTag(info.id, info.name, info.note ?? null);
+  return actorTag(info.id, info.name, info.title);
+}
+
+const tagKey = (i: ActorInfo) => `${i.kind}|${i.name}|${i.title ?? ''}|${i.note ?? ''}`;
 
 interface Entry {
   actor: Actor;
@@ -71,7 +90,20 @@ export class CharactersView {
   private readonly pool = new SpotPool();
   private poolSig = '';
   private ctx: CharsContext | null = null;
-  private cfg: CharactersConfig = { heightMap: 54, boostSec: 4, plusText: '+{points} {unit}', maxVehicles: 3, honorRotateSec: 20 };
+  private cfg: CharactersConfig = {
+    heightMap: 54,
+    boostSec: 4,
+    plusText: '+{points} {unit}',
+    maxVehicles: 3,
+    honorRotateSec: 20,
+    npcPace: 0.75,
+    birdsEverySec: 0,
+    npcCartEverySec: 0,
+    flags: true,
+  };
+  private readonly crowd: AnonCrowdView;
+  private readonly birds = new Birds();
+  private readonly cartTimer = new NpcCartTimer();
   private unit = '';
   private clock = 0;
   private loaded = false;
@@ -87,8 +119,9 @@ export class CharactersView {
     private readonly depth: Container,
     private readonly fxLayer: Container,
   ) {
-    this.screen.addChild(this.fxScreen, this.tagLayer, this.plusLayer);
+    this.screen.addChild(this.birds.container, this.fxScreen, this.tagLayer, this.plusLayer);
     this.honors = new HonorView(depth, this.fxScreen, null);
+    this.crowd = new AnonCrowdView(depth, this.fxScreen);
     this.honors.onReveal = (r) => this.ctx?.peek(r);
     const self = this;
     this.world = {
@@ -137,6 +170,7 @@ export class CharactersView {
       this.effects = new Effects(this.depth, this.fxScreen, art, this.art, this.fxWorld());
     } else this.effects.setArt(art, this.art);
     this.honors.setArt(this.art, this.map?.honorSlots ?? []);
+    this.crowd.setArt(this.art);
     if (this.map) {
       for (const info of this.infos) this.spawn(info, true);
       if (this.infos.length) this.loaded = true;
@@ -203,22 +237,26 @@ export class CharactersView {
     for (const info of list) {
       const en = this.entries.get(info.id);
       if (!en) this.spawn(info, snap);
-      else if (en.info.name !== info.name || en.info.title !== info.title) {
+      else if (tagKey(en.info) !== tagKey(info)) {
+        // Đổi tên, danh hiệu, hoặc người góp công cũ vừa tương tác (thành người xem thật): giữ nhân vật, đổi chữ.
         en.info = info;
+        en.actor.pace = info.kind === 'npc' ? this.cfg.npcPace : 1;
         en.tag.root.destroy({ children: true });
-        en.tag = actorTag(info.id, info.name, info.title);
+        en.tag = makeTag(info);
         this.tagLayer.addChild(en.tag.root);
       }
     }
   }
 
   private spawn(info: ActorInfo, snap: boolean): void {
-    const look = lookFor(info.id);
+    const look = info.look ?? lookFor(info.id);
     const actor = new Actor(info.id, look, this.art?.frames.get(look), this.entry ?? { x: 0, y: 0 });
+    // Dân phu NPC làm chậm hơn người xem (mục 9B).
+    actor.pace = info.kind === 'npc' ? this.cfg.npcPace : 1;
     actor.enter(this.world, snap);
     const sprite = new Sprite();
     this.depth.addChild(sprite);
-    const tag = actorTag(info.id, info.name, info.title);
+    const tag = makeTag(info);
     this.tagLayer.addChild(tag.root);
     this.entries.set(info.id, { actor, sprite, ph: null, tag, info, ping: this.clock });
   }
@@ -232,6 +270,11 @@ export class CharactersView {
 
   setHonors(list: HonorInfo[]): void {
     this.honors.setHonors(list, this.cfg.heightMap);
+  }
+
+  /** Đám đông vô danh (chỉ phòng rất đông). */
+  setAnonCrowd(c: AnonCrowd | null): void {
+    this.crowd.set(c);
   }
 
   /** Một lần có công của người xem: làm nhanh hơn, "+công", hiệu ứng quà theo mức. */
@@ -290,8 +333,35 @@ export class CharactersView {
   }
 
   /** Số nhân vật đang hiện (kể cả đang đi ra), xe đang chạy (cho trang công cụ, test). */
-  stats(): { actors: number; leaving: number; vehicles: number; honors: number } {
-    return { actors: this.entries.size, leaving: this.leaving.length, vehicles: this.effects?.busy ?? 0, honors: this.honors.count };
+  stats(): { actors: number; leaving: number; vehicles: number; honors: number; npcs: number; returning: number; crowd: number; birds: number } {
+    const kinds = [...this.entries.values()].map((e) => e.info.kind);
+    return {
+      actors: this.entries.size,
+      leaving: this.leaving.length,
+      vehicles: this.effects?.busy ?? 0,
+      honors: this.honors.count,
+      npcs: kinds.filter((k) => k === 'npc').length,
+      returning: kinds.filter((k) => k === 'returning').length,
+      crowd: this.crowd.count,
+      birds: this.birds.flying,
+    };
+  }
+
+  /** Vị trí từng nhân vật (cho kiểm tra tự động). */
+  debug(): { id: string; kind: string; x: number; y: number; leaving: boolean; working: boolean }[] {
+    return [...this.entries.values(), ...this.leaving].map((e) => ({
+      id: e.info.id,
+      kind: e.info.kind,
+      x: Math.round(e.actor.x),
+      y: Math.round(e.actor.y),
+      leaving: e.actor.leaving,
+      working: e.actor.working,
+    }));
+  }
+
+  /** Cho một đàn chim bay qua ngay (trang thử). */
+  launchBirds(): void {
+    if (this.ctx) this.birds.launch(this.ctx.screenView());
   }
 
   tick(dt: number): void {
@@ -340,6 +410,17 @@ export class CharactersView {
       p.text.alpha = k < 0.7 ? 1 : (1 - k) / 0.3;
     }
     this.honors.tick(dt, this.cfg.honorRotateSec, (x, y) => ctx.toScreen(x, y), view, this.fxLayer);
+    this.crowd.tick(dt, {
+      paths: this.map.paths ?? [],
+      site: site ? { key: site.key, rect: site.rect, baseY: site.baseY } : null,
+      view,
+      toScreen: (x, y) => ctx.toScreen(x, y),
+      heightMap: h,
+      hidden: (p) => ctx.hidden(p),
+    });
+    // Công trường tự chạy (mục 9B): chim bay ngang, xe trâu NPC chở vật liệu chạy qua (không tên người tặng).
+    this.birds.tick(dt, this.cfg.birdsEverySec, ctx.screenView());
+    if (this.cartTimer.tick(dt, this.cfg.npcCartEverySec) && site) this.effects?.vehicle('cart', null);
   }
 
   private draw(en: Entry, p: ReturnType<Actor['pose']>, h: number, siteZ: number): void {
@@ -369,13 +450,15 @@ export class CharactersView {
     const h = this.cfg.heightMap;
     // Tên người tặng trên xe, voi, chuông được ưu tiên; chữ nhân vật chồng lên thì ẩn bớt.
     const placed: { x: number; y: number; w: number; h: number }[] = this.effects?.tagRects() ?? [];
-    const order = [...all].sort((a, b) => Number(a.actor.leaving) - Number(b.actor.leaving) || b.ping - a.ping);
+    const order = [...all].sort(
+      (a, b) => Number(a.actor.leaving) - Number(b.actor.leaving) || TAG_RANK[a.info.kind] - TAG_RANK[b.info.kind] || b.ping - a.ping,
+    );
     for (const en of order) {
       const a = en.actor;
       const on = a.x > view.x - 30 && a.x < view.x + view.w + 30 && a.y > view.y && a.y < view.y + view.h + h;
       const s = ctx.toScreen(a.x, a.y - h * 1.08);
       const r = { x: s.x - en.tag.w / 2 - 2, y: s.y - en.tag.h - 2, w: en.tag.w + 4, h: en.tag.h + 4 };
-      const free = on && !placed.some((q) => r.x < q.x + q.w && q.x < r.x + r.w && r.y < q.y + q.h && q.y < r.y + r.h);
+      const free = on && en.tag.w > 0 && !placed.some((q) => r.x < q.x + q.w && q.x < r.x + r.w && r.y < q.y + q.h && q.y < r.y + r.h);
       if (free) placed.push(r);
       const want = free ? 1 : 0;
       en.tag.vis += (want - en.tag.vis) * Math.min(1, dt * 8);
@@ -390,5 +473,7 @@ export class CharactersView {
     this.destroyAll();
     this.effects?.clear();
     this.honors.clear();
+    this.crowd.clear();
+    this.birds.clear();
   }
 }

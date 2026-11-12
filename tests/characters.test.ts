@@ -229,8 +229,8 @@ describe('tượng võ tướng đá, trạng thái gửi xuống overlay', () =
     gift(2, 100, 'g1'); // 10.000 công
     const s = buildOverlayState(core, null);
     expect(s.actors).toEqual([
-      { id: 'p1', name: 'Bé Na', title: null },
-      { id: 'p2', name: 'Người xem 2', title: 'Thợ cả' },
+      { id: 'p1', kind: 'viewer', name: 'Bé Na', title: null },
+      { id: 'p2', kind: 'viewer', name: 'Người xem 2', title: 'Thợ cả' },
     ]);
     expect(s.characters).toMatchObject({ heightMap: 54, boostSec: 4, plusText: '+{points} {unit}', honorRotateSec: 20 });
   });

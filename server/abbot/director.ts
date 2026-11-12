@@ -118,6 +118,18 @@ export class AbbotDirector {
     this.enqueue({ groups: ['goal_reached'], vars: { target: target.toLocaleString('vi-VN'), reward: this.d.config().heartGoal.reward }, pose: 'welcome', priority: PRIORITY.event });
   }
 
+  /**
+   * Người góp công cũ đang hiện trên bản đồ vào phòng và tương tác (mục 9B): lời chào riêng (nhóm returning, {item} = hạng mục
+   * đang xây), và không chào lại như người mới trong phiên này.
+   */
+  onReturning(pid: string, name: string): void {
+    const session = this.d.sessionId();
+    if (session !== null) this.d.greeted.add(session, pid);
+    this.pendingGreet = this.pendingGreet.filter((g) => g.pid !== pid);
+    const p = this.d.progress();
+    this.enqueue({ key: `greet:${pid}`, groups: ['returning'], vars: { name, item: p.item.name, stage: p.stage.name }, pose: 'wave', priority: PRIORITY.greet });
+  }
+
   onSessionEnd(): void {
     this.queue = this.queue.filter((q) => q.priority >= PRIORITY.event);
     this.enqueue({ groups: ['session_end'], vars: {}, pose: 'pray', priority: PRIORITY.event });

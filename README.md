@@ -13,8 +13,9 @@ mỗi hạng mục qua nhiều giai đoạn thi công.
 > Giai đoạn 4 làm từng phần: đã xong **4a** (chế độ độ đông của phòng, kho thoại, trụ trì nói chuyện trên overlay, tên quà theo mức),
 > **4b** (thông báo quà, mục tiêu tim của phiên với phần thưởng múa lân, trang Kho thoại), **4c** (ảnh nhân vật, xe trâu,
 > voi, tượng võ tướng đá; lối đi, vị trí làm việc, ô ghi danh trên bản đồ; trang `/tools/paths`) và **4d** (nhân vật người xem
-> đi lại, làm việc, khiêng vật liệu trên bản đồ; hiệu ứng quà theo mức: gạch, bó gỗ, xe trâu, voi, đúc chuông, tượng ghi danh).
-> Sắp tới: 4e (dân phu không tên, người góp công cũ, đám đông vô danh).
+> đi lại, làm việc, khiêng vật liệu trên bản đồ; hiệu ứng quà theo mức: gạch, bó gỗ, xe trâu, voi, đúc chuông, tượng ghi danh)
+> và **4e** (dân phu không tên, người góp công cũ, đám đông vô danh ở phòng rất đông, công trường tự chạy: cờ, chim, xe trâu).
+> Giai đoạn 4 đã xong. Sắp tới: giai đoạn 5 (các loại lễ và bia).
 > Chưa kết nối TikTok (giai đoạn 6).
 
 ---
@@ -107,6 +108,26 @@ Trên overlay hiện có:
   - **Tối đa 40 người.** Đầy chỗ thì người ưu tiên thấp nhất nhường chỗ: phòng vừa giữ người tương tác gần nhất, phòng đông
     giữ người tặng quà, phòng rất đông giữ người tặng nhiều nhất trong 10 phút gần đây. Người mới có ưu tiên thấp nhất thì chưa có nhân vật.
   - Tắt game bật lại giữa phiên: nhân vật của những người còn trong giờ tự quay lại.
+- **Dân phu không tên** (SPEC 9B, giai đoạn 4e): nhân vật nền của game, không phải người xem. Phòng vắng 6–8 người, phòng vừa 3–4,
+  phòng đông và rất đông không có. Có cả chú tiểu (chú tiểu chỉ làm dân phu, không bao giờ là nhân vật của người xem).
+  Trên đầu chỉ có nhãn nghề nhỏ, mờ: `Dân phu`, `Thợ mộc`, `Thợ nề` (chú tiểu không có nhãn). Làm việc theo giai đoạn như người xem
+  nhưng chậm hơn. Không góp điểm, không lên bảng xếp hạng, không nói, trụ trì không chào.
+- **Người góp công cũ** (SPEC 9B): người xem **thật** đã có công từ các phiên trước, hiện lại trên công trường để phòng vắng đỡ trống.
+  Phòng vắng 5–10 người, phòng vừa 2–3, đông và rất đông không có. Chọn ngẫu nhiên, ai góp nhiều công thì dễ được chọn hơn,
+  ưu tiên người chưa có mặt trong phiên này. Khác hẳn người xem đang tương tác: **khung tên màu bạc mờ**, avatar mờ,
+  dòng phụ nhỏ `đã góp Cổng tam quan` (hạng mục người đó góp nhiều nhất). Mỗi người ở lại 5–10 phút rồi đổi người khác
+  (người vừa hiện thì 30 phút sau mới được chọn lại). Không tạo sự kiện, không cộng điểm, không được chào như người mới.
+  Nếu chính người đó vào phòng và tim / bình luận / tặng quà: nhân vật đổi sang khung tên thường (người xem thật) và trụ trì
+  chào riêng ("… đã trở lại! Công trường nhớ con lắm."). Ai không muốn hiện lại: trang trạng thái, khung **Người góp công cũ**.
+- **Tối đa 40 nhân vật tính chung** người xem, người góp công cũ và dân phu. Đầy chỗ thì **dân phu rời trước**, rồi người góp công cũ,
+  rồi mới tới người xem thật (theo thứ tự ở trên).
+- **Đám đông vô danh** (chỉ phòng rất đông, bảng 9A): một nhóm hình người nhỏ không tên đứng làm việc quanh công trường
+  (tránh chỗ bị công trình che), kèm bộ đếm `210 người đang góp sức` (số người tương tác 5 phút gần nhất). Càng đông thì nhóm
+  càng nhiều người (mỗi 15 người tương tác thêm một hình, từ 6 đến 24 hình).
+- **Công trường tự chạy** (SPEC 9B), thưa dần khi phòng đông: **cờ đuôi nheo** tung bay ở cột cờ cạnh đống vật liệu và trên
+  hai cột ngoài cùng của giàn giáo; **đàn chim** bay ngang khung hình (vắng khoảng 30 giây một lần, vừa 45, đông 90, rất đông 180);
+  **xe trâu chở vật liệu** chạy vào công trường không có tên người (vắng khoảng 2,5 phút một lần, vừa 4, đông 8, rất đông không có).
+  Ánh sáng đổi theo giờ thật trong ngày làm cùng phần ngày đêm, thời tiết (giai đoạn 5c).
 - **Hiệu ứng quà theo mức** (giá trị một lần tặng, mục 9):
   - dưới 10 xu: nhân vật người tặng **khiêng một viên gạch** ra đống vật liệu; 10–99 xu: **vác bó gỗ**;
   - 100–499 xu: **xe trâu chở đá**, 500–999 xu: **voi chở gỗ**. Xe, voi đi đường chính từ mép dưới màn hình vào tới trước
@@ -465,7 +486,23 @@ Mở cửa sổ lệnh **tại thư mục dự án**: mở thư mục `game-xay-
    người không tương tác quá 3 phút lần lượt đi ra khỏi màn hình.
 8. Bấm **F5** trên overlay: nhân vật hiện ngay ở chỗ làm (không đi vào lại từ đầu).
 
-**l) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
+**l) Giai đoạn 4e: dân phu, người góp công cũ, đám đông vô danh**
+1. Đóng game, nhấp đúp lại `start-test.bat`, mở overlay cạnh trang trạng thái. Khung **Độ đông** bấm **Vắng**.
+2. Khoảng nửa phút đến một phút: **dân phu** lần lượt đi vào (6–8 người), trên đầu chỉ có nhãn nhỏ "Dân phu", "Thợ mộc", "Thợ nề"
+   hoặc không có nhãn (chú tiểu). Dòng **Nhân vật trên bản đồ** ghi rõ số người xem, góp công cũ, dân phu.
+3. **Người góp công cũ** là người đã góp công ở **phiên trước** và đang không có nhân vật trên bản đồ. Dữ liệu thử của mình
+   có sẵn nhiều người như vậy từ các lần thử trước. Nếu chưa thấy ai: bấm **Kết thúc phiên**, đóng cửa sổ game, mở lại
+   `start-test.bat`, bấm **Bắt đầu phiên**, chọn **Vắng**. Người góp công cũ đi vào với **khung tên màu bạc**, dòng phụ "đã góp …".
+   Khung **Người góp công cũ** trên trang trạng thái liệt kê họ.
+4. Bấm **Không hiện lại** cạnh một người: nhân vật đó đi ra ngay, tên chuyển xuống "Danh sách không hiện lại". Bấm **Cho hiện lại** để bỏ.
+   Gõ tên vào ô **Tìm người xem theo tên**, bấm **Tìm**, có thể chặn trước người chưa hiện.
+5. Cờ đuôi nheo bay cạnh đống vật liệu, trên giàn giáo; thỉnh thoảng có đàn chim bay ngang, xe trâu không tên chạy vào đổ vật liệu.
+6. Bấm **Đợt dồn dập** vài lần cho đủ 40 nhân vật: dân phu rời đi trước, rồi đến người góp công cũ.
+7. Bấm **Rất đông**: dân phu, người góp công cũ đi ra dần (vài giây một người). Bấm **1.000 tim** và **Comment** nhiều lần:
+   một **nhóm người nhỏ không tên** hiện quanh công trường, kèm bộ đếm "… người đang góp sức".
+8. Bấm **Vắng** trở lại: đám đông biến mất, dân phu và người góp công cũ quay lại dần.
+
+**m) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
 Lệnh này xóa dữ liệu thử và chạy một chuỗi sự kiện mẫu. Màn hình in từng giai đoạn, từng hạng mục vừa xong, kèm các bảng xếp hạng.
 
 ---
@@ -479,7 +516,7 @@ Các file sau được tạo tự động ở lần chạy đầu, từ bản m�
 | `config\config.json` | Điểm quy đổi, trần ngày, giờ vàng, nhãn chữ trên overlay, danh hiệu, bố cục overlay… |
 | `config\project.json` | **Danh sách hạng mục** theo thứ tự xây, giá, các mẫu giai đoạn (mục 5 của SPEC) |
 | `config\events.json` | Lịch sự kiện dương lịch, âm lịch (Mùng 1, Rằm, Tết…) |
-| `config\dialogues.json` | Kho thoại (mục 9C): thoại trụ trì (`session_start`, `greet_single`, `gift_small`… 15 nhóm) và nhãn `piece_burst`. Xem dưới |
+| `config\dialogues.json` | Kho thoại (mục 9C): thoại trụ trì (`session_start`, `greet_single`, `gift_small`…) và chữ trên bản đồ (`piece_burst`, nhãn nghề dân phu, bộ đếm đám đông…). Xem dưới |
 
 - Mở bằng Notepad để sửa, lưu lại rồi tắt và bật lại game. Từ giai đoạn 7, sửa trực tiếp trên trang admin.
 - Ghi sai thì game không chạy và báo rõ chỗ sai, ví dụ: `items: Hạng mục "tam_quan": không có mẫu giai đoạn "vuaa"`.
@@ -488,7 +525,9 @@ Các file sau được tạo tự động ở lần chạy đầu, từ bản m�
 ### `config\dialogues.json`: kho thoại
 Mỗi nhóm (`session_start`, `greet_single`, `greet_group`, `returning`, `gift_small`, `gift_medium`, `gift_large`, `gift_huge`,
 `gift_thanks_group`, `progress`, `item_complete`, `stage_ritual`, `idle_story`, `idle_howto`, `session_end`, `toast_gift` (chữ thông báo quà),
-`goal_text` (chữ mục tiêu tim), `goal_reached` (trụ trì nói khi đủ tim), `piece_burst`) có:
+`goal_text` (chữ mục tiêu tim), `goal_reached` (trụ trì nói khi đủ tim), `piece_burst`, và từ 4e: `crowd_counter` (bộ đếm đám đông,
+`{count}`), `npc_labels` (nhãn nghề dân phu: **dòng 1 = dân phu, dòng 2 = thợ mộc, dòng 3 = thợ nề**; tắt dòng nào thì loại đó
+không có nhãn), `returning_subtitle` (dòng phụ người góp công cũ, `{item}`)) có:
 - `mode`: `shuffle` (xáo trộn, hết một vòng mới lặp lại), `sequential` (lần lượt), `random` (ngẫu nhiên theo `weight`);
 - `cooldownSec`: nghỉ ít nhất bao nhiêu giây giữa hai lần nói cùng nhóm;
 - `lines`: danh sách câu, mỗi câu `{ "text", "tiers", "weight", "enabled", "verified" }`.
@@ -630,6 +669,18 @@ Mục `characters` (nhân vật người xem, SPEC 9 và 9A):
 - Chữ bay lên trên đầu khi thả tim, bình luận: `labels.actorPlus` (mặc định `+{points} {unit}`).
 
 Mục `honor` (tượng ghi danh): `rotateSec` (20) = nhiều tượng hơn số ô thì mỗi bao nhiêu giây đổi lượt tượng.
+
+Mục `npc` (dân phu không tên, SPEC 9B): `count` = số người theo chế độ `[ít nhất, nhiều nhất]` (mặc định vắng `[6, 8]`, vừa `[3, 4]`,
+đông và rất đông `[0, 0]`); `fillGapSec` (6) = mỗi bao nhiêu giây thêm một người; `pace` (0,75) = làm chậm hơn người xem;
+`showRole` (true) = hiện nhãn nghề.
+
+Mục `returning` (người góp công cũ): `count` theo chế độ (vắng `[5, 10]`, vừa `[2, 3]`, đông và rất đông `[0, 0]`);
+`staySec` (`[300, 600]`) = ở lại 5–10 phút; `fillGapSec` (8) = mỗi bao nhiêu giây thêm một người; `cooldownMin` (30) = đã hiện thì
+bao nhiêu phút sau mới được chọn lại. Danh sách không hiện lại lưu trong dữ liệu của hồ sơ (sửa trên trang trạng thái).
+
+Mục `ambient` (công trường tự chạy, đám đông vô danh): `birdsEverySec`, `npcCartEverySec` = mỗi khoảng bao nhiêu giây có đàn chim,
+xe trâu NPC theo chế độ (`0` = không có); `flags` (true) = cờ bay; `crowdPerSprite` (15) và `crowdSprites` (`[6, 24]`) = phòng rất đông
+cứ bao nhiêu người tương tác thì thêm một hình người trong đám đông, ít nhất và nhiều nhất bao nhiêu hình.
 
 File `config.json` cũ của bản tháp (có mục `tower`, tên tầng, các khóa `floor1WidthPx`, `towerTaper`, `towerCenterX`, `towerBaseY`
 trong mục `overlay`…) được game **tự dọn** ở lần chạy đầu, phần mình đã chỉnh khác được giữ nguyên.

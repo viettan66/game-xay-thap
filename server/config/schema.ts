@@ -20,6 +20,11 @@ const weekdays = z.array(z.number().int().min(0).max(6)).min(1);
 const perCrowd = (max: number) =>
   z.strictObject({ vang: z.number().min(0).max(max), vua: z.number().min(0).max(max), dong: z.number().min(0).max(max), ratdong: z.number().min(0).max(max) });
 
+/** Khoảng [ít nhất, nhiều nhất] theo từng chế độ độ đông. */
+const range = (max: number) =>
+  z.tuple([z.number().int().min(0).max(max), z.number().int().min(0).max(max)]).refine((r) => r[0] <= r[1], { message: 'Số đầu phải nhỏ hơn hoặc bằng số sau' });
+const perCrowdRange = (max: number) => z.strictObject({ vang: range(max), vua: range(max), dong: range(max), ratdong: range(max) });
+
 export const configSchema = z.strictObject({
   liveSource: z.enum(['tiktok-connector', 'simulator', 'euler-ws', 'tikfinity']),
   channelUsername: z.string(),
@@ -168,6 +173,34 @@ export const configSchema = z.strictObject({
     boostSec: z.number().min(0).max(60),
     /** Số xe trâu, voi chạy cùng lúc tối đa (thừa thì chờ lượt). */
     maxVehicles: int(1).max(20),
+  }),
+  // Dân phu NPC không tên (mục 9B, bảng 9A): bao nhiêu người theo chế độ [ít nhất, nhiều nhất], mỗi bao nhiêu giây thêm một
+  // người, làm chậm hơn người xem bao nhiêu (pace), có hiện nhãn nghề (nhóm thoại npc_labels) không.
+  npc: z.strictObject({
+    count: perCrowdRange(40),
+    fillGapSec: z.number().min(0).max(600),
+    pace: z.number().min(0.2).max(1.5),
+    showRole: z.boolean(),
+  }),
+  // Người góp công cũ (mục 9B): người xem thật có công từ phiên trước, chọn ngẫu nhiên theo điểm.
+  returning: z
+    .strictObject({
+      count: perCrowdRange(40),
+      /** Ở lại [ít nhất, nhiều nhất] giây rồi đổi người khác. */
+      staySec: z.tuple([z.number().min(10), z.number().min(10)]),
+      fillGapSec: z.number().min(0).max(600),
+      /** Đã hiện rồi thì bao nhiêu phút sau mới được chọn lại. */
+      cooldownMin: z.number().min(0).max(24 * 60),
+    })
+    .refine((r) => r.staySec[0] <= r.staySec[1], { message: 'staySec: số đầu phải nhỏ hơn hoặc bằng số sau' }),
+  // Công trường tự chạy (mục 9B), giảm dần khi đông: chim bay ngang, xe trâu NPC chở vật liệu (0 = không có), cờ bay.
+  // Đám đông vô danh ở phòng rất đông (bảng 9A): mỗi bao nhiêu người tương tác thì thêm một hình người nhỏ.
+  ambient: z.strictObject({
+    birdsEverySec: perCrowd(24 * 3600),
+    npcCartEverySec: perCrowd(24 * 3600),
+    flags: z.boolean(),
+    crowdPerSprite: z.number().min(1).max(1000),
+    crowdSprites: z.tuple([int(0).max(100), int(0).max(100)]),
   }),
   // Ô ghi danh (tượng võ tướng đá, mục 9): nhiều tượng hơn số ô thì mỗi bao nhiêu giây đổi sang lượt tượng khác.
   honor: z.strictObject({

@@ -2,7 +2,8 @@
 
 import { computeMultiplier, goldenHourEndsAt } from '../../shared/events.js';
 import { displayName } from '../../shared/names.js';
-import type { Board, BoardRow, CrowdTier, EventLine, OverlayState, PiecesConfig } from '../../shared/protocol.js';
+import type { ActorInfo, AnonCrowd, Board, BoardRow, CrowdTier, EventLine, OverlayState, PiecesConfig } from '../../shared/protocol.js';
+import type { CharLook } from '../../shared/characters.js';
 import { assetsVersion } from '../assets/manifest.js';
 import type { GameCore } from '../core.js';
 import { honorStatues, topItem, topSession, topTotal } from '../game/queries.js';
@@ -29,6 +30,47 @@ export function overlayName(core: GameCore, raw: string | null | undefined): str
 export function dialogueLines(core: GameCore, group: string, liveOnly: boolean): string[] {
   const g = core.configStore.getDialogues().groups[group];
   return (g?.lines ?? []).filter((l) => l.enabled && (!liveOnly || l.verified)).map((l) => l.text);
+}
+
+/** Dòng đang bật thứ `index` của một nhóm (giữ đúng vị trí dòng, dòng tắt / chưa duyệt khi live thật = null). */
+function lineAt(core: GameCore, group: string, index: number, liveOnly: boolean): string | null {
+  const l = core.configStore.getDialogues().groups[group]?.lines[index];
+  return l && l.enabled && (!liveOnly || l.verified) ? l.text : null;
+}
+
+/** Nhãn nghề của dân phu theo kiểu nhân vật (nhóm npc_labels: dòng 1 dân phu, dòng 2 thợ mộc, dòng 3 thợ nề; chú tiểu không có). */
+export function npcLabel(core: GameCore, look: CharLook, liveOnly: boolean): string {
+  if (!core.config.npc.showRole) return '';
+  const idx = look === 'danphu_nam' || look === 'danphu_nu' ? 0 : look === 'thomoc' ? 1 : look === 'thone' ? 2 : -1;
+  return idx < 0 ? '' : (lineAt(core, 'npc_labels', idx, liveOnly) ?? '');
+}
+
+/** Nhân vật trên bản đồ: người xem, người góp công cũ, dân phu (mục 9, 9B). */
+export function actorList(core: GameCore, liveOnly: boolean): ActorInfo[] {
+  const r = core.roster;
+  const names = new Map(core.project.items.map((i) => [i.id, i.name]));
+  const subtitle = dialogueLines(core, 'returning_subtitle', liveOnly)[0] ?? null;
+  return [
+    ...r.list().map((m): ActorInfo => ({ id: m.id, kind: 'viewer', name: m.name, title: m.title })),
+    ...r.returningList().map((m): ActorInfo => {
+      const item = m.itemId ? names.get(m.itemId) : undefined;
+      return { id: m.id, kind: 'returning', name: m.name, title: null, note: item && subtitle ? fillTemplate(subtitle, { item }) : null };
+    }),
+    ...r.npcList().map((m): ActorInfo => ({ id: m.id, kind: 'npc', name: npcLabel(core, m.look, liveOnly), title: null, look: m.look })),
+  ];
+}
+
+/** Đám đông vô danh (bảng 9A, chỉ phòng rất đông): số hình người theo số người tương tác 5 phút, chữ bộ đếm. */
+export function anonCrowd(core: GameCore, crowd: CrowdTier, liveOnly: boolean): AnonCrowd | null {
+  if (crowd !== 'ratdong') return null;
+  const a = core.config.ambient;
+  const count = core.crowd.info(core.now()).interactors;
+  const [lo, hi] = a.crowdSprites;
+  const tpl = dialogueLines(core, 'crowd_counter', liveOnly)[0];
+  return {
+    sprites: Math.max(lo, Math.min(hi, Math.round(count / a.crowdPerSprite))),
+    text: tpl ? fillTemplate(tpl, { count: count.toLocaleString('vi-VN') }) : '',
+  };
 }
 
 export function buildOverlayState(core: GameCore, badge: string | null): OverlayState {
@@ -132,7 +174,7 @@ export function buildOverlayState(core: GameCore, badge: string | null): Overlay
     },
     // Live thật (kể cả diễn tập) chỉ dùng câu đã duyệt; giả lập (nhãn CHẾ ĐỘ THỬ) dùng tất cả.
     texts: { pieceBurst: dialogueLines(core, 'piece_burst', badge !== cfg.labels.testBadge) },
-    actors: core.roster.list().map((m) => ({ id: m.id, name: m.name, title: m.title })),
+    actors: actorList(core, badge !== cfg.labels.testBadge),
     honors: honorStatues(core.db, HONOR_LIMIT).map((h) => ({ id: h.id, seq: h.seq, name: overlayName(core, h.nickname) })),
     characters: {
       heightMap: cfg.characters.heightMap,
@@ -140,7 +182,12 @@ export function buildOverlayState(core: GameCore, badge: string | null): Overlay
       plusText: cfg.labels.actorPlus,
       maxVehicles: cfg.characters.maxVehicles,
       honorRotateSec: cfg.honor.rotateSec,
+      npcPace: cfg.npc.pace,
+      birdsEverySec: cfg.ambient.birdsEverySec[crowd],
+      npcCartEverySec: cfg.ambient.npcCartEverySec[crowd],
+      flags: cfg.ambient.flags,
     },
+    anonCrowd: anonCrowd(core, crowd, badge !== cfg.labels.testBadge),
     assetsVersion: assetsVersion(core.rootDir),
   };
 }

@@ -50,7 +50,8 @@ interface Flight {
 
 class Vehicle {
   readonly sprite = new Sprite();
-  readonly tag: NameTag;
+  /** Tên người tặng; xe trâu NPC (công trường tự chạy) thì không có. */
+  readonly tag: NameTag | null;
   private line: Polyline;
   private s: number;
   private end: number;
@@ -65,12 +66,12 @@ class Vehicle {
 
   constructor(
     readonly kind: VehicleKind,
-    name: string,
+    name: string | null,
     private readonly w: FxWorld,
     private readonly art: CharArt,
     private readonly fx: Effects,
   ) {
-    this.tag = giftTag(name);
+    this.tag = name ? giftTag(name) : null;
     const pile = w.pile();
     const target = pile ? { x: pile.x + 64, y: pile.y + 22 } : w.front() ?? w.mainEntry();
     const site = w.site();
@@ -256,7 +257,7 @@ function mix(a: number, b: number, k: number): number {
 /** Xe trâu, voi, chuông đang chạy + vật liệu bay. Vẽ trong lớp sắp theo chân (depth); tên người tặng ở lớp màn hình. */
 export class Effects {
   private vehicles: Vehicle[] = [];
-  private queue: { kind: VehicleKind; name: string }[] = [];
+  private queue: { kind: VehicleKind; name: string | null }[] = [];
   private bells: Bell[] = [];
   private flights: Flight[] = [];
   maxVehicles = 3;
@@ -275,15 +276,17 @@ export class Effects {
     this.charArt = charArt;
   }
 
-  vehicle(kind: VehicleKind, name: string): void {
+  /** Xe trâu / voi do quà (có tên người tặng), hoặc xe trâu NPC chạy qua (name = null; chỉ chạy khi còn chỗ trống). */
+  vehicle(kind: VehicleKind, name: string | null): void {
+    if (name === null && this.vehicles.length + this.queue.length >= this.maxVehicles) return;
     if (this.vehicles.length < this.maxVehicles) this.launch(kind, name);
     else if (this.queue.length < QUEUE_MAX) this.queue.push({ kind, name });
   }
 
-  private launch(kind: VehicleKind, name: string): void {
+  private launch(kind: VehicleKind, name: string | null): void {
     const v = new Vehicle(kind, name, this.w, this.charArt, this);
     this.depth.addChild(v.sprite);
-    this.screen.addChild(v.tag.root);
+    if (v.tag) this.screen.addChild(v.tag.root);
     this.vehicles.push(v);
   }
 
@@ -318,7 +321,7 @@ export class Effects {
   /** Khung tên người tặng trên màn hình (chữ nhân vật chồng lên thì nhường). */
   tagRects(): { x: number; y: number; w: number; h: number }[] {
     return [...this.vehicles.map((v) => v.tag), ...this.bells.map((b) => b.tag)]
-      .filter((t) => t.root.visible && t.root.alpha > 0.1)
+      .filter((t): t is NameTag => !!t && t.root.visible && t.root.alpha > 0.1)
       .map((t) => ({ x: t.root.x - t.w / 2 - 2, y: t.root.y - t.h - 2, w: t.w + 4, h: t.h + 4 }));
   }
 
@@ -333,11 +336,11 @@ export class Effects {
       v.update(dt);
       const top = v.top;
       const sp = toScreen(top.x, top.y);
-      v.tag.root.position.set(sp.x, sp.y);
-      v.tag.root.alpha = v.alpha;
+      v.tag?.root.position.set(sp.x, sp.y);
+      if (v.tag) v.tag.root.alpha = v.alpha;
       if (v.done) {
         v.sprite.destroy();
-        v.tag.root.destroy({ children: true });
+        v.tag?.root.destroy({ children: true });
         this.vehicles.splice(i, 1);
       }
     }
@@ -376,7 +379,7 @@ export class Effects {
   clear(): void {
     for (const v of this.vehicles) {
       v.sprite.destroy();
-      v.tag.root.destroy({ children: true });
+      v.tag?.root.destroy({ children: true });
     }
     for (const b of this.bells) {
       b.destroy();

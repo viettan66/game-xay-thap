@@ -105,6 +105,8 @@ export async function startServer(o: ServerOptions): Promise<RunningServer> {
   });
   core.bus.on('sessionStart', () => abbot.onSessionStart());
   core.bus.on('sessionEnd', () => abbot.onSessionEnd());
+  // Người góp công cũ quay lại tương tác: trụ trì chào riêng (mục 9B, nhóm returning).
+  core.bus.on('returning', (m: { id: string; name: string }) => abbot.onReturning(m.id, m.name));
   core.bus.on('crowd', () => broadcaster.markDirty());
   const live: LiveService = new LiveService(core, {
     logger: o.logger,

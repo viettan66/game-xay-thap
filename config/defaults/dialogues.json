@@ -1,5 +1,5 @@
 {
-  "_ghi_chu": "Kho thoại (SPEC mục 9C). Mỗi nhóm có danh sách câu không giới hạn. Câu mẫu của SPEC đã duyệt (verified: true); câu viết thêm chờ chủ dự án duyệt (verified: false): live thật chỉ nói câu đã duyệt, giả lập dùng tất cả.",
+  "_ghi_chu": "Kho thoại (SPEC mục 9C). Mỗi nhóm có danh sách câu không giới hạn. Nhóm npc_labels: dòng 1 = nhãn dân phu, dòng 2 = thợ mộc, dòng 3 = thợ nề (tắt hoặc xóa dòng = không hiện nhãn); chú tiểu không có nhãn. Câu mẫu của SPEC đã duyệt (verified: true); câu viết thêm chờ chủ dự án duyệt (verified: false): live thật chỉ nói câu đã duyệt, giả lập dùng tất cả.",
   "groups": {
     "session_start": {
       "mode": "shuffle",
@@ -222,6 +222,31 @@
       "lines": [
         {"text": "{name} vừa xây {n} {material}", "tiers": [], "weight": 1, "enabled": true, "verified": true},
         {"text": "+{n} {material} từ {name}", "tiers": [], "weight": 1, "enabled": true, "verified": true}
+      ]
+    },
+    "crowd_counter": {
+      "mode": "sequential",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "{count} người đang góp sức", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "{count} thiện hữu đang cùng góp sức", "tiers": [], "weight": 1, "enabled": true, "verified": false}
+      ]
+    },
+    "npc_labels": {
+      "mode": "sequential",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "Dân phu", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Thợ mộc", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "Thợ nề", "tiers": [], "weight": 1, "enabled": true, "verified": true}
+      ]
+    },
+    "returning_subtitle": {
+      "mode": "sequential",
+      "cooldownSec": 0,
+      "lines": [
+        {"text": "đã góp {item}", "tiers": [], "weight": 1, "enabled": true, "verified": true},
+        {"text": "từng góp sức xây {item}", "tiers": [], "weight": 1, "enabled": true, "verified": false}
       ]
     }
   }

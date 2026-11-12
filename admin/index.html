@@ -155,6 +155,20 @@
     <label class="rng">Dải miễn trừ <input type="range" id="o-disclaimer" min="0" max="1" step="0.05"><span id="vo-disclaimer"></span></label>
     <p class="note">Kéo là overlay đổi ngay (lưu vào config\config.json).</p>
   </section>
+  <section>
+    <h2>Người góp công cũ</h2>
+    <p class="note" style="margin-top:0">Người xem thật có công từ phiên trước, hiện lại trên công trường khi phòng vắng, vừa (khung tên màu bạc,
+      dòng phụ "đã góp …"), mỗi người 5–10 phút rồi đổi người khác. Ai không muốn hiện lại thì bấm <b>Không hiện lại</b>.</p>
+    <div class="row"><span>Đang hiện</span><span id="ret-count">–</span></div>
+    <div id="ret-showing"></div>
+    <p class="note" style="margin:10px 0 4px">Danh sách không hiện lại:</p>
+    <div id="ret-excluded"></div>
+    <div class="buttons">
+      <input id="ret-q" placeholder="Tìm người xem theo tên" style="width:190px; padding:6px; border-radius:8px; border:1px solid #c9b79a">
+      <button id="ret-search">Tìm</button>
+    </div>
+    <div id="ret-results"></div>
+  </section>
   <section id="sim" class="wide" hidden>
     <h2>Giả lập (chỉ hồ sơ thử) – overlay hiện nhãn “CHẾ ĐỘ THỬ”</h2>
     <div class="buttons">
@@ -246,7 +260,8 @@
       $('crowd-tier').textContent = s.crowd.forced ? `${TIER[s.crowd.tier]} (ép tay; tự tính: ${TIER[s.crowd.raw]})` : `${TIER[s.crowd.tier]} (tự động${s.crowd.raw !== s.crowd.tier ? `, đang chuyển sang ${TIER[s.crowd.raw]}` : ''})`;
       $('crowd-inter').textContent = fmt(s.crowd.interactors);
       if (s.characters) {
-        $('chars-count').textContent = `${fmt(s.characters.count)} / ${fmt(s.characters.max)}`;
+        const c = s.characters;
+        $('chars-count').textContent = `${fmt(c.total ?? c.count)} / ${fmt(c.max)} (${fmt(c.count)} người xem · ${fmt(c.returning ?? 0)} góp công cũ · ${fmt(c.npcs ?? 0)} dân phu)`;
         $('honor-count').textContent = fmt(s.characters.honors);
       }
       for (const b of document.querySelectorAll('[data-crowd]')) b.classList.toggle('on', b.dataset.crowd === (s.crowd.forced || 'auto'));
@@ -359,8 +374,46 @@
   });
   fetch('/api/display').then((r) => r.json()).then(showDisplay).catch(() => {});
 
+  // ---- Người góp công cũ (mục 9B) ----
+  const retRow = (u, exclude, note) =>
+    `<div class="row"><span>${esc(u.name ?? u.nickname)}${note ? ` <span class="note">· ${esc(note)}</span>` : ''}</span>` +
+    `<button data-exclude="${esc(u.platformId)}" data-value="${exclude ? '1' : '0'}">${exclude ? 'Không hiện lại' : 'Cho hiện lại'}</button></div>`;
+  function showReturning(r) {
+    $('ret-count').textContent = r.showing.length ? fmt(r.showing.length) + ' người' : 'không có';
+    $('ret-showing').innerHTML = r.showing.map((u) => retRow(u, true, u.note)).join('');
+    $('ret-excluded').innerHTML = r.excluded.length ? r.excluded.map((u) => retRow(u, false)).join('') : '<p class="note" style="margin:0">(trống)</p>';
+  }
+  async function loadReturning() {
+    try { showReturning(await (await fetch('/api/returning')).json()); } catch {}
+  }
+  async function searchUsers() {
+    const q = $('ret-q').value.trim();
+    if (!q) { $('ret-results').innerHTML = ''; return; }
+    const r = await (await fetch('/api/users/search?q=' + encodeURIComponent(q))).json();
+    $('ret-results').innerHTML = r.users.length
+      ? r.users.map((u) => retRow({ ...u, name: `${u.nickname} (${fmt(u.points)} công)` }, !u.excluded)).join('')
+      : '<p class="note" style="margin:0">Không tìm thấy người xem có công với tên này.</p>';
+  }
+  $('ret-search').addEventListener('click', searchUsers);
+  $('ret-q').addEventListener('keydown', (e) => { if (e.key === 'Enter') searchUsers(); });
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-exclude]');
+    if (!b) return;
+    const r = await fetch('/api/returning/exclude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ platformId: b.dataset.exclude, exclude: b.dataset.value === '1' }),
+    });
+    if (r.ok) {
+      showReturning(await r.json());
+      if ($('ret-q').value.trim()) searchUsers();
+    }
+  });
+
   refresh();
+  loadReturning();
   setInterval(refresh, 2000);
+  setInterval(loadReturning, 5000);
 </script>
 </body>
 </html>

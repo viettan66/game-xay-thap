@@ -15,7 +15,8 @@ import { retireLegacyTowerDb } from './db/legacy.js';
 import { getSetting, setSetting } from './db/settings.js';
 import { CROWD_TIERS, CrowdTracker } from './game/crowd.js';
 import { HeartGoalService } from './game/heartGoal.js';
-import { CharacterRoster } from './game/roster.js';
+import { CharacterRoster, type ReturningPick } from './game/roster.js';
+import { excludedIds, pickReturning, returningCandidates, setExcluded } from './game/returning.js';
 import { userTotalPoints } from './game/queries.js';
 import { titleFor } from '../shared/characters.js';
 import { displayName } from '../shared/names.js';
@@ -60,7 +61,8 @@ export class GameCore {
   readonly goals: HeartGoalService;
   /** Nhân vật người xem đang có trên bản đồ (mục 9, 9A). */
   readonly roster: CharacterRoster;
-  /** Sự kiện cho các phần khác (trụ trì…): 'sessionStart', 'sessionEnd' (SessionRow), 'crowd' (CrowdTier), 'goal' (nấc vừa đạt). */
+  /** Sự kiện cho các phần khác (trụ trì…): 'sessionStart', 'sessionEnd' (SessionRow), 'crowd' (CrowdTier), 'goal' (nấc vừa đạt),
+   *  'returning' (người góp công cũ vừa quay lại tương tác: ReturningMember). */
   readonly bus = new EventEmitter();
   private readonly log: Logger;
   private pendingBackups: Promise<unknown>[] = [];
@@ -111,7 +113,15 @@ export class GameCore {
       now: this.now,
     });
     this.crowd = new CrowdTracker(() => this.config.crowd);
-    this.roster = new CharacterRoster({ config: () => this.config.characters, tier: () => this.crowd.tier });
+    this.roster = new CharacterRoster({
+      config: () => this.config.characters,
+      tier: () => this.crowd.tier,
+      npc: () => this.config.npc,
+      returning: () => this.config.returning,
+      pickReturning: (skip) => this.pickReturning(skip),
+      // Người góp công cũ vào phòng và tương tác: trụ trì chào riêng (nhóm returning).
+      onBack: (m) => this.bus.emit('returning', m),
+    });
     const forced = getSetting<string | null>(this.db, 'crowd_forced', null);
     this.crowd.forced = CROWD_TIERS.includes(forced as CrowdTier) ? (forced as CrowdTier) : null;
     try {
@@ -154,6 +164,23 @@ export class GameCore {
       if (hasUser(ev)) this.rosterEvent(ev, this.now());
     }
     return r;
+  }
+
+  /** Chọn một người góp công cũ (mục 9B): người có công từ phiên trước, không bị loại trừ, không đang có nhân vật. */
+  private pickReturning(skip: (id: string) => boolean): ReturningPick | null {
+    const cfg = this.config;
+    const excluded = new Set(excludedIds(this.db));
+    const c = pickReturning(returningCandidates(this.db, this.sessions.currentId()), (id) => skip(id) || excluded.has(id), Math.random);
+    if (!c) return null;
+    return { id: c.platformId, name: displayName(c.nickname, cfg.nameFilter.bannedWords, cfg.labels.anonymousName), itemId: c.topItemId };
+  }
+
+  /** Admin: thêm / bỏ một người khỏi danh sách không hiện lại dưới dạng người góp công cũ. Đang hiện thì đi ra ngay. */
+  setReturningExcluded(platformId: string, excluded: boolean): string[] {
+    const list = setExcluded(this.db, platformId, excluded);
+    if (excluded) this.roster.dropReturning(platformId);
+    this.log.info(excluded ? `Không hiện lại người góp công cũ: ${platformId}` : `Cho hiện lại người góp công cũ: ${platformId}`);
+    return list;
   }
 
   /** Cập nhật nhân vật của người xem (sinh mới, đổi tên, danh hiệu, lần tương tác). */

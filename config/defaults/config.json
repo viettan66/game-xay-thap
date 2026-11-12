@@ -107,6 +107,25 @@
   "honor": {
     "rotateSec": 20
   },
+  "npc": {
+    "count": { "vang": [6, 8], "vua": [3, 4], "dong": [0, 0], "ratdong": [0, 0] },
+    "fillGapSec": 6,
+    "pace": 0.75,
+    "showRole": true
+  },
+  "returning": {
+    "count": { "vang": [5, 10], "vua": [2, 3], "dong": [0, 0], "ratdong": [0, 0] },
+    "staySec": [300, 600],
+    "fillGapSec": 8,
+    "cooldownMin": 30
+  },
+  "ambient": {
+    "birdsEverySec": { "vang": 30, "vua": 45, "dong": 90, "ratdong": 180 },
+    "npcCartEverySec": { "vang": 150, "vua": 240, "dong": 480, "ratdong": 0 },
+    "flags": true,
+    "crowdPerSprite": 15,
+    "crowdSprites": [6, 24]
+  },
   "nameFilter": {
     "bannedWords": []
   },

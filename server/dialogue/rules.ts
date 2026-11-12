@@ -63,7 +63,7 @@ export function varsOf(text: string): string[] {
   return [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!);
 }
 
-/** Các nhóm game đang dùng (giai đoạn 4b). Live thật mà nhóm không có câu đã duyệt thì lúc đó im lặng. */
+/** Các nhóm game đang dùng (giai đoạn 4b, thêm ở 4e). Live thật mà nhóm không có câu đã duyệt thì lúc đó im lặng. */
 export const USED_GROUPS = [
   'session_start',
   'greet_single',
@@ -83,6 +83,11 @@ export const USED_GROUPS = [
   'goal_text',
   'goal_reached',
   'piece_burst',
+  // 4e: người góp công cũ quay lại, bộ đếm đám đông, nhãn nghề dân phu, dòng phụ người góp công cũ.
+  'returning',
+  'crowd_counter',
+  'npc_labels',
+  'returning_subtitle',
 ];
 
 /** Nhóm đang dùng mà chưa có câu nào vừa bật vừa đã duyệt (cảnh báo trước khi live thật, mục 9C). */

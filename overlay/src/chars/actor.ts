@@ -74,8 +74,12 @@ export class Actor {
   private alpha = 1;
   /** Đang đi một chuyến khiêng vật liệu (không nhận chuyến khác). */
   private trip = false;
+  /** Chưa vào được vì công trường chưa sẵn sàng: vào ngay khi có (đứng sẵn hay đi từ mép khung hình). */
+  private deferred: 'snap' | 'walk' | null = null;
   /** Chân thang của chỗ đang đứng trên giàn giáo (để trèo xuống). */
   private climbBase: number | null = null;
+  /** Nhịp làm việc: dân phu NPC chậm hơn người xem (mục 9B, config npc.pace). Không áp khi đi ra. */
+  pace = 1;
 
   constructor(
     readonly id: string,
@@ -90,7 +94,15 @@ export class Actor {
   /** Đi từ mép màn hình vào (mở overlay giữa chừng thì `snap` = đặt thẳng vào chỗ làm). */
   enter(w: ActorWorld, snap: boolean): void {
     const site = w.site();
-    const spot = site ? this.claim(w, site) : null;
+    // Công trường chưa dựng xong (vừa mở overlay, đang tải ảnh): chờ, có công trường rồi mới vào (không đi bộ từ tận mép bản đồ).
+    if (!site) {
+      this.deferred = snap ? 'snap' : 'walk';
+      this.alpha = snap ? 1 : 0;
+      return;
+    }
+    this.deferred = null;
+    this.alpha = 1;
+    const spot = this.claim(w, site);
     if (snap && spot) {
       this.x = spot.x;
       this.y = spot.y;
@@ -228,6 +240,10 @@ export class Actor {
       this.tasks.push({ type: 'wait', t: 0, dur: 1, pose: 'stand' });
       return;
     }
+    if (this.deferred) {
+      this.enter(w, this.deferred === 'snap');
+      return;
+    }
     // Đổi hạng mục, hoặc chỗ đứng không còn (giàn giáo thấp xuống): nhận chỗ mới rồi đi tới.
     const mine = w.pool.spotOf(this.id);
     if (site.key !== this.siteKey || !mine) {
@@ -257,7 +273,7 @@ export class Actor {
   }
 
   update(dt: number, w: ActorWorld): void {
-    const k = this.boostT > 0 ? 1.6 : 1;
+    const k = (this.boostT > 0 ? 1.6 : 1) * (this.leaving ? 1 : this.pace);
     if (this.boostT > 0) this.boostT = Math.max(0, this.boostT - dt);
     this.anim += dt * k;
     if (this.gone) return;

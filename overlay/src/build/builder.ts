@@ -123,6 +123,20 @@ export interface SiteDeps {
   worldScale: () => number;
   /** Tay một dân phu đứng gần (tọa độ bản đồ) để mảnh bay từ đó; null = bay từ đống vật liệu (mục 7.5). */
   source?: () => { x: number; y: number } | null;
+  /** Cờ bay ở công trường (mục 9B: công trường tự chạy). */
+  flags?: () => boolean;
+}
+
+/** Màu cờ đuôi nheo (cờ ngũ sắc kiểu hội làng): đỏ, vàng, xanh lá, xanh dương, trắng. */
+const FLAG_COLORS = [0xc8372d, 0xf0b52b, 0x3f8f4a, 0x2f6fb0, 0xf3eee2];
+
+/** Lá cờ đuôi nheo tung bay trên đỉnh một cột (x, y = đỉnh cột), dài `len`, bay về bên phải. */
+function drawPennant(g: Graphics, x: number, y: number, len: number, t: number, color: number): void {
+  const h = len * 0.42;
+  const w1 = Math.sin(t * 6 + x * 0.05) * len * 0.07;
+  const w2 = Math.sin(t * 6 + x * 0.05 + 1.3) * len * 0.14;
+  g.poly([x, y, x + len * 0.5, y + h * 0.22 + w1, x + len, y + h * 0.5 + w2, x + len * 0.5, y + h * 0.78 + w1, x, y + h]).fill(color);
+  g.poly([x, y, x + len * 0.5, y + h * 0.22 + w1, x + len, y + h * 0.5 + w2, x + len * 0.5, y + h * 0.78 + w1, x, y + h]).stroke({ width: 1, color: 0x5a2a12, alpha: 0.5 });
 }
 
 /** Hình học công trường cho nhân vật (tọa độ bản đồ): chỗ đứng, giàn giáo, đống vật liệu (mục 9). */
@@ -145,6 +159,10 @@ export class BuildSite {
   private readonly flashSprite: Sprite;
   private readonly bounceLayer = new Container();
   private readonly scaffoldG = new Graphics();
+  private readonly flagG = new Graphics();
+  private flagT = 0;
+  /** Cột giàn giáo đang vẽ [x, đỉnh, chân] (tọa độ trong khung), để cắm cờ ở hai đầu. */
+  private poles: [number, number, number][] = [];
   private readonly pileLayer = new Container();
   private readonly batch = new Container();
   private readonly rt: RenderTexture;
@@ -186,7 +204,7 @@ export class BuildSite {
     this.flashSprite.blendMode = 'add';
     this.flashSprite.alpha = 0;
     this.container.position.set(target.x, target.y);
-    this.container.addChild(this.groundLayer, this.rtSprite, this.flashSprite, this.bounceLayer, this.scaffoldG, this.pileLayer);
+    this.container.addChild(this.groundLayer, this.rtSprite, this.flashSprite, this.bounceLayer, this.scaffoldG, this.pileLayer, this.flagG);
     // Ảnh từng vùng theo cách hiện (màu thật / gỗ thô): mảnh lấy phần ảnh của đúng vùng đó.
     const looks = new Set(plans.flatMap((p) => p.pieces.map((q) => `${q.part}:${q.look}`)));
     for (const key of looks) {
@@ -263,6 +281,28 @@ export class BuildSite {
       pile: { x: t.x + pile.x, y: t.y + pile.y },
       prop: this.plans[Math.min(stage, this.plans.length - 1)]?.prop ?? 'gach',
     };
+  }
+
+  /** Cờ đuôi nheo tung bay (mục 9B): một cột cờ cạnh đống vật liệu, cờ nhỏ trên hai cột ngoài cùng của giàn giáo. */
+  private drawFlags(dt: number): void {
+    const g = this.flagG.clear();
+    if (!(this.deps.flags?.() ?? true)) return;
+    this.flagT += dt;
+    const t = this.flagT;
+    const pile = this.pilePos();
+    const px = pile.x - 30;
+    const top = pile.y - 92;
+    g.moveTo(px, pile.y).lineTo(px, top).stroke({ width: 2.5, color: 0x6b4426 });
+    g.circle(px, top - 2, 2.5).fill(0xe2ae45);
+    drawPennant(g, px + 1, top + 2, 30, t, FLAG_COLORS[0]!);
+    drawPennant(g, px + 1, top + 18, 22, t + 0.7, FLAG_COLORS[1]!);
+    if (this.poles.length >= 2) {
+      const ends = [this.poles[0]!, this.poles[this.poles.length - 1]!];
+      ends.forEach(([x, y0], i) => {
+        g.moveTo(x, y0).lineTo(x, y0 - 16).stroke({ width: 2, color: 0xc8a050 });
+        drawPennant(g, x, y0 - 16, 20, t + i * 1.9, FLAG_COLORS[2 + (i % 3)]!);
+      });
+    }
   }
 
   /** Dân phu đặt vật liệu xuống đống: đống nảy lên, bụi nhỏ. */
@@ -364,11 +404,13 @@ export class BuildSite {
   private updateScaffold(stage: number, placed: number): void {
     const g = this.scaffoldG.clear();
     this.ledgers = [];
+    this.poles = [];
     if (!this.bodyBox || this.builtTop === Infinity) return;
     const last = this.plans.length - 1;
     const removeFrac = stage >= last ? placed / Math.max(1, this.count(last)) : 0;
     const s = scaffold(this.bodyBox, this.builtTop, removeFrac);
     this.ledgers = s.ledgers;
+    this.poles = s.poles;
     for (const [x0, x1, y] of s.ledgers) g.moveTo(x0, y).lineTo(x1, y);
     for (const [x, top, bottom] of s.poles) g.moveTo(x, top).lineTo(x, bottom);
     g.stroke({ width: 2.5, color: 0xc8a050, alpha: 0.85 });
@@ -560,6 +602,7 @@ export class BuildSite {
       }
     }
     if (this.flashAlpha > 0) this.flashAlpha = Math.max(0, this.flashAlpha - dt * 1.2);
+    this.drawFlags(dt);
     // Đống vật liệu nảy lên khi dân phu đặt vật liệu xuống.
     if (this.pileSprite && (this.pileBump > 0 || this.lastBump > 0)) {
       this.pileBump = Math.max(0, this.pileBump - dt * 4);
@@ -581,9 +624,15 @@ export class BuildSite {
   }
 }
 
+/** Nhãn vùng mặt nước trong mặt nạ vùng (1..7 theo PART_KEYS). */
+const NUOC = PART_KEYS.indexOf('nuoc') + 1;
+const NEN = PART_KEYS.indexOf('nen') + 1;
+
 /** Điểm đứng trên phần đất của công trình phẳng (sân, hồ, tường bao): lưới thưa, thứ tự cố định theo mã hạng mục. */
 function floorPoints(labels: Uint8Array, w: number, h: number, seed: string): { x: number; y: number }[] {
   const out: { x: number; y: number }[] = [];
+  /** Chỗ đứng trên vùng nền (bờ đá, mặt sân, mặt đất): ưu tiên, vì vùng trang trí của hồ sen là lá sen giữa hồ. */
+  const onNen: { x: number; y: number }[] = [];
   const step = 44;
   let row = 0;
   for (let y = step / 2; y < h; y += step * 0.75, row++) {
@@ -591,17 +640,25 @@ function floorPoints(labels: Uint8Array, w: number, h: number, seed: string): { 
       const xi = Math.round(x);
       const yi = Math.round(y);
       // Cần có đất quanh chỗ đứng (không đứng ở mép hình).
-      if (labels[yi * w + xi] && labels[Math.max(0, yi - 10) * w + xi] && labels[Math.min(h - 1, yi + 6) * w + xi]) out.push({ x: xi, y: yi });
+      // Không đứng trên mặt nước, lá sen giữa hồ (gần vùng nuoc trong bán kính 18 điểm ảnh).
+      const at = (dx: number, dy: number) => labels[Math.min(h - 1, Math.max(0, yi + dy)) * w + Math.min(w - 1, Math.max(0, xi + dx))]!;
+      if (!at(0, 0) || !at(0, -10) || !at(0, 6)) continue;
+      let wet = false;
+      for (let k = 0; k < 8 && !wet; k++) wet = at(Math.round(Math.cos((k * Math.PI) / 4) * 18), Math.round(Math.sin((k * Math.PI) / 4) * 9)) === NUOC;
+      if (wet || at(0, 0) === NUOC) continue;
+      out.push({ x: xi, y: yi });
+      if (at(0, 0) === NEN && at(0, -10) === NEN && at(0, 6) === NEN) onNen.push({ x: xi, y: yi });
     }
   }
+  const list = onNen.length >= 8 ? onNen : out;
   const r = rng(hashSeed('floor:' + seed));
-  for (let i = out.length - 1; i > 0; i--) {
+  for (let i = list.length - 1; i > 0; i--) {
     const j = Math.floor(r() * (i + 1));
-    const tmp = out[i]!;
-    out[i] = out[j]!;
-    out[j] = tmp;
+    const tmp = list[i]!;
+    list[i] = list[j]!;
+    list[j] = tmp;
   }
-  return out.slice(0, 60);
+  return list.slice(0, 60);
 }
 
 function propTexture(art: Art, prop: PropKind, level: 'lon' | 'vua' | 'nho'): Texture | null {
@@ -678,6 +735,8 @@ export class Builder {
   private lineAt = 0;
   private readonly fx = new Container();
   private piecesCfg: PiecesConfig = DEFAULT_PIECES;
+  /** Cờ bay ở công trường (config ambient.flags). */
+  flags = true;
 
   constructor(
     private readonly renderer: Renderer,
@@ -847,6 +906,7 @@ export class Builder {
         pieces: () => this.piecesCfg,
         worldScale: this.worldScale,
         source: () => this.events.source?.() ?? null,
+        flags: () => this.flags,
       });
       if (this.map !== map || this.loading !== itemId) {
         site?.destroy();
