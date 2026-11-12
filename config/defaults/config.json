@@ -87,6 +87,10 @@
     "maxQueue": 6,
     "progressMarks": [50, 80, 95]
   },
+  "characters": {
+    "heightMap": 54,
+    "maxCharacters": 40
+  },
   "nameFilter": {
     "bannedWords": []
   },

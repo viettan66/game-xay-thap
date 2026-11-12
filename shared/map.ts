@@ -3,6 +3,7 @@
 // Hàm thuần, có test.
 
 import type { PartKey } from './parts.js';
+import type { HonorSlot, MapPath } from './paths.js';
 
 export interface MapTile {
   /** Đường dẫn trong assets/game, ví dụ "map/bg_0.jpg". */
@@ -63,6 +64,10 @@ export interface MapManifest {
   /** Ảnh map_built cùng hệ tọa độ, chỉ để so khớp trên trang /tools/assets. */
   reference: string | null;
   buildings: MapBuilding[];
+  /** Lối đi (assets/map-paths.json, giai đoạn 4c). Chưa có thì nhân vật đi thẳng. */
+  paths?: MapPath[];
+  /** Ô ghi danh dọc đường vào chùa (tượng võ tướng đá). */
+  honorSlots?: HonorSlot[];
 }
 
 /** Khóa ảnh dùng khi nạp texture: bỏ phần đuôi file. */

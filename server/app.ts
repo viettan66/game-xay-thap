@@ -12,6 +12,7 @@ import { loadCuts, MapCutError, missingSegments } from './assets/mapCut.js';
 import { partsForEditing, partsStatus, proposeForBuilding, saveParts, syncManifestParts, validateLabels } from './assets/parts.js';
 import { PARTS } from '../shared/parts.js';
 import { MapCutQueue, updateBuildingCut, type MapTools } from './assets/mapTools.js';
+import { loadPaths, savePaths, syncManifestPaths } from './assets/paths.js';
 import type { AbbotDirector } from './abbot/director.js';
 import type { GameConfig } from './config/schema.js';
 import { DIALOGUE_VARS, lineProblems, unverifiedGroups, USED_GROUPS } from './dialogue/rules.js';
@@ -318,6 +319,37 @@ export function createApp(deps: AppDeps): express.Express {
     labels: Buffer.from(labels).toString('base64'),
     source,
   });
+  // ---- Lối đi, ô ghi danh (giai đoạn 4c): trang /tools/paths ----
+  try {
+    if (syncManifestPaths(rootDir)) broadcaster.markDirty();
+  } catch (e) {
+    // File lối đi sai: game vẫn chạy (nhân vật đi thẳng), trang /tools/paths báo lỗi.
+    void e;
+  }
+  app.get('/api/tools/paths', (_req, res) => {
+    const m = loadManifest(rootDir);
+    let data: unknown = null;
+    let error: string | null = null;
+    try {
+      data = loadPaths(rootDir);
+    } catch (e) {
+      error = e instanceof Error ? e.message : String(e);
+    }
+    res.json({
+      paths: data,
+      error,
+      map: m?.map ? { width: m.map.width, height: m.map.height, tiles: m.map.tiles, reference: m.map.reference, buildings: m.map.buildings } : null,
+      names: Object.fromEntries(core.project.items.map((i) => [i.id, i.name])),
+      characters: core.config.characters,
+      sprites: Object.fromEntries(Object.entries(m?.images ?? {}).filter(([k]) => /^(chars|vehicles|honor)\//.test(k))),
+    });
+  });
+  app.post('/api/tools/paths', (req, res) => {
+    const saved = savePaths(rootDir, body(req));
+    broadcaster.markDirty();
+    res.json({ ok: true, paths: saved });
+  });
+
   app.get('/api/tools/parts', (_req, res) => {
     const map = loadManifest(rootDir)?.map;
     res.json({
@@ -376,6 +408,7 @@ export function createApp(deps: AppDeps): express.Express {
   toolPage('/tools/parts', 'parts.html');
   toolPage('/tools/assets', 'tools.html');
   toolPage('/tools/build', 'build.html');
+  toolPage('/tools/paths', 'paths.html');
 
   app.get('/admin', (_req, res) => {
     res.sendFile(path.join(rootDir, 'admin', 'index.html'));

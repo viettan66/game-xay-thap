@@ -19,6 +19,7 @@ import type { Manifest } from '../../shared/manifest.js';
 import { formatZodError } from '../config/schema.js';
 import { gameAssetsDir, loadManifest, saveManifest } from './manifest.js';
 import { bbox, boxBlur, components, dilate, erode, fillHoles, open, polygonMask, smoothstep } from './mask.js';
+import { loadPaths } from './paths.js';
 import { KIND_APRON, KIND_CORE, KIND_GROUND, KIND_HOLE } from './kinds.js';
 import { ensureParts } from './parts.js';
 import { rawPath, upscaledPath } from './rawFiles.js';
@@ -110,7 +111,7 @@ export function validateCuts(raw: unknown): MapCuts {
 }
 
 export function loadCuts(root: string): MapCuts {
-  return validateCuts(JSON.parse(fs.readFileSync(cutsPath(root), 'utf8').replace(/^﻿/, '')));
+  return validateCuts(JSON.parse(fs.readFileSync(cutsPath(root), 'utf8').replace(/^\uFEFF/, '')));
 }
 
 /** JSON dễ đọc: khung, điểm, danh sách mã, và mỗi phần cắt đơn giản viết trên một dòng. */
@@ -633,6 +634,9 @@ export async function buildMap(root: string, opts: BuildMapOptions = {}): Promis
     reference: bg.reference,
     buildings,
   };
+  // Lối đi, ô ghi danh (assets/map-paths.json, giai đoạn 4c): giữ nguyên khi dựng lại bản đồ.
+  const paths = loadPaths(root);
+  if (paths) Object.assign(map, { paths: paths.paths, honorSlots: paths.honorSlots });
   const manifest = loadManifest(root) ?? emptyManifest();
   saveManifest(root, { ...manifest, map });
   return map;

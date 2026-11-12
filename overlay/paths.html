@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lối đi và ô ghi danh – Đại Danh Lam Thiên Phúc</title>
+<style>
+  :root { --bg: #f6f1e7; --card: #fffdf8; --ink: #2b2118; --muted: #7a6a58; --line: #e4d9c6; --accent: #b5462b; --ok: #2e7d32; --bad: #b3261e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+  header { position: sticky; top: 0; z-index: 5; padding: 10px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); background: var(--card); }
+  header h1 { font-size: 19px; margin: 0; }
+  header a { color: var(--accent); font-size: 14px; }
+  button, select, input { font: inherit; font-size: 14px; }
+  button { padding: 6px 12px; border-radius: 8px; border: 1px solid #c9b79a; background: #fff; color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  button.small { padding: 3px 8px; font-size: 13px; }
+  button:disabled { opacity: .45; cursor: default; }
+  main { display: grid; grid-template-columns: 1fr 360px; gap: 14px; padding: 14px 20px; }
+  @media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+  #vp { height: calc(100vh - 90px); overflow: auto; border-radius: 10px; border: 1px solid var(--line); background: #222; }
+  #cv { display: block; }
+  aside { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; height: calc(100vh - 90px); overflow: auto; }
+  aside h2 { font-size: 15px; margin: 14px 0 6px; color: var(--accent); }
+  aside h2:first-child { margin-top: 0; }
+  .note { color: var(--muted); font-size: 13px; margin: 4px 0; }
+  .err { color: var(--bad); font-weight: 600; }
+  .ok { color: var(--ok); font-weight: 600; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+  .p { display: grid; grid-template-columns: 14px 1fr auto; gap: 6px; align-items: center; padding: 4px 6px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; font-size: 14px; }
+  .p:hover { background: #f3eadb; }
+  .p.sel { border-color: var(--ink); background: #fff3d6; }
+  .sw { width: 14px; height: 4px; border-radius: 2px; }
+  kbd { font: 12px monospace; border: 1px solid #ccc; border-radius: 4px; padding: 0 4px; background: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Lối đi và ô ghi danh</h1>
+  <a href="/admin">← Trang trạng thái</a>
+  <a href="/tools/assets">Kiểm tra ảnh ↗</a>
+  <button class="primary" id="save" disabled>Lưu</button>
+  <button id="revert" disabled>Bỏ thay đổi</button>
+  <span id="msg" class="note"></span>
+</header>
+<main>
+  <div id="vp"><canvas id="cv"></canvas></div>
+  <aside>
+    <h2>Xem</h2>
+    <div class="row">
+      <label>Thu phóng <select id="zoom"><option value="0.25">25%</option><option value="0.4" selected>40%</option><option value="0.6">60%</option><option value="1">100%</option></select></label>
+      <label><input type="checkbox" id="built" checked> Ảnh chùa đã xây</label>
+    </div>
+    <div class="row"><label><input type="checkbox" id="showSprites" checked> Người, xe, tượng mẫu (đúng tỉ lệ)</label></div>
+
+    <h2>Công cụ</h2>
+    <div class="row">
+      <button id="tool-move" class="on">Chọn / kéo</button>
+      <button id="tool-add">+ Điểm vào lối đang chọn</button>
+      <button id="tool-slot">+ Ô ghi danh</button>
+    </div>
+    <p class="note">Kéo điểm (tròn trắng) hoặc ô ghi danh (vuông tím) để dời. Bấm chuột phải để xóa. Thêm điểm: bấm gần một đoạn thì chèn vào giữa,
+      bấm chỗ khác thì nối vào cuối lối đang chọn. Hai lối có điểm trùng nhau (hoặc điểm nằm trên đoạn của lối kia) là nối với nhau.</p>
+
+    <h2>Lối đi</h2>
+    <div id="list"></div>
+    <div class="row">
+      <button id="new-path">+ Lối đi mới</button>
+      <button id="del-path">Xóa lối đang chọn</button>
+    </div>
+    <div class="row" id="path-edit"></div>
+    <p class="note" id="net"></p>
+
+    <h2>Thử với một hạng mục</h2>
+    <div class="row"><select id="item" style="max-width:100%"></select></div>
+    <div class="row"><button id="walk">▶ Cho một người đi từ cổng vào</button></div>
+    <p class="note">Chấm cam: vị trí làm việc (tự sinh quanh chân công trình và trên sàn giàn giáo). Nét đứt xanh: đường đi từ mép dưới bản đồ vào.
+      Người mẫu đứng ở chân công trình để so tỉ lệ (khoảng 1/8 chiều cao gác chuông).</p>
+    <p class="err" id="error"></p>
+  </aside>
+</main>
+<script type="module" src="./src/tools/paths.ts"></script>
+</body>
+</html>

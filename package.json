@@ -20,6 +20,7 @@
     "assets:map": "node --import tsx scripts/assets/build-map.ts",
     "assets:props": "node --import tsx scripts/assets/build-props.ts",
     "assets:festival": "node --import tsx scripts/assets/build-festival.ts",
+    "assets:chars": "node --import tsx scripts/assets/build-chars.ts",
     "demo": "node --import tsx scripts/demo.ts",
     "test": "vitest run",
     "test:watch": "vitest",

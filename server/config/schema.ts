@@ -141,6 +141,11 @@ export const configSchema = z.strictObject({
     maxQueue: int(1).max(50),
     progressMarks: z.array(z.number().min(1).max(99)),
   }),
+  // Nhân vật trên bản đồ (mục 9): cao bao nhiêu đơn vị bản đồ (khoảng 1/8 chiều cao gác chuông), tối đa bao nhiêu người.
+  characters: z.strictObject({
+    heightMap: z.number().min(10).max(300),
+    maxCharacters: int(1).max(200),
+  }),
   // Lọc tên (mục 8): tên chứa từ cấm hiện labels.anonymousName.
   nameFilter: z.strictObject({
     bannedWords: z.array(z.string().min(1)),

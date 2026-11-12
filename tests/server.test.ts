@@ -9,7 +9,7 @@ import { startServer, type RunningServer } from '../server/server.js';
 import { buildOverlayState, overlayName } from '../server/overlay/state.js';
 import type { ServerMessage } from '../shared/protocol.js';
 import { vnTs } from '../shared/time.js';
-import { disableEvents, FakeClock, makeTempRoot, removeTempRoot } from './helpers.js';
+import { disableEvents, FakeClock, makeTempRoot, REPO_ROOT, removeTempRoot } from './helpers.js';
 
 let root: string;
 let srv: RunningServer;
@@ -335,6 +335,23 @@ describe('thông báo quà, mục tiêu tim, kho thoại (4b)', () => {
     const ex = await fetch(`${srv.url}/api/dialogues/export`);
     expect(ex.headers.get('content-disposition')).toContain('dialogues-');
     expect(((await ex.json()) as typeof next).groups.goal_reached!.lines).toHaveLength(6);
+  });
+});
+
+describe('lối đi, ô ghi danh (4c)', () => {
+  it('đọc và lưu lối đi; sai thì báo lỗi, không ghi', async () => {
+    fs.mkdirSync(path.join(root, 'assets'), { recursive: true });
+    fs.copyFileSync(path.join(REPO_ROOT, 'assets', 'map-paths.json'), path.join(root, 'assets', 'map-paths.json'));
+    await start();
+    const g = (await (await fetch(`${srv.url}/api/tools/paths`)).json()) as { paths: { paths: unknown[]; honorSlots: unknown[] }; characters: { heightMap: number } };
+    expect(g.paths.paths.length).toBeGreaterThan(5);
+    expect(g.characters.heightMap).toBe(54);
+    const next = { paths: [{ id: 'a', kind: 'main', points: [[1, 2], [3, 4]] }], honorSlots: [{ x: 1, y: 1 }] };
+    expect((await post('/api/tools/paths', next)).status).toBe(200);
+    const disk = JSON.parse(fs.readFileSync(path.join(root, 'assets', 'map-paths.json'), 'utf8')) as typeof next;
+    expect(disk.paths).toEqual(next.paths);
+    const bad = await post('/api/tools/paths', { paths: [{ id: 'A', kind: 'xe', points: [] }], honorSlots: [] });
+    expect(bad.status).toBe(400);
   });
 });
 

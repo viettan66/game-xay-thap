@@ -18,6 +18,17 @@ const entry = z.strictObject({
 
 const mapFile = (ext: string) => z.string().regex(new RegExp(`^[a-z0-9_/]+\\.(${ext})$`), 'Tên file phải là chữ thường không dấu');
 const rect = { x: z.number(), y: z.number(), w: z.number().positive(), h: z.number().positive() };
+const pathSchema = z.strictObject({
+  id: z.string().regex(/^[a-z0-9_]+$/, 'Mã lối đi chỉ gồm chữ thường không dấu, số và dấu _'),
+  kind: z.enum(['main', 'walk']),
+  points: z.array(z.tuple([z.number(), z.number()])).min(2),
+});
+export const mapPathsSchema = z.strictObject({
+  _ghi_chu: z.string().optional(),
+  paths: z.array(pathSchema),
+  honorSlots: z.array(z.strictObject({ x: z.number(), y: z.number() })),
+});
+
 const mapSchema = z.strictObject({
   width: z.number().int().positive(),
   height: z.number().int().positive(),
@@ -44,6 +55,8 @@ const mapSchema = z.strictObject({
         .optional(),
     }),
   ),
+  paths: z.array(pathSchema).optional(),
+  honorSlots: z.array(z.strictObject({ x: z.number(), y: z.number() })).optional(),
 });
 
 export const manifestSchema = z.strictObject({

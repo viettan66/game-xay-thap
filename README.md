@@ -10,9 +10,10 @@ mỗi hạng mục qua nhiều giai đoạn thi công.
 > ("xây từng mảnh": mỗi lần có công, từng viên gạch, viên ngói, thanh gỗ bay vào đúng chỗ), **R3c** (trang thử xây
 > `/tools/build`: chọn hạng mục, giai đoạn, nút tim và quà, đo FPS) và **R4** (camera phóng to, toàn cảnh, lia giới thiệu;
 > giao diện mới: thanh tiến độ góc trên phải, bảng xếp hạng thu gọn tự tránh công trình, ô sự kiện, bản đồ thu nhỏ, lọc tên).
-> Giai đoạn 4 làm từng phần: đã xong **4a** (chế độ độ đông của phòng, kho thoại, trụ trì nói chuyện trên overlay, tên quà theo mức)
-> và **4b** (thông báo quà, mục tiêu tim của phiên với phần thưởng múa lân, trang Kho thoại).
-> Sắp tới: 4c (ảnh nhân vật, lối đi), 4d (nhân vật người xem, hiệu ứng quà), 4e (dân phu, người góp công cũ).
+> Giai đoạn 4 làm từng phần: đã xong **4a** (chế độ độ đông của phòng, kho thoại, trụ trì nói chuyện trên overlay, tên quà theo mức),
+> **4b** (thông báo quà, mục tiêu tim của phiên với phần thưởng múa lân, trang Kho thoại) và **4c** (ảnh nhân vật, xe trâu,
+> voi, tượng võ tướng đá; lối đi, vị trí làm việc, ô ghi danh trên bản đồ; trang `/tools/paths`).
+> Sắp tới: 4d (nhân vật người xem đi lại, làm việc trên bản đồ; hiệu ứng quà), 4e (dân phu, người góp công cũ).
 > Chưa kết nối TikTok (giai đoạn 6).
 
 ---
@@ -223,6 +224,30 @@ Mở trang: trên trang trạng thái bấm **Thử xây ↗**, hoặc vào `htt
   số mảnh đang chờ, đang bay; tiến độ theo game.
 - Mọi thứ chỉ nằm trong trang đó. Tải lại trang (F5) là xây lại từ đầu chỗ đã chọn. Overlay và bảng xếp hạng không đổi.
 
+### Lối đi và ô ghi danh: trang `/tools/paths` (4c)
+Nhân vật (giai đoạn 4d) đi theo **lối đi** vẽ trên bản đồ; xe trâu, voi đi theo **đường chính** từ mép dưới bản đồ vào.
+Tượng võ tướng đá mang tên người tặng quà từ 5.000 xu đứng ở các **ô ghi danh** dọc đường vào chùa.
+Mở trang: trên trang trạng thái bấm **Lối đi ↗**, hoặc vào `http://127.0.0.1:3000/tools/paths`.
+- Nét xanh dương là đường chính, nét xanh lá là lối đi bộ, chấm trắng là điểm, ô vuông tím là ô ghi danh (kèm tượng mẫu, số thứ tự).
+- **Chọn / kéo**: kéo điểm hoặc ô ghi danh để dời. **Bấm chuột phải** để xóa.
+- **+ Điểm vào lối đang chọn**: bấm gần một đoạn thì chèn điểm vào giữa, bấm chỗ khác thì nối vào cuối lối đó.
+- **+ Lối đi mới**, **Xóa lối đang chọn**, đổi mã và loại (lối đi bộ / đường chính) ở dưới danh sách.
+- Hai lối có điểm trùng nhau, hoặc điểm của lối này nằm trên đoạn của lối kia, là **nối với nhau**. Dưới danh sách báo
+  "Mọi lối đi nối liền nhau" hoặc số cụm rời nhau (cần nối lại).
+- **+ Ô ghi danh**: bấm lên bản đồ để thêm ô. Hết ô thì tượng mới xoay vòng thay tượng cũ (giai đoạn 4d).
+- **Thử với một hạng mục**: chọn hạng mục để thấy khung (vàng), **vị trí làm việc** tự sinh (chấm cam: dưới đất; cam nhạt: trên giàn giáo),
+  **đường đi** từ cổng vào (nét đứt xanh) và một **người mẫu** đứng ở chân công trình để so tỉ lệ (khoảng 1/8 chiều cao gác chuông).
+  Bấm **▶ Cho một người đi từ cổng vào** để xem người đó đi theo lối.
+- **Lưu**: ghi vào `assets\map-paths.json` (overlay dùng ngay từ giai đoạn 4d). Cắt lại bản đồ không làm mất lối đi.
+
+### Ảnh nhân vật, xe trâu, voi, tượng (4c)
+Cắt từ 12 ảnh gốc (5 loại người: dân phu nam, dân phu nữ, thợ mộc, thợ nề, chú tiểu; xe trâu và voi; 3 tượng võ tướng đá) thành
+`assets\game\chars\`, `vehicles\`, `honor\` (xem ở trang **Kiểm tra ảnh ↗**). Mỗi loại người có: đi xuống (nhìn thẳng), đi lên (thấy lưng),
+đi ngang (sang trái thì lật ảnh), mỗi hướng 3 khung + dáng đứng; dáng mang vác (gạch, quang gánh, gỗ) và dáng làm việc
+(cuốc, cưa, đóng búa, xây gạch, trát vữa, đục đá, bê đá, kéo dây, chuyền ngói, quét sân, tưới cây…). Chú tiểu chỉ dùng làm dân phu không tên.
+Làm lại từ ảnh gốc: `npm run assets:nobg chars_danphu_nam_walk …` (tên các tấm xem trong `assets\raw-files.json`) rồi `npm run assets:chars`.
+Cỡ người trên bản đồ: `characters.heightMap` trong `config.json` (mặc định 54 = khoảng 1/8 chiều cao gác chuông).
+
 ### Làm lại bản đồ từ ảnh gốc (chỉ khi thay ảnh bản đồ trong `assets\raw\`)
 Cần Python + rembg và Real-ESRGAN như bên dưới. Mở cửa sổ lệnh tại thư mục dự án rồi gõ lần lượt:
 1. `npm run assets:upscale`: phóng ×4 ba ảnh bản đồ bằng Real-ESRGAN (vài phút; ảnh đã phóng thì bỏ qua).
@@ -377,7 +402,17 @@ Mở cửa sổ lệnh **tại thư mục dự án**: mở thư mục `game-xay-
 5. Bấm **Kho thoại ↗**: xem cảnh báo, bấm một nhóm, thử sửa một câu thêm chữ "may mắn" (hiện ⚠), bấm **Nói thử** (trụ trì nói trên overlay),
    **Duyệt** vài câu, **Lưu**. Mở lại trang thấy câu đã duyệt hết viền cam.
 
-**j) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
+**j) Giai đoạn 4c: ảnh nhân vật, lối đi**
+1. Đóng game đang chạy, nhấp đúp lại `start-test.bat`. Trên trang trạng thái bấm **Kiểm tra ảnh ↗**, kéo xuống phần ảnh đã cắt:
+   xem các nhóm **Nhân vật**, **Xe trâu, voi**, **Tượng võ tướng đá** trên 3 nền (viền sạch, không mất tay chân, dụng cụ).
+2. Bấm **Lối đi ↗**. Xem các lối đi có chạy đúng trên đường đá, sân gạch không; dưới danh sách phải báo "Mọi lối đi nối liền nhau".
+3. Chọn hạng mục **Gác chuông**: người mẫu đứng ở chân gác chuông, cao khoảng 1/8 gác chuông. Bấm **▶ Cho một người đi từ cổng vào**:
+   người đi qua cổng tam quan, theo lối tới gác chuông. Thử thêm **Chính điện**, **Bảo tháp – Tầng 1**, **Nhà tổ**.
+4. Kéo xuống dưới hồ sen: các ô ghi danh (vuông tím) có tượng mẫu dọc hai bên đường đá.
+5. Thử dời một điểm, thêm một ô ghi danh, bấm **Lưu**, tải lại trang: vẫn giữ. Muốn bỏ: sửa lại rồi lưu.
+   Mình thấy chỗ nào lối đi chưa hợp (đi xuyên cây, xuyên tường) thì chỉnh trên trang này, hoặc báo em.
+
+**k) Lõi game không cần trình duyệt.** Đóng `start-test.bat` trước, rồi gõ `npm run demo -- --reset`.
 Lệnh này xóa dữ liệu thử và chạy một chuỗi sự kiện mẫu. Màn hình in từng giai đoạn, từng hạng mục vừa xong, kèm các bảng xếp hạng.
 
 ---
@@ -526,6 +561,7 @@ Mục `toast` (thông báo quà): `sec` (4) = hiện bao nhiêu giây; `mergeSec
 Mục `heartGoal` (mục tiêu tim): `targets` = các nấc theo chế độ; `reward` = tên phần thưởng hiện trong `{reward}` (mặc định "màn múa lân");
 `festivalSec` (14) = múa lân bao lâu. Chữ trong ô sự kiện: `labels.events.heartGoal`, `labels.events.heartGoalDone`; dòng "+công": `labels.plusPoints`.
 Ảnh vật phẩm trong thông báo quà: `gifts.tiers[].icon`.
+Mục `characters`: `heightMap` (54) = một người cao bao nhiêu đơn vị bản đồ; `maxCharacters` (40) = tối đa bao nhiêu nhân vật cùng lúc (dùng từ 4d).
 
 File `config.json` cũ của bản tháp (có mục `tower`, tên tầng, các khóa `floor1WidthPx`, `towerTaper`, `towerCenterX`, `towerBaseY`
 trong mục `overlay`…) được game **tự dọn** ở lần chạy đầu, phần mình đã chỉnh khác được giữ nguyên.
@@ -560,6 +596,7 @@ trong mục `overlay`…) được game **tự dọn** ở lần chạy đầu, 
 | `npm run assets:segment [mã…]` | Tách hình công trình bằng rembg theo `assets/map-cuts.json` → `assets/work/map/rembg` |
 | `npm run assets:nobg props` rồi `npm run assets:props` | Tách nền và cắt 18 ảnh đống vật liệu → `assets/game/props` + manifest |
 | `npm run assets:nobg lion_dance` rồi `npm run assets:festival` | Tách nền và cắt 14 khung múa lân → `assets/game/festival` + manifest |
+| `npm run assets:nobg chars_… vehicles honor_statues` rồi `npm run assets:chars` | Tách nền và cắt nhân vật, xe, tượng → `assets/game/chars`, `vehicles`, `honor` + manifest |
 | `npm run assets:map` | Ghép nền, cắt công trình, tiền cảnh → `assets/game/map`, `buildings`, `fg` + phần `map` của manifest |
 | `node --import tsx scripts/slice-sheet.ts <sheet.png> <thư_mục> --names a,b --equal` | Cắt một sprite sheet nền trong suốt bất kỳ |
 

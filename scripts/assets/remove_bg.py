@@ -32,12 +32,24 @@ OUT = ROOT / "assets" / "work" / "nobg"
 # (bia đá, trụ trì), không để lại vệt sáng ở mép. (Ảnh tầng tháp, chóp tháp cũ đã bỏ sau R4.)
 SHEETS = {
     "abbot_poses": {"model": "birefnet-general-lite"},
-    "chars_workers": {"model": "birefnet-general-lite"},
     "stele": {"model": "birefnet-general-lite"},
     # R3b: đống vật liệu (gạch, gỗ, ngói, đá – 3 mức; cát, giá cưa, ròng rọc, thang, quang gánh, xe cút kít).
     "props": {"model": "birefnet-general-lite"},
     # 4b: múa lân (phần thưởng khi đủ mục tiêu tim): lân nhìn thẳng, lân đi ngang, người đánh trống, chũm chọe, ông Địa.
     "lion_dance": {"model": "birefnet-general-lite"},
+    # 4c: nhân vật (5 loại × đi lại / làm việc), xe trâu và voi, tượng võ tướng đá ở ô ghi danh.
+    "chars_danphu_nam_walk": {"model": "birefnet-general-lite"},
+    "chars_danphu_nam_work": {"model": "birefnet-general-lite"},
+    "chars_danphu_nu_walk": {"model": "birefnet-general-lite"},
+    "chars_danphu_nu_work": {"model": "birefnet-general-lite"},
+    "chars_thomoc_walk": {"model": "birefnet-general-lite"},
+    "chars_thomoc_work": {"model": "birefnet-general-lite"},
+    "chars_thone_walk": {"model": "birefnet-general-lite"},
+    "chars_thone_work": {"model": "birefnet-general-lite"},
+    "chars_tusi_walk": {"model": "birefnet-general-lite"},
+    "chars_tusi_work": {"model": "birefnet-general-lite"},
+    "vehicles": {"model": "birefnet-general-lite"},
+    "honor_statues": {"model": "birefnet-general-lite"},
 }
 ALREADY_TRANSPARENT = ["ui_kit"]
 

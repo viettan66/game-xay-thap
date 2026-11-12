@@ -34,7 +34,17 @@ function buildGallery(): void {
     if (!groups.has(g)) groups.set(g, []);
     groups.get(g)!.push([key, e]);
   }
-  const names: Record<string, string> = { chars: 'Nhân vật', abbot: 'Trụ trì', ui: 'Giao diện', items: 'Vật phẩm', stele: 'Bia đá', props: 'Đống vật liệu' };
+  const names: Record<string, string> = {
+    chars: 'Nhân vật',
+    vehicles: 'Xe trâu, voi',
+    honor: 'Tượng võ tướng đá (ô ghi danh)',
+    festival: 'Múa lân',
+    abbot: 'Trụ trì',
+    ui: 'Giao diện',
+    items: 'Vật phẩm',
+    stele: 'Bia đá',
+    props: 'Đống vật liệu',
+  };
   $('groups').innerHTML = [...groups.entries()]
     .map(
       ([g, items]) => `<h3>${esc(names[g] ?? g)} (${items.length})</h3><div class="grid">${items

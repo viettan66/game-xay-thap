@@ -21,7 +21,7 @@ const MANIFEST = path.join(ROOT, 'assets', 'manifest.json');
 
 const images: Record<string, ManifestEntry> = {};
 /** Nhóm ảnh script này dựng lại (ảnh cũ cùng nhóm được thay hẳn). */
-const BUILT = ['abbot', 'chars', 'stele', 'ui', 'items'];
+const BUILT = ['abbot', 'stele', 'ui', 'items'];
 const log = (s: string) => console.log(s);
 
 function previous(): Manifest | null {
@@ -67,28 +67,6 @@ async function abbot(): Promise<void> {
   const names = ['abbot_pray', 'abbot_wave', 'abbot_bow', 'abbot_welcome'];
   const imgs = slice(await sheet('abbot_poses'), 4, { minGap: 16 });
   await writeGroup(packGroup(imgs.map((im, i) => charFrame(`abbot/${names[i]}`, im)), 6));
-}
-
-async function workers(): Promise<void> {
-  const imgs = slice(await sheet('chars_workers'), 21, { minGap: 20 });
-  const rows = [
-    ['worker_m_idle', 'worker_m_walk_1', 'worker_m_walk_2', 'worker_m_walk_3', 'worker_m_carry_brick', 'worker_m_carry_baskets'],
-    ['worker_f_idle', 'worker_f_walk_1', 'worker_f_walk_2', 'worker_f_walk_3', 'worker_f_carry_brick', 'worker_f_carry_baskets'],
-    ['monk_idle', 'monk_walk_1', 'monk_walk_2', 'monk_walk_3', 'monk_carry_wood'],
-    ['carpenter_1', 'carpenter_2', 'mason_1', 'mason_2'],
-  ];
-  const names = rows.flat();
-  const frames = imgs.map((im, i) => charFrame(`chars/${names[i]}`, im));
-  const groups: Record<string, Frame[]> = {};
-  for (const f of frames) {
-    const key = f.name.replace(/^chars\//, '').replace(/_(idle|walk_\d|carry_\w+|\d)$/, '');
-    (groups[key] ??= []).push(f);
-  }
-  for (const [key, fs] of Object.entries(groups)) {
-    const g = packGroup(fs, 4);
-    await writeGroup(g);
-    log(`  nhóm ${key}: ${fs.length} khung, ô ${g.cellW}×${g.cellH}`);
-  }
 }
 
 async function stele(): Promise<void> {
@@ -235,8 +213,6 @@ async function main(): Promise<void> {
   log('Dựng ảnh game từ assets/work/nobg → assets/game');
   log('- Trụ trì');
   await abbot();
-  log('- Nhân vật');
-  await workers();
   log('- Bia đá');
   await stele();
   log('- Bộ giao diện và vật phẩm');
